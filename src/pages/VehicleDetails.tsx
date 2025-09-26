@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
-// import VehicleConfiguration from "@/components/vehicle-details/VehicleConfiguration"; // Removed
-// import VehicleModals from "@/components/vehicle-details/VehicleModals";
-// import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation"; // Removed
+import VehicleConfiguration from "@/components/vehicle-details/VehicleConfiguration";
+import VehicleModals from "@/components/vehicle-details/VehicleModals";
+import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation";
 import { PageLoading, ComponentLoading } from "@/components/ui/enhanced-loading";
 import { PerformanceErrorBoundary } from "@/components/ui/performance-error-boundary";
 import { HeroSkeleton } from "@/components/ui/performance-skeleton";
@@ -56,9 +56,9 @@ const TechnologyShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/TechnologyShowcase")
 );
 
-// const VehicleMediaShowcase = createLazyComponent(
-//   () => import("@/components/vehicle-details/VehicleMediaShowcase") // Removed
-// );
+const VehicleMediaShowcase = createLazyComponent(
+  () => import("@/components/vehicle-details/VehicleMediaShowcase")
+);
 
 const RefinedTechExperience = createLazyComponent(
   () => import("@/components/vehicle-details/RefinedTechExperience")
@@ -312,10 +312,9 @@ const VehicleDetails = () => {
                 </section>
                 
                 <section id="media-showcase">
-                   {/* VehicleMediaShowcase temporarily disabled */}
-                   <div className="py-16 text-center">
-                     <p className="text-muted-foreground">Media showcase coming soon</p>
-                   </div>
+                   <Suspense fallback={<ComponentLoading />}>
+                    <VehicleMediaShowcase vehicle={vehicle} />
+                  </Suspense>
                 </section>
 
                  <Suspense fallback={<ComponentLoading />}>
@@ -358,7 +357,6 @@ const VehicleDetails = () => {
             </>
           )}
           
-          {/* VehicleConfiguration temporarily disabled
           <section id="configuration">
             <VehicleConfiguration 
               vehicle={vehicle}
@@ -367,7 +365,6 @@ const VehicleDetails = () => {
               onGradeSelect={modalHandlers.handleGradeSelect}
             />
           </section>
-          */}
 
           {shouldRenderHeavyContent && (
             <Suspense fallback={<ComponentLoading />}>
@@ -396,12 +393,10 @@ const VehicleDetails = () => {
           />
         </div>
 
-        {/* ModernSectionNavigation temporarily disabled */}
-        {/* <ModernSectionNavigation /> */}
+        {/* Modern Section Navigation */}
+        <ModernSectionNavigation />
       </div>
 
-      {/* VehicleModals temporarily disabled */}
-      {/*
       <VehicleModals
         vehicle={vehicle}
         isBookingOpen={modals.isBookingOpen}
@@ -424,7 +419,6 @@ const VehicleDetails = () => {
         setIsInteriorModalOpen={(value) => modalHandlers.updateModal('isInteriorModalOpen', value)}
         carBuilderInitialGrade={carBuilderInitialGrade}
       />
-      */}
         </ToyotaLayout>
       </PerformanceErrorBoundary>
     </OptimizedModalProvider>

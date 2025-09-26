@@ -8,7 +8,7 @@ import OffersModal from "@/components/home/OffersModal";
 import SafetySuiteModal from "./modals/SafetySuiteModal";
 import ConnectivityModal from "./modals/ConnectivityModal";
 import HybridTechModal from "./modals/HybridTechModal";
-// import InteriorExperienceModal from "./modals/InteriorExperienceModal"; // Removed temporarily
+import InteriorExperienceModal from "./modals/InteriorExperienceModal";
 import { 
   useOptimizedModal, 
   MODAL_PRIORITIES,
@@ -121,13 +121,11 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
         onBookTestDrive={() => handleTestDriveFromModal(setIsHybridTechModalOpen)}
       />
 
-      {/* InteriorExperienceModal temporarily disabled
       <InteriorExperienceModal
         isOpen={isInteriorModalOpen}
         onClose={() => handleModalClose(setIsInteriorModalOpen)}
         onBookTestDrive={() => handleTestDriveFromModal(setIsInteriorModalOpen)}
       />
-      */}
     </>
   );
 };
