@@ -13,6 +13,7 @@ import TestDrive from "./pages/TestDrive";
 import Enquire from "./pages/Enquire";
 import PreOwned from "./pages/PreOwned";
 import NotFound from "./pages/NotFound";
+import DemoPage from "./pages/DemoPage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/test-drive" element={<TestDrive />} />
               <Route path="/enquire" element={<Enquire />} />
               <Route path="/pre-owned" element={<PreOwned />} />
+              <Route path="/demo" element={<DemoPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
