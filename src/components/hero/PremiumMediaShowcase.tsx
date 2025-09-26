@@ -1,232 +1,151 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { useReducedMotionSafe, motionSafeVariants } from '@/hooks/useReducedMotionSafe';
-import type { Media } from '@/data/demo-data';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, useMotionValueEvent, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import { heroMedia } from '../../data/vehicles';
+import { colors, layout, shadows, typography } from '../../utils/tokens';
+import { createFadeInUp } from '../../utils/motion';
 
-interface PremiumMediaShowcaseProps {
-  media: Media;
-  title?: string;
-  subtitle?: string;
-  ctaPrimary?: {
-    label: string;
-    action: () => void;
-  };
-  ctaSecondary?: {
-    label: string;
-    action: () => void;
-  };
-  className?: string;
-}
+const overlayGradient =
+  'linear-gradient(180deg, rgba(8, 8, 12, 0.82) 0%, rgba(8, 8, 12, 0.78) 35%, rgba(8, 8, 12, 0.65) 55%, rgba(8, 8, 12, 0.4) 100%)';
 
-const PremiumMediaShowcase: React.FC<PremiumMediaShowcaseProps> = ({
-  media,
-  title = "Experience Excellence",
-  subtitle = "Where luxury meets performance in perfect harmony",
-  ctaPrimary = { label: "Build & Price", action: () => {} },
-  ctaSecondary = { label: "Book Test Drive", action: () => {} },
-  className = ""
+type CTA = {
+  label: string;
+  action: () => void;
+};
+
+type PremiumMediaShowcaseProps = {
+  onPrimaryAction?: () => void;
+  onSecondaryAction?: () => void;
+};
+
+const CTA_BUTTONS: CTA[] = [
+  { label: 'Reserve Your Build', action: () => {} },
+  { label: 'Download Specification', action: () => {} },
+];
+
+export const PremiumMediaShowcase: React.FC<PremiumMediaShowcaseProps> = ({
+  onPrimaryAction,
+  onSecondaryAction,
 }) => {
-  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
-  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
-  const prefersReducedMotion = useReducedMotionSafe();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
+  const prefersReducedMotion = useReducedMotion();
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [ctaButtons] = useState(() =>
+    CTA_BUTTONS.map((cta, index) => ({ ...cta, action: index === 0 ? onPrimaryAction ?? cta.action : onSecondaryAction ?? cta.action }))
+  );
 
-  const hasVideo = Boolean(media.videoUrl);
+  const scale = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [1, 1] : [1, 1.12]);
+  const y = useTransform(scrollYProgress, [0, 1], prefersReducedMotion ? [0, 0] : [0, 120]);
+
+  useMotionValueEvent(scrollYProgress, 'change', () => {
+    if (!isLoaded && heroMedia.type === 'video') {
+      setIsLoaded(true);
+    }
+  });
 
   useEffect(() => {
-    if (videoElement && hasVideo) {
-      if (isVideoPlaying) {
-        videoElement.play().catch(console.warn);
-      } else {
-        videoElement.pause();
-      }
+    if (heroMedia.type === 'image') {
+      const image = new Image();
+      image.src = heroMedia.src;
+      image.onload = () => setIsLoaded(true);
     }
-  }, [isVideoPlaying, videoElement, hasVideo]);
+  }, []);
 
-  const handleVideoToggle = () => {
-    setIsVideoPlaying(!isVideoPlaying);
-  };
-
-  const handleMuteToggle = () => {
-    if (videoElement) {
-      videoElement.muted = !isMuted;
-      setIsMuted(!isMuted);
+  const renderBackground = useMemo(() => {
+    if (heroMedia.type === 'video') {
+      return (
+        <motion.video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster={heroMedia.poster}
+          style={{ scale, y }}
+        >
+          <source src={heroMedia.src} type="video/mp4" />
+        </motion.video>
+      );
     }
-  };
+
+    return (
+      <motion.img
+        src={heroMedia.src}
+        alt={heroMedia.headline}
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ scale, y }}
+      />
+    );
+  }, [scale, y]);
 
   return (
-    <section className={`relative h-screen overflow-hidden bg-black ${className}`}>
-      {/* Media Background */}
-      <div className="absolute inset-0 z-0">
-        {hasVideo ? (
-          <video
-            ref={setVideoElement}
-            className="w-full h-full object-cover"
-            poster={media.poster || media.imageUrl}
-            muted={isMuted}
-            loop
-            playsInline
-            autoPlay
-            preload="metadata"
+    <section
+      ref={containerRef}
+      className="relative flex min-h-[90vh] w-full items-end justify-center overflow-hidden bg-black text-white"
+    >
+      <div className="absolute inset-0" aria-hidden="true" style={{ backgroundImage: overlayGradient }} />
+      {renderBackground}
+
+      <div
+        className="relative z-10 mx-auto flex w-full flex-col px-4 pb-14 pt-32 sm:px-8 lg:px-12"
+        style={{ maxWidth: layout.maxWidth }}
+      >
+        <motion.div
+          className="flex max-w-4xl flex-col gap-6 text-left"
+          variants={createFadeInUp(60)}
+          initial="hidden"
+          animate="visible"
+        >
+          <p className="text-sm uppercase tracking-[0.5em]" style={{ color: colors.accent }}>
+            Electrified Performance Studio
+          </p>
+          <h1
+            className="font-medium"
+            style={{
+              fontFamily: typography.display,
+              fontSize: 'clamp(2.75rem, 5vw, 4.8rem)',
+              lineHeight: 1.05,
+              letterSpacing: '-0.02em',
+            }}
           >
-            <source src={media.videoUrl} type="video/mp4" />
-            {/* Fallback image */}
-            <img
-              src={media.imageUrl || media.poster}
-              alt={media.caption || title}
-              className="w-full h-full object-cover"
-            />
-          </video>
-        ) : (
-          <img
-            src={media.imageUrl}
-            alt={media.caption || title}
-            className="w-full h-full object-cover"
-            loading="eager"
-            sizes="100vw"
-          />
-        )}
-        
-        {/* Luxury gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 h-full flex items-center">
-        <div className="toyota-container w-full">
-          <div className="max-w-4xl">
-            <motion.div
-              custom={prefersReducedMotion}
-              variants={motionSafeVariants}
-              initial="initial"
-              animate="animate"
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="space-y-8"
-            >
-              {/* Title */}
-              <div className="space-y-4">
-                <motion.h1 
-                  className="text-5xl md:text-7xl font-light text-white tracking-tight leading-none"
-                  custom={prefersReducedMotion}
-                  variants={motionSafeVariants}
-                  initial="initial"
-                  animate="animate"
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  {title}
-                </motion.h1>
-                
-                <motion.p 
-                  className="text-xl md:text-2xl text-white/80 max-w-2xl font-light tracking-wide"
-                  custom={prefersReducedMotion}
-                  variants={motionSafeVariants}
-                  initial="initial"
-                  animate="animate"
-                  transition={{ duration: 0.8, delay: 0.6 }}
-                >
-                  {subtitle}
-                </motion.p>
-              </div>
-
-              {/* CTAs */}
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-4"
-                custom={prefersReducedMotion}
-                variants={motionSafeVariants}
-                initial="initial"
-                animate="animate"
-                transition={{ duration: 0.8, delay: 0.8 }}
+            {heroMedia.headline}
+          </h1>
+          <p className="max-w-2xl text-lg sm:text-xl" style={{ fontFamily: typography.body, color: colors.textSecondary }}>
+            {heroMedia.subheadline}
+          </p>
+          <div className="mt-6 flex flex-col items-start gap-4 sm:flex-row">
+            {ctaButtons.map((cta, index) => (
+              <motion.button
+                key={cta.label}
+                onClick={cta.action}
+                className="rounded-full border border-white/10 bg-white/10 px-8 py-3 text-sm uppercase tracking-[0.3em] text-white transition hover:border-[#CC0000] hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EB0A1E]"
+                style={{ boxShadow: index === 0 ? shadows.glow : shadows.glass }}
+                whileHover={prefersReducedMotion ? undefined : { y: -6 }}
+                whileTap={prefersReducedMotion ? undefined : { scale: 0.97 }}
               >
-                <Button
-                  onClick={ctaPrimary.action}
-                  size="lg"
-                  className="bg-white text-black hover:bg-white/90 px-8 py-6 text-lg font-medium tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
-                >
-                  {ctaPrimary.label}
-                </Button>
-                
-                <Button
-                  onClick={ctaSecondary.action}
-                  variant="outline"
-                  size="lg"
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 px-8 py-6 text-lg font-medium tracking-wide backdrop-blur-sm transition-all duration-300"
-                >
-                  {ctaSecondary.label}
-                </Button>
-              </motion.div>
-            </motion.div>
+                {cta.label}
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+        <div
+          className="mt-16 grid w-full gap-6 text-xs uppercase tracking-[0.35em] sm:grid-cols-3"
+          style={{ color: colors.textMuted }}
+        >
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+            <p>0-100 km/h</p>
+            <p className="mt-2 text-2xl text-white">3.8s*</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+            <p>Electric Range</p>
+            <p className="mt-2 text-2xl text-white">620 km</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+            <p>Charging</p>
+            <p className="mt-2 text-2xl text-white">80% in 18 min</p>
           </div>
         </div>
       </div>
-
-      {/* Video Controls */}
-      {hasVideo && (
-        <div className="absolute bottom-8 right-8 z-20 flex gap-3">
-          <Button
-            onClick={handleVideoToggle}
-            variant="outline"
-            size="sm"
-            className="bg-black/20 border-white/20 text-white hover:bg-white/10 backdrop-blur-md"
-            aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
-          >
-            {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          </Button>
-          
-          <Button
-            onClick={handleMuteToggle}
-            variant="outline"
-            size="sm"
-            className="bg-black/20 border-white/20 text-white hover:bg-white/10 backdrop-blur-md"
-            aria-label={isMuted ? 'Unmute video' : 'Mute video'}
-          >
-            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-          </Button>
-        </div>
-      )}
-
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-        animate={prefersReducedMotion ? {} : { y: [0, 10, 0] }}
-        transition={prefersReducedMotion ? {} : { duration: 2, repeat: Infinity }}
-      >
-        <div className="w-1 h-12 bg-white/30 rounded-full">
-          <motion.div
-            className="w-1 h-6 bg-white rounded-full"
-            animate={prefersReducedMotion ? {} : { y: [0, 24, 0] }}
-            transition={prefersReducedMotion ? {} : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-      </motion.div>
-
-      {/* Subtle parallax particles for luxury feel */}
-      {!prefersReducedMotion && (
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-white/10 rounded-full"
-              style={{
-                left: `${20 + i * 30}%`,
-                top: `${30 + i * 20}%`,
-              }}
-              animate={{
-                y: [0, -20, 0],
-                opacity: [0.3, 0.7, 0.3],
-              }}
-              transition={{
-                duration: 4 + i,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.5,
-              }}
-            />
-          ))}
-        </div>
-      )}
     </section>
   );
 };

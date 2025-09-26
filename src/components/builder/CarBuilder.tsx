@@ -1,446 +1,237 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Check, X, Settings, Car, Palette, Wrench } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
-import { Grade } from '@/data/grades';
+import { useMemo, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { builderSteps } from '../../data/vehicles';
+import { colors, shadows, typography } from '../../utils/tokens';
+import { createFadeInUp, staggerContainer } from '../../utils/motion';
 
-interface BuilderConfig {
-  grade?: Grade;
-  exteriorColor?: string;
-  wheels?: string;
-  interior?: string;
-  packages?: string[];
-}
+type BuilderSelections = Record<string, string>;
 
-interface CarBuilderProps {
-  isOpen: boolean;
-  onClose: () => void;
-  vehicle?: any;
-  initialGrade?: string;
-  onReserve?: (config: BuilderConfig) => void;
-}
+const initialSelections: BuilderSelections = {
+  grade: builderSteps[0]?.options[0]?.id ?? '',
+  color: builderSteps[1]?.options[0]?.id ?? '',
+  wheels: builderSteps[2]?.options[0]?.id ?? '',
+  interior: builderSteps[3]?.options[0]?.id ?? '',
+};
 
-interface BuilderStep {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: React.ComponentType<any>;
-  component: React.ComponentType<any>;
-}
+const getOptionPreviewStyle = (preview: string) =>
+  preview.startsWith('#')
+    ? { backgroundColor: preview }
+    : {
+        backgroundImage: `url(${preview})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      };
 
-const builderSteps: BuilderStep[] = [
-  { id: 'grade', title: 'Choose Grade', subtitle: 'Select your trim level', icon: Car, component: GradeStep },
-  { id: 'exterior', title: 'Exterior Color', subtitle: 'Pick your finish', icon: Palette, component: ExteriorStep },
-  { id: 'wheels', title: 'Wheels & Tires', subtitle: 'Select wheel design', icon: Settings, component: WheelsStep },
-  { id: 'interior', title: 'Interior', subtitle: 'Choose materials', icon: Car, component: InteriorStep },
-  { id: 'packages', title: 'Options', subtitle: 'Add packages', icon: Wrench, component: PackagesStep },
-];
+export const CarBuilder: React.FC = () => {
+  const [activeStep, setActiveStep] = useState(0);
+  const [selections, setSelections] = useState<BuilderSelections>(initialSelections);
+  const prefersReducedMotion = useReducedMotion();
 
-// Step Components
-function GradeStep({ config, onChange }: { config: BuilderConfig; onChange: (update: Partial<BuilderConfig>) => void }) {
-  const grades = [
-    { id: 'le', name: 'LE', price: 32500, features: ['Toyota Safety Sense 2.0', 'LED Headlights', 'Apple CarPlay'] },
-    { id: 'xle', name: 'XLE', price: 35500, features: ['Moonroof', 'Heated Seats', 'Wireless Charging'] },
-    { id: 'limited', name: 'Limited', price: 39500, features: ['Leather Interior', 'JBL Audio', 'Advanced Climate'] },
-  ];
+  const activeStepData = builderSteps[activeStep];
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {grades.map((grade) => (
-        <motion.div
-          key={grade.id}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Card className={cn(
-            'cursor-pointer transition-all duration-200 border-2',
-            config.grade?.id === grade.id ? 'border-brand-primary bg-brand-primary/5' : 'border-border hover:border-brand-primary/50'
-          )}
-          onClick={() => onChange({ grade })}
-          >
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold">{grade.name}</h3>
-                <Badge variant="secondary">${grade.price.toLocaleString()}</Badge>
-              </div>
-              <ul className="space-y-2">
-                {grade.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 mr-2 text-brand-primary" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
+  const summary = useMemo(() => {
+    return builderSteps
+      .filter((step) => step.id !== 'summary')
+      .map((step) => {
+        const selectedOptionId = selections[step.id];
+        const option = step.options.find((opt) => opt.id === selectedOptionId);
+        return {
+          step: step.title,
+          selection: option?.label ?? 'Not selected',
+          priceImpact: option?.priceImpact ?? '',
+        };
+      });
+  }, [selections]);
 
-function ExteriorStep({ config, onChange }: { config: BuilderConfig; onChange: (update: Partial<BuilderConfig>) => void }) {
-  const colors = [
-    { id: 'white', name: 'Pearl White', hex: '#FFFFFF', premium: false },
-    { id: 'black', name: 'Midnight Black', hex: '#1a1a1a', premium: true },
-    { id: 'silver', name: 'Silver Metallic', hex: '#C0C0C0', premium: false },
-    { id: 'red', name: 'Supersonic Red', hex: '#EB0A1E', premium: true },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {colors.map((color) => (
-        <motion.div
-          key={color.id}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={cn(
-            'relative cursor-pointer p-4 rounded-lg border-2 transition-all',
-            config.exteriorColor === color.id ? 'border-brand-primary' : 'border-border hover:border-brand-primary/50'
-          )}
-          onClick={() => onChange({ exteriorColor: color.id })}
-        >
-          <div
-            className="w-16 h-16 rounded-full mx-auto mb-3 shadow-lg"
-            style={{ backgroundColor: color.hex }}
-          />
-          <div className="text-center">
-            <p className="font-medium text-sm">{color.name}</p>
-            {color.premium && <Badge variant="outline" className="mt-1 text-xs">Premium</Badge>}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function WheelsStep({ config, onChange }: { config: BuilderConfig; onChange: (update: Partial<BuilderConfig>) => void }) {
-  const wheels = [
-    { id: 'standard', name: '17" Alloy', price: 0 },
-    { id: 'sport', name: '19" Sport', price: 1500 },
-    { id: 'premium', name: '20" Premium', price: 2500 },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {wheels.map((wheel) => (
-        <Card
-          key={wheel.id}
-          className={cn(
-            'cursor-pointer transition-all border-2',
-            config.wheels === wheel.id ? 'border-brand-primary' : 'border-border hover:border-brand-primary/50'
-          )}
-          onClick={() => onChange({ wheels: wheel.id })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-3" />
-            <h3 className="font-medium">{wheel.name}</h3>
-            {wheel.price > 0 && <p className="text-sm text-muted-foreground">+${wheel.price}</p>}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function InteriorStep({ config, onChange }: { config: BuilderConfig; onChange: (update: Partial<BuilderConfig>) => void }) {
-  const interiors = [
-    { id: 'fabric', name: 'SofTex', price: 0 },
-    { id: 'leather', name: 'Leather', price: 1200 },
-    { id: 'premium', name: 'Premium Leather', price: 2400 },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {interiors.map((interior) => (
-        <Card
-          key={interior.id}
-          className={cn(
-            'cursor-pointer transition-all border-2',
-            config.interior === interior.id ? 'border-brand-primary' : 'border-border hover:border-brand-primary/50'
-          )}
-          onClick={() => onChange({ interior: interior.id })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="w-full h-24 bg-muted rounded mb-3" />
-            <h3 className="font-medium">{interior.name}</h3>
-            {interior.price > 0 && <p className="text-sm text-muted-foreground">+${interior.price}</p>}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function PackagesStep({ config, onChange }: { config: BuilderConfig; onChange: (update: Partial<BuilderConfig>) => void }) {
-  const packages = [
-    { id: 'tech', name: 'Technology Package', price: 2500, features: ['Navigation', 'Premium Audio', 'HUD'] },
-    { id: 'safety', name: 'Safety Package', price: 1800, features: ['Blind Spot', 'Rear Cross Traffic', 'Parking Assist'] },
-    { id: 'luxury', name: 'Luxury Package', price: 3200, features: ['Ventilated Seats', 'Ambient Lighting', 'Power Tailgate'] },
-  ];
-
-  const togglePackage = (packageId: string) => {
-    const currentPackages = config.packages || [];
-    const newPackages = currentPackages.includes(packageId)
-      ? currentPackages.filter(p => p !== packageId)
-      : [...currentPackages, packageId];
-    onChange({ packages: newPackages });
+  const handleSelect = (stepId: string, optionId: string) => {
+    setSelections((prev) => ({ ...prev, [stepId]: optionId }));
   };
 
   return (
-    <div className="space-y-4">
-      {packages.map((pkg) => (
-        <Card
-          key={pkg.id}
-          className={cn(
-            'cursor-pointer transition-all border-2',
-            config.packages?.includes(pkg.id) ? 'border-brand-primary bg-brand-primary/5' : 'border-border hover:border-brand-primary/50'
-          )}
-          onClick={() => togglePackage(pkg.id)}
-        >
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">{pkg.name}</h3>
-                <p className="text-brand-primary font-medium">+${pkg.price.toLocaleString()}</p>
-              </div>
-              <div className={cn(
-                'w-6 h-6 rounded border-2 flex items-center justify-center',
-                config.packages?.includes(pkg.id) ? 'border-brand-primary bg-brand-primary' : 'border-border'
-              )}>
-                {config.packages?.includes(pkg.id) && <Check className="w-4 h-4 text-white" />}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {pkg.features.map((feature, idx) => (
-                <span key={idx} className="text-sm text-muted-foreground">{feature}</span>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-const CarBuilder: React.FC<CarBuilderProps> = ({
-  isOpen,
-  onClose,
-  vehicle,
-  initialGrade,
-  onReserve
-}) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [config, setConfig] = useState<BuilderConfig>({});
-  const reduceMotion = useReducedMotionSafe();
-
-  const updateConfig = (update: Partial<BuilderConfig>) => {
-    setConfig(prev => ({ ...prev, ...update }));
-  };
-
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0: return !!config.grade;
-      case 1: return !!config.exteriorColor;
-      case 2: return !!config.wheels;
-      case 3: return !!config.interior;
-      default: return true;
-    }
-  };
-
-  const calculateTotal = () => {
-    let total = config.grade?.price || 0;
-    // Add package costs
-    const packages = config.packages || [];
-    packages.forEach(pkg => {
-      if (pkg === 'tech') total += 2500;
-      if (pkg === 'safety') total += 1800;
-      if (pkg === 'luxury') total += 3200;
-    });
-    return total;
-  };
-
-  const CurrentStepComponent = builderSteps[currentStep]?.component;
-
-  if (!isOpen) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
-    >
-      <div className="h-full overflow-auto">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          <Card className="bg-white dark:bg-gray-900">
-            {/* Header */}
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold">Build & Price</h1>
-                  <p className="text-muted-foreground">Customize your vehicle</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="h-6 w-6" />
-                </Button>
-              </div>
-              
-              {/* Progress */}
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Step {currentStep + 1} of {builderSteps.length}</span>
-                  <span className="text-sm text-muted-foreground">{Math.round(((currentStep + 1) / builderSteps.length) * 100)}% Complete</span>
-                </div>
-                <Progress value={((currentStep + 1) / builderSteps.length) * 100} className="h-2" />
-              </div>
-
-              {/* Step Navigation */}
-              <div className="hidden md:flex items-center justify-between mt-6">
-                {builderSteps.map((step, index) => {
-                  const Icon = step.icon;
-                  return (
-                    <div key={step.id} className="flex items-center">
-                      <div className={cn(
-                        'flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors',
-                        index <= currentStep ? 'border-brand-primary bg-brand-primary text-white' : 'border-muted'
-                      )}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      {index < builderSteps.length - 1 && (
-                        <div className={cn(
-                          'w-16 h-0.5 mx-2 transition-colors',
-                          index < currentStep ? 'bg-brand-primary' : 'bg-muted'
-                        )} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-3">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-semibold">{builderSteps[currentStep]?.title}</h2>
-                    <p className="text-muted-foreground">{builderSteps[currentStep]?.subtitle}</p>
-                  </div>
-                  
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentStep}
-                      initial={reduceMotion ? {} : { opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={reduceMotion ? {} : { opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {CurrentStepComponent && (
-                        <CurrentStepComponent config={config} onChange={updateConfig} />
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-
-                {/* Summary Sidebar */}
-                <div className="lg:col-span-1">
-                  <Card className="sticky top-4">
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-4">Summary</h3>
-                      <div className="space-y-3 text-sm">
-                        {config.grade && (
-                          <div className="flex justify-between">
-                            <span>Grade:</span>
-                            <span className="font-medium">{config.grade.name}</span>
-                          </div>
-                        )}
-                        {config.exteriorColor && (
-                          <div className="flex justify-between">
-                            <span>Color:</span>
-                            <span className="font-medium capitalize">{config.exteriorColor}</span>
-                          </div>
-                        )}
-                        {config.wheels && (
-                          <div className="flex justify-between">
-                            <span>Wheels:</span>
-                            <span className="font-medium capitalize">{config.wheels}</span>
-                          </div>
-                        )}
-                        {config.interior && (
-                          <div className="flex justify-between">
-                            <span>Interior:</span>
-                            <span className="font-medium capitalize">{config.interior}</span>
-                          </div>
-                        )}
-                        {config.packages && config.packages.length > 0 && (
-                          <div>
-                            <div className="font-medium mb-1">Packages:</div>
-                            {config.packages.map(pkg => (
-                              <div key={pkg} className="text-xs text-muted-foreground ml-2">
-                                • {pkg} Package
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <Separator className="my-4" />
-                      
-                      <div className="flex justify-between items-center font-semibold text-lg">
-                        <span>Total:</span>
-                        <span className="text-brand-primary">${calculateTotal().toLocaleString()}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t bg-muted/20">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                  disabled={currentStep === 0}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Previous
-                </Button>
-                
-                <div className="flex gap-3">
-                  {currentStep === builderSteps.length - 1 ? (
-                    <Button
-                      onClick={() => onReserve?.(config)}
-                      disabled={!canProceed()}
-                      className="bg-brand-primary hover:bg-brand-primary/90"
-                    >
-                      Reserve Now - ${calculateTotal().toLocaleString()}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => setCurrentStep(Math.min(builderSteps.length - 1, currentStep + 1))}
-                      disabled={!canProceed()}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
+    <section className="mx-auto w-full max-w-6xl px-4 py-24 sm:px-8">
+      <div className="mb-16 flex flex-col gap-4 text-white">
+        <p className="text-xs uppercase tracking-[0.4em]" style={{ color: colors.accent }}>
+          Personalisation Studio
+        </p>
+        <h2 className="text-3xl font-light sm:text-4xl">Compose Your GR Hybrid</h2>
+        <p className="max-w-3xl text-sm sm:text-base" style={{ color: colors.textSecondary }}>
+          Experience a multi-sensory configurator crafted for clarity across any device. Effortlessly glide through grade, finish,
+          wheel, and interior selections before receiving a curated summary.
+        </p>
       </div>
-    </motion.div>
+
+      <div className="hidden gap-10 rounded-[32px] border border-white/10 bg-[rgba(14,14,18,0.9)] p-10 text-white shadow-2xl backdrop-blur-xl lg:grid lg:grid-cols-[260px_1fr_280px]">
+        <nav className="flex flex-col gap-4 text-sm uppercase tracking-[0.3em]" style={{ color: colors.textMuted }}>
+          {builderSteps.map((step, index) => (
+            <button
+              key={step.id}
+              onClick={() => setActiveStep(index)}
+              className={`rounded-2xl border px-5 py-4 text-left transition ${
+                activeStep === index
+                  ? 'border-[#EB0A1E] bg-white/5 text-white'
+                  : 'border-white/5 bg-transparent text-white/70 hover:border-white/15'
+              }`}
+            >
+              <span className="text-[11px] tracking-[0.4em]">0{index + 1}</span>
+              <div className="mt-2 text-base" style={{ fontFamily: typography.display }}>
+                {step.title}
+              </div>
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex flex-col gap-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeStepData.id}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -24 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="rounded-[24px] border border-white/10 bg-[rgba(18,18,24,0.85)] p-8"
+            >
+              <h3 className="text-2xl font-light">{activeStepData.title}</h3>
+              {activeStepData.id === 'summary' ? (
+                <div className="mt-6 space-y-4">
+                  {summary.map((item) => (
+                    <div key={item.step} className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4">
+                      <div>
+                        <p className="text-sm" style={{ color: colors.textMuted }}>
+                          {item.step}
+                        </p>
+                        <p className="text-lg text-white">{item.selection}</p>
+                      </div>
+                      <span
+                        className="text-xs uppercase tracking-[0.35em]"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        {item.priceImpact}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <motion.div
+                  variants={staggerContainer(0.12)}
+                  initial="hidden"
+                  animate="visible"
+                  className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
+                >
+                  {activeStepData.options.map((option) => {
+                    const isActive = selections[activeStepData.id] === option.id;
+                    return (
+                      <motion.button
+                        key={option.id}
+                        variants={createFadeInUp(30)}
+                        onClick={() => handleSelect(activeStepData.id, option.id)}
+                        className={`group flex flex-col overflow-hidden rounded-[24px] border border-white/10 text-left transition ${
+                          isActive ? 'bg-white/5' : 'bg-transparent hover:border-white/20'
+                        }`}
+                        style={
+                          isActive
+                            ? { borderColor: colors.primary, boxShadow: shadows.glow }
+                            : undefined
+                        }
+                      >
+                        <div className="relative h-40 w-full overflow-hidden rounded-[24px]">
+                          <div className="h-full w-full" style={getOptionPreviewStyle(option.preview)} />
+                          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70" />
+                        </div>
+                        <div className="flex flex-col gap-2 p-4">
+                          <span className="text-xs uppercase tracking-[0.35em]" style={{ color: colors.textMuted }}>
+                            {option.priceImpact}
+                          </span>
+                          <span className="text-lg text-white">{option.label}</span>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <aside className="flex flex-col gap-4 text-sm" style={{ color: colors.textSecondary }}>
+          <div className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.8)] p-6" style={{ boxShadow: shadows.glass }}>
+            <p className="text-xs uppercase tracking-[0.3em]" style={{ color: colors.primary }}>
+              Live Preview
+            </p>
+            <div className="mt-4 h-40 w-full overflow-hidden rounded-2xl">
+              <img
+                src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=800&q=80"
+                alt="Configurator preview"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <p className="mt-4 text-sm">Signature Carbon Matte with Neon Edge pack shown.</p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.8)] p-6">
+            <p className="text-xs uppercase tracking-[0.3em]" style={{ color: colors.primary }}>
+              Current Build
+            </p>
+            <ul className="mt-4 space-y-3 text-white">
+              {summary.map((item) => (
+                <li key={item.step} className="flex items-center justify-between text-xs uppercase tracking-[0.3em]">
+                  <span>{item.selection}</span>
+                  <span style={{ color: colors.textMuted }}>{item.priceImpact}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+      <div className="flex flex-col gap-4 text-white lg:hidden">
+        {builderSteps.map((step, index) => (
+          <details key={step.id} className="rounded-[24px] border border-white/10 bg-[rgba(18,18,24,0.85)]" open={index === 0}>
+            <summary className="cursor-pointer list-none px-5 py-4 text-sm uppercase tracking-[0.35em]">
+              {step.title}
+            </summary>
+            <div className="px-5 pb-6">
+              {step.id === 'summary' ? (
+                <div className="space-y-4">
+                  {summary.map((item) => (
+                    <div
+                      key={item.step}
+                      className="flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs uppercase tracking-[0.3em]"
+                      style={{ color: colors.textMuted }}
+                    >
+                      <span className="text-white">{item.selection}</span>
+                      <span>{item.priceImpact}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {step.options.map((option) => {
+                    const isActive = selections[step.id] === option.id;
+                    return (
+                        <button
+                          key={option.id}
+                          onClick={() => handleSelect(step.id, option.id)}
+                          className={`flex flex-col overflow-hidden rounded-[24px] border text-left transition ${
+                            isActive ? 'bg-white/10' : 'border-white/10'
+                          }`}
+                          style={isActive ? { borderColor: colors.primary } : undefined}
+                        >
+                        <div className="h-36 w-full" style={getOptionPreviewStyle(option.preview)} />
+                        <div className="flex flex-col gap-1 p-4">
+                          <span className="text-xs uppercase tracking-[0.35em]" style={{ color: colors.textMuted }}>
+                            {option.priceImpact}
+                          </span>
+                          <span className="text-lg">{option.label}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
   );
 };
 
