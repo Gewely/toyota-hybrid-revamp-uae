@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock';
 
 interface CTAAction {
   id: string;
@@ -53,6 +54,8 @@ const ReserveModal: React.FC<{ isOpen: boolean; onClose: () => void; onSubmit: (
     onSubmit(formData);
     onClose();
   };
+
+  useBodyScrollLock(isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -140,6 +143,8 @@ const TestDriveModal: React.FC<{ isOpen: boolean; onClose: () => void; onSubmit:
     onSubmit(formData);
     onClose();
   };
+
+  useBodyScrollLock(isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -269,6 +274,8 @@ const ServiceModal: React.FC<{ isOpen: boolean; onClose: () => void; onSubmit: (
     onClose();
   };
 
+  useBodyScrollLock(isOpen);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -393,6 +400,8 @@ const TradeInModal: React.FC<{ isOpen: boolean; onClose: () => void; onSubmit: (
     onSubmit(formData);
     onClose();
   };
+
+  useBodyScrollLock(isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

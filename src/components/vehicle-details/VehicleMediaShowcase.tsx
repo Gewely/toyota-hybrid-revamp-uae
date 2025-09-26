@@ -1,6 +1,7 @@
 // src/components/vehicle-details/VehicleMediaShowcase.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import type { VehicleModel } from "@/types/vehicle";
 
 /* ================= Brand tokens ================= */
@@ -15,15 +16,6 @@ const TOK = {
 
 const cx = (...a: Array<string | false | null | undefined>) => a.filter(Boolean).join(" ");
 
-/* ================= Utilities ================= */
-function useBodyScrollLock(locked: boolean) {
-  useEffect(() => {
-    if (!locked) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [locked]);
-}
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
