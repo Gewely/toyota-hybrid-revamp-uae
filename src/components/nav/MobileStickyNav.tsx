@@ -1,189 +1,110 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Car, 
-  Heart, 
-  Calendar, 
-  Share2, 
-  ArrowRight,
-  Zap,
-  Settings
-} from 'lucide-react';
-import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { colors, shadows } from '../../utils/tokens';
 
-interface MobileStickyNavProps {
-  onCompare?: () => void;
-  onBuild?: () => void;
-  onTestDrive?: () => void;
-  onShare?: () => void;
-  compareCount?: number;
-  className?: string;
-}
+type NavItem = {
+  id: string;
+  label: string;
+  icon: JSX.Element;
+};
 
-const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
-  onCompare = () => {},
-  onBuild = () => {},
-  onTestDrive = () => {},
-  onShare = () => {},
-  compareCount = 0,
-  className = ""
-}) => {
+type MobileStickyNavProps = {
+  onSelect: (id: string) => void;
+};
+
+const iconStyles = 'h-6 w-6';
+
+const icons: Record<string, JSX.Element> = {
+  compare: (
+    <svg className={iconStyles} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h6m-6 4h6m-6 4h6m6 0h6m-6-4h6m-6-4h6" />
+    </svg>
+  ),
+  build: (
+    <svg className={iconStyles} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 7l7.89 5.26a2 2 0 002.22 0L21 7M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      />
+    </svg>
+  ),
+  drive: (
+    <svg className={iconStyles} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 16a4 4 0 118 0m6 0a4 4 0 11-8 0m8 0h1a1 1 0 001-1v-3a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-2.828-2.828A1 1 0 009.586 7H6a2 2 0 00-2 2v6a1 1 0 001 1h1"
+      />
+    </svg>
+  ),
+  share: (
+    <svg className={iconStyles} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4m4-4v14"
+      />
+    </svg>
+  ),
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'compare', label: 'Compare', icon: icons.compare },
+  { id: 'build', label: 'Build', icon: icons.build },
+  { id: 'drive', label: 'Test Drive', icon: icons.drive },
+  { id: 'share', label: 'Share', icon: icons.share },
+];
+
+export const MobileStickyNav: React.FC<MobileStickyNavProps> = ({ onSelect }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [activeAction, setActiveAction] = useState<string | null>(null);
-  const prefersReducedMotion = useReducedMotionSafe();
+  const prefersReducedMotion = useReducedMotion();
 
-  // Hide/show on scroll
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      const currentY = window.scrollY;
+      if (currentY > lastScrollY && currentY > 120) {
         setIsVisible(false);
       } else {
         setIsVisible(true);
       }
-      
-      setLastScrollY(currentScrollY);
+      setLastScrollY(currentY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const handleAction = (action: string, callback: () => void) => {
-    setActiveAction(action);
-    callback();
-    
-    // Reset active state after animation
-    setTimeout(() => setActiveAction(null), 200);
-  };
-
-  const navItems = [
-    {
-      id: 'compare',
-      icon: Car,
-      label: 'Compare',
-      action: () => handleAction('compare', onCompare),
-      badge: compareCount > 0 ? compareCount : undefined,
-      color: 'bg-blue-600'
-    },
-    {
-      id: 'build',
-      icon: Settings,
-      label: 'Build',
-      action: () => handleAction('build', onBuild),
-      color: 'bg-green-600'
-    },
-    {
-      id: 'test-drive',
-      icon: Calendar,
-      label: 'Test Drive',
-      action: () => handleAction('test-drive', onTestDrive),
-      color: 'bg-orange-600'
-    },
-    {
-      id: 'share',
-      icon: Share2,
-      label: 'Share',
-      action: () => handleAction('share', onShare),
-      color: 'bg-purple-600'
-    }
-  ];
-
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 100 }}
-          animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 100 }}
-          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className={`fixed bottom-0 left-0 right-0 z-[100] lg:hidden ${className}`}
+        <motion.nav
+          initial={{ y: 120, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 120, opacity: 0 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-4 left-1/2 z-50 w-[90%] max-w-xl -translate-x-1/2 rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.85)]/80 px-4 py-3 shadow-lg backdrop-blur"
+          style={{ boxShadow: shadows.glass }}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl border-t border-white/10" />
-          
-          {/* Content */}
-          <div className="relative px-4 py-3 safe-area-inset-bottom">
-            <div className="flex items-center justify-between max-w-sm mx-auto">
-              {navItems.map((item, index) => {
-                const Icon = item.icon;
-                const isActive = activeAction === item.id;
-                
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.8 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, scale: 1 }}
-                    transition={prefersReducedMotion ? {} : { 
-                      delay: index * 0.1,
-                      duration: 0.3,
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30
-                    }}
-                    className="relative"
-                  >
-                    <Button
-                      onClick={item.action}
-                      variant="ghost"
-                      size="sm"
-                      className={`
-                        flex-col h-auto p-3 text-white hover:text-white hover:bg-white/10
-                        transition-all duration-200 touch-manipulation min-h-touch-target
-                        ${isActive ? 'scale-95' : ''}
-                      `}
-                      style={{
-                        minHeight: '44px',
-                        minWidth: '44px'
-                      }}
-                    >
-                      <div className="relative">
-                        <div className={`
-                          w-8 h-8 rounded-lg flex items-center justify-center mb-1
-                          ${isActive ? item.color : 'bg-white/10'}
-                          transition-colors duration-200
-                        `}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        
-                        {/* Badge for compare count */}
-                        {item.badge && (
-                          <Badge
-                            variant="destructive"
-                            className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-red-600 border-none"
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <span className="text-xs font-medium leading-none">
-                        {item.label}
-                      </span>
-                    </Button>
-
-                    {/* Haptic feedback ripple */}
-                    <AnimatePresence>
-                      {isActive && !prefersReducedMotion && (
-                        <motion.div
-                          className="absolute inset-0 rounded-lg bg-white/20"
-                          initial={{ scale: 0, opacity: 0.6 }}
-                          animate={{ scale: 1.5, opacity: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
+          <div
+            className="grid grid-cols-4 gap-2 text-center text-[11px] font-medium uppercase tracking-[0.3em]"
+            style={{ color: colors.textSecondary }}
+          >
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onSelect(item.id)}
+                className="group flex flex-col items-center gap-2 rounded-2xl px-3 py-2 text-white/80 transition hover:bg-white/5"
+              >
+                <motion.span whileHover={prefersReducedMotion ? undefined : { y: -3 }} className="rounded-full bg-white/5 p-2 text-white">
+                  {item.icon}
+                </motion.span>
+                {item.label}
+              </button>
+            ))}
           </div>
-        </motion.div>
+        </motion.nav>
       )}
     </AnimatePresence>
   );
