@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -223,6 +224,8 @@ const ConnectivityModal: React.FC<ConnectivityModalProps> = ({
   modelName = "Toyota Camry",
   regionLabel = "UAE",
 }) => {
+  useBodyScrollLock(isOpen);
+
   const [mediaTab, setMediaTab] = React.useState<MediaTab>("image");
   const prefersReducedMotion = useReducedMotion();
 

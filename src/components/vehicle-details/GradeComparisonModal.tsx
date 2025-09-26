@@ -9,10 +9,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  X, 
-  Check, 
-  Download, 
+import {
+  X,
+  Check,
+  Download,
   Wrench, 
   Sparkles,
   Eye,
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { openTestDrivePopup } from "@/utils/testDriveUtils";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 interface GradeComparisonModalProps {
   isOpen: boolean;
@@ -51,6 +52,8 @@ const GradeComparisonModal: React.FC<GradeComparisonModalProps> = ({
   onCarBuilder,
   onBookTestDrive
 }) => {
+  useBodyScrollLock(isOpen);
+
   const [selectedGrades, setSelectedGrades] = useState<number[]>([0, 1]);
   const [showOnlyDifferences, setShowOnlyDifferences] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['pricing', 'engine', 'specs']);

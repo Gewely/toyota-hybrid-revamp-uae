@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CollapsibleContent from "@/components/ui/collapsible-content";
 import { cn } from "@/lib/utils";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 /* -------------------------------------------------------------------------- */
 /*                                  Config                                     */
@@ -250,6 +251,8 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
   modelName = "Toyota Camry",
   regionLabel = "UAE",
 }) => {
+  useBodyScrollLock(isOpen);
+
   const prefersReduced = useReducedMotion();
   const [scenario, setScenario] = React.useState<ScenarioKey>("laneDrift");
 

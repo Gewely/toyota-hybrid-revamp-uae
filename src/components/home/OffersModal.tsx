@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { X, Phone, Mail, MapPin, Calendar, Gift, Star } from "lucide-react";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 interface OffersModalProps {
   isOpen: boolean;
@@ -15,11 +16,13 @@ interface OffersModalProps {
   selectedOffer?: any;
 }
 
-const OffersModal: React.FC<OffersModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  selectedOffer 
+const OffersModal: React.FC<OffersModalProps> = ({
+  isOpen,
+  onClose,
+  selectedOffer
 }) => {
+  useBodyScrollLock(isOpen);
+
   const defaultOffer = {
     id: 1,
     title: "0% Interest Rate",

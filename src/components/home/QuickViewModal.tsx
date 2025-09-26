@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { VehicleModel } from '@/types/vehicle';
 import { Persona } from '@/types/persona';
+import { useBodyScrollLock } from '@/hooks/use-body-scroll-lock';
 
 interface QuickViewModalProps {
   vehicle: VehicleModel;
@@ -13,6 +14,8 @@ interface QuickViewModalProps {
 }
 
 const QuickViewModal: React.FC<QuickViewModalProps> = ({ vehicle, onClose, personaData }) => {
+  useBodyScrollLock(true);
+
   // Prevent clicks inside the modal from closing it
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();

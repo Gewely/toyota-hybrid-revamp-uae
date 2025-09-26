@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VehicleModel } from "@/types/vehicle";
@@ -15,6 +15,7 @@ import {
   X,
   Car,
 } from "lucide-react";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 /* ─────────────────────────────────────────────────────────
    Types
@@ -101,17 +102,6 @@ function Hotspot({
   );
 }
 
-function useLockBodyScroll() {
-  useEffect(() => {
-    const b = document.body;
-    const prev = b.style.overflow;
-    b.style.overflow = "hidden";
-    return () => {
-      b.style.overflow = prev;
-    };
-  }, []);
-}
-
 /* ─────────────────────────────────────────────────────────
    Modals
 ────────────────────────────────────────────────────────── */
@@ -128,7 +118,7 @@ function PerformanceModal({
 }) {
   const [i, setI] = useState(0);
   const s = item.gallery[i];
-  useLockBodyScroll();
+  useBodyScrollLock(true);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85">
@@ -200,7 +190,7 @@ function SafetyModal({
   onClose: () => void;
   onBook?: () => void;
 }) {
-  useLockBodyScroll();
+  useBodyScrollLock(true);
   const v = item.video;
   const src = v
     ? v.provider === "youtube"
@@ -248,7 +238,7 @@ function SafetyModal({
 
 // 3. Interior
 function InteriorModal({ item, onClose }: { item: MediaItem; onClose: () => void }) {
-  useLockBodyScroll();
+  useBodyScrollLock(true);
   const [i, setI] = useState(0);
   const s = item.gallery[i];
 
@@ -293,7 +283,7 @@ function QualityModal({
   onClose: () => void;
   onBook?: () => void;
 }) {
-  useLockBodyScroll();
+  useBodyScrollLock(true);
   const img = item.gallery[0]?.url || FALLBACK;
   return (
     <div className="fixed inset-0 z-50 bg-white">
@@ -334,7 +324,7 @@ function TechnologyModal({
   onClose: () => void;
   onBook?: () => void;
 }) {
-  useLockBodyScroll();
+  useBodyScrollLock(true);
   const img = item.gallery[0]?.url || FALLBACK;
   return (
     <div className="fixed inset-0 z-50 grid md:grid-cols-[1fr_340px] bg-[#071a1e] text-cyan-50">
@@ -370,7 +360,7 @@ function TechnologyModal({
 
 // 6. Handling
 function HandlingModal({ item, onClose }: { item: MediaItem; onClose: () => void }) {
-  useLockBodyScroll();
+  useBodyScrollLock(true);
   const [mode, setMode] = useState(item.gallery[0]?.title || "Normal");
   const s = item.gallery.find((g) => g.title === mode) ?? item.gallery[0];
 

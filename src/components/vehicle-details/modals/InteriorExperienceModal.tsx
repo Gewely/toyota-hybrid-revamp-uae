@@ -13,6 +13,7 @@ import {
   MobileOptimizedDialogDescription,
 } from "@/components/ui/mobile-optimized-dialog";
 import { cn } from "@/lib/utils";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 const TOYOTA_RED = "#cb0017";
 
@@ -209,6 +210,8 @@ const InteriorExperienceModal: React.FC<InteriorExperienceModalProps> = ({
   videos = [],
   gallery,
 }) => {
+  useBodyScrollLock(isOpen);
+
   const prefersReduced = useReducedMotion();
   const enter = prefersReduced ? {} : { opacity: 0, y: 16 };
   const entered = prefersReduced ? {} : { opacity: 1, y: 0 };

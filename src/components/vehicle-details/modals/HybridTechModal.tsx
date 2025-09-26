@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/mobile-optimized-dialog";
 import CollapsibleContent from "@/components/ui/collapsible-content";
 import { cn } from "@/lib/utils";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 /* ----------------------------------------------------------------------------
    Brand & Assets
@@ -349,6 +350,8 @@ const HybridTechModal: React.FC<HybridTechModalProps> = ({
   onBookTestDrive,
   videoIds = [],
 }) => {
+  useBodyScrollLock(isOpen);
+
   const prefersReduced = useReducedMotion();
   const enter = prefersReduced ? {} : { opacity: 0, y: 16 };
   const entered = prefersReduced ? {} : { opacity: 1, y: 0 };
