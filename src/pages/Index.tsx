@@ -460,18 +460,74 @@ const Index = () => {
       />
 
       {/* Luxury Comparison Tool */}
-      {showComparison && (
-        <LuxuryComparisonTool
-          grades={[
-            { id: 'le', name: 'LE', price: 32500, description: 'Essential features and reliability', monthlyFrom: 450, badge: 'Popular', badgeColor: 'blue', features: ['Toyota Safety Sense 2.0', 'LED Headlights'] },
-            { id: 'xle', name: 'XLE', price: 35500, description: 'Enhanced comfort and convenience', monthlyFrom: 520, badge: 'Best Value', badgeColor: 'green', features: ['Moonroof', 'Heated Seats'] },
-            { id: 'limited', name: 'Limited', price: 39500, description: 'Premium luxury and technology', monthlyFrom: 580, badge: 'Premium', badgeColor: 'gold', features: ['Leather Interior', 'JBL Audio'] }
+      <LuxuryComparisonTool
+        isOpen={showComparison}
+        grades={[
+            { 
+              id: 'le', 
+              name: 'LE', 
+              price: 32500, 
+              description: 'Essential features and reliability', 
+              monthlyFrom: 450, 
+              badge: 'Popular', 
+              badgeColor: 'blue', 
+              image: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true',
+              features: ['Toyota Safety Sense 2.0', 'LED Headlights'],
+              specs: {
+                engine: '2.5L 4-Cylinder',
+                power: '203 HP',
+                torque: '184 lb-ft',
+                transmission: '8-Speed Automatic',
+                acceleration: '8.2 sec 0-100 km/h',
+                fuelEconomy: '7.2L/100km'
+              },
+              highlights: ['Most affordable option', 'Proven reliability', 'Comprehensive safety features']
+            },
+            { 
+              id: 'xle', 
+              name: 'XLE', 
+              price: 35500, 
+              description: 'Enhanced comfort and convenience', 
+              monthlyFrom: 520, 
+              badge: 'Best Value', 
+              badgeColor: 'green', 
+              image: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true',
+              features: ['Moonroof', 'Heated Seats'],
+              specs: {
+                engine: '2.5L 4-Cylinder',
+                power: '203 HP',
+                torque: '184 lb-ft',
+                transmission: '8-Speed Automatic',
+                acceleration: '8.2 sec 0-100 km/h',
+                fuelEconomy: '7.0L/100km'
+              },
+              highlights: ['Perfect balance of features and price', 'Enhanced comfort', 'Premium amenities']
+            },
+            { 
+              id: 'limited', 
+              name: 'Limited', 
+              price: 39500, 
+              description: 'Premium luxury and technology', 
+              monthlyFrom: 580, 
+              badge: 'Premium', 
+              badgeColor: 'gold', 
+              image: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true',
+              features: ['Leather Interior', 'JBL Audio'],
+              specs: {
+                engine: '2.5L 4-Cylinder',
+                power: '203 HP',
+                torque: '184 lb-ft',
+                transmission: '8-Speed Automatic',
+                acceleration: '8.2 sec 0-100 km/h',
+                fuelEconomy: '7.0L/100km'
+              },
+              highlights: ['Top-tier luxury features', 'Premium materials', 'Advanced technology']
+            }
           ]}
           onClose={() => setShowComparison(false)}
           onTestDrive={(gradeId) => console.log('Test drive grade:', gradeId)}
           onGetQuote={(gradeId) => console.log('Get quote grade:', gradeId)}
         />
-      )}
 
       {/* Persona Badge - Show when a persona is selected */}
       {activePersona && <PersonaBadge />}
