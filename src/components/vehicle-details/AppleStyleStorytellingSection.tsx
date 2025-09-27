@@ -133,6 +133,11 @@ const SceneMedia: React.FC<{
           loading={isActive ? "eager" : "lazy"}
           srcSet={`${scene.backgroundImage} 1920w, ${scene.backgroundImage}?w=1280 1280w, ${scene.backgroundImage}?w=768 768w`}
           sizes="100vw"
+          onError={(e) => {
+            const target = e.currentTarget as HTMLImageElement;
+            target.onerror = null;
+            target.src = '/placeholder.svg';
+          }}
         />
       )}
       

@@ -360,9 +360,9 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <Card className="bg-gradient-to-b from-white/5 to-white/2 border-white/10 overflow-hidden">
+                      <Card className="bg-card text-card-foreground border overflow-hidden shadow-sm">
                         {/* Media */}
-                        <div className="relative aspect-video bg-black overflow-hidden">
+                        <div className="relative aspect-video bg-muted overflow-hidden">
                           <motion.img
                             src={grade.image}
                             alt={grade.name}
@@ -382,7 +382,7 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
                             className={`absolute top-2 right-2 rounded-full h-8 w-8 p-0 ${
                               pinnedBaseline === grade.id
                                 ? 'bg-yellow-400 text-black'
-                                : 'bg-black/60 text-white hover:bg-black/80'
+                                : 'bg-muted/80 text-foreground hover:bg-muted'
                             }`}
                           >
                             <Pin className="h-3 w-3" />
@@ -392,15 +392,15 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
                         {/* Grade Info */}
                         <div className="p-4 space-y-3">
                           <div>
-                            <h3 className="font-medium text-white">{grade.name}</h3>
-                            <p className="text-xs text-white/60 mt-1">{grade.description}</p>
+                            <h3 className="font-medium">{grade.name}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">{grade.description}</p>
                           </div>
                           
                           <div className="text-center">
-                            <div className="text-lg font-light text-white">
+                            <div className="text-lg font-light">
                               AED {grade.price.toLocaleString()}
                             </div>
-                            <div className="text-xs text-white/60">
+                            <div className="text-xs text-muted-foreground">
                               From AED {grade.monthlyFrom}/month
                             </div>
                           </div>

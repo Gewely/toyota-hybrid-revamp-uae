@@ -320,6 +320,21 @@ const Index = () => {
                 </Button>
               }
             />
+
+            {/* Quick access to new experiences so changes reflect immediately */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowComparison(true)}
+            >
+              Compare Grades
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={() => setShowCarBuilder(true)}
+            >
+              Build & Reserve
+            </Button>
           </div>
         </div>
       </motion.div>
