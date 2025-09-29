@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { ArrowDown, Menu, ArrowRight, Settings, Calendar, Pause, Play } from "lucide-react";
 
-// CONFIGURABLE DATA
+// --- CONFIGURABLE DATA ---
+
 const galleryImages = [
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/cbbefa79-6002-4f61-94e0-ee097a8dc6c6/items/e79b990a-9343-4559-b7cc-772c1c52696b/renditions/3964658f-a7d0-4b11-8b8a-cf5b70fe2bff?binary=true&mformat=true",
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/5103fe2b-5c90-47cc-a37a-9b9d2dbc1c2e/items/278810b0-4e58-400a-8510-158e058c3ca1/renditions/5a278171-17e4-4c66-b4f7-f13c6a6254db?binary=true&mformat=true",
@@ -24,27 +25,29 @@ const SPECS = [
   { label: "AWD", value: "Dual Motor" }
 ];
 
-// FRAMER VARIANTS
+// --- END CONFIGURABLE DATA ---
+
+// Framer Motion variants for luxury effect
 const containerVariants = {
   hidden: {},
   show: {
     transition: {
-      staggerChildren: 0.18,
+      staggerChildren: 0.15,
       delayChildren: 0.35,
     },
   },
 };
 const fadeUpVariants = {
-  hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 18 } },
+  hidden: { opacity: 0, y: 40 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 90, damping: 18 } },
 };
 
 const HeroSection: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ target: heroRef });
-  const bgScale = useTransform(scrollY, [0, 300], [1, 1.04]);
-  const bgY = useTransform(scrollY, [0, 300], [0, -30]);
-  const contentY = useTransform(scrollY, [0, 200], [0, -20]);
+  const bgScale = useTransform(scrollY, [0, 450], [1, 1.05]);
+  const bgY = useTransform(scrollY, [0, 400], [0, -36]);
+  const contentY = useTransform(scrollY, [0, 200], [0, -12]);
   const scrollIndicatorOpacity = useTransform(scrollY, [0, 80], [1, 0]);
 
   // Slideshow state & logic
@@ -84,12 +87,12 @@ const HeroSection: React.FC = () => {
   return (
     <section
       ref={heroRef}
-      className="relative w-full min-h-screen flex flex-col bg-[#181A1B] overflow-hidden"
+      className="relative w-full min-h-screen flex flex-col bg-black overflow-hidden"
       aria-label="Premium Automotive Hero section"
     >
       {/* Sticky Navigation */}
-      <nav className="sticky top-0 left-0 w-full z-30 bg-gradient-to-b from-[#141415ed] via-[#181A1Bcc] to-[#181A1B00] backdrop-blur-md flex items-center px-4 sm:px-10 py-4 lg:py-6">
-        <ul className="flex ml-0 space-x-8 text-white/90 text-base font-medium tracking-wide">
+      <nav className="sticky top-0 left-0 w-full z-30 bg-gradient-to-b from-[#141415ea] via-[#1a1c1fbe] to-[#1a1c1f00] backdrop-blur-md flex items-center px-4 sm:px-10 py-4 lg:py-6">
+        <ul className="flex ml-0 space-x-8 text-white/90 text-base font-semibold tracking-wide">
           {NAV_ITEMS.map((item) => (
             <li key={item.label}>
               <a
@@ -106,7 +109,7 @@ const HeroSection: React.FC = () => {
         </button>
       </nav>
 
-      {/* Background slideshow & bloom accent */}
+      {/* Cinematic Background slideshow */}
       <motion.div
         style={{ scale: bgScale, y: bgY }}
         className="absolute inset-0 w-full h-full z-0"
@@ -121,25 +124,107 @@ const HeroSection: React.FC = () => {
             src={galleryImages[currentImageIndex]}
             alt={`Cinematic hero car view ${currentImageIndex + 1}`}
             className="w-full h-full object-cover object-center absolute inset-0 transition-all duration-700"
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 1.06 }}
+            animate={{ opacity: 1, scale: 1.01 }}
             exit={{ opacity: 0, scale: 0.99 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
             draggable={false}
-            style={{ filter: "brightness(0.92) saturate(1.1)" }}
+            style={{ filter: "saturate(1.25) contrast(1.14) brightness(1.01)" }}
           />
         </AnimatePresence>
-        {/* Subtle bottom gradient for text readability */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-        {/* Neon accent bloom */}
-        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[55vw] h-[13vw] pointer-events-none z-10"
+        {/* Strong bottom gradient for text readability */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
+        {/* Neon accent streak (luxury feel) */}
+        <div className="absolute left-[10vw] bottom-12 w-[60vw] h-[8vw] rounded-xl blur-2xl opacity-40 pointer-events-none z-10"
           style={{
-            background: "radial-gradient(ellipse at center, #fff 0%, #EB0A1E88 40%, transparent 100%)",
-            filter: "blur(38px)",
-            opacity: 0.23,
+            background: "linear-gradient(90deg,#EB0A1E88 0%,#fff0 80%)",
           }}
         />
       </motion.div>
+
+      {/* Luxury: Headline and tag centered, buttons bottom left */}
+      <motion.main
+        id="main-content"
+        tabIndex={-1}
+        className="relative flex flex-1 items-end justify-start z-20"
+        style={{ outline: "none" }}
+      >
+        {/* Headline/Tagline */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-full px-4 pt-20 sm:px-0 md:pt-28 flex flex-col items-center pointer-events-none select-none"
+          style={{ y: contentY }}
+        >
+          <motion.h1
+            variants={fadeUpVariants}
+            className="text-white font-black text-4xl sm:text-6xl xl:text-7xl tracking-tight leading-tight text-center drop-shadow-[0_4px_32px_#181A1B] uppercase"
+            style={{ letterSpacing: '0.04em', textShadow: "0 2px 32px #EB0A1E22" }}
+          >
+            {HEADLINE}
+          </motion.h1>
+          <motion.h2
+            variants={fadeUpVariants}
+            className="mt-4 text-white/90 text-lg sm:text-2xl xl:text-3xl font-light tracking-wide text-center"
+            style={{ textShadow: "0 2px 20px #181A1B" }}
+          >
+            {TAGLINE}
+          </motion.h2>
+        </motion.div>
+
+        {/* Buttons & Specs: luxury left-bottom position */}
+        <div className="absolute left-0 bottom-0 z-30 w-full sm:w-auto px-4 pb-10 sm:pb-16 flex flex-col items-start justify-end">
+          <motion.div
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate="show"
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <motion.button
+              type="button"
+              onClick={handleConfigure}
+              whileHover={{ y: -3, boxShadow: "0 8px 32px #EB0A1E99", scale: 1.035 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-8 py-4 rounded-full font-bold text-lg shadow-lg bg-[#EB0A1E] text-white transition-all duration-200 outline-none border-2 border-[#EB0A1E] hover:bg-[#c10e18] focus:ring-2 focus:ring-[#EB0A1E] focus:ring-offset-2"
+              aria-label="Configure and Order"
+            >
+              <Settings className="h-5 w-5" />
+              Configure & Order
+              <ArrowRight className="h-5 w-5" />
+            </motion.button>
+            <motion.button
+              type="button"
+              onClick={handleTestDrive}
+              whileHover={{ y: -3, boxShadow: "0 6px 32px #fff4", scale: 1.025 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/90 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2"
+              aria-label="Book a Test Drive"
+            >
+              <Calendar className="h-5 w-5" />
+              Book a Test Drive
+            </motion.button>
+          </motion.div>
+          {/* Specs row */}
+          <motion.div
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate="show"
+            className="mt-6 flex flex-wrap gap-x-8 gap-y-2 text-white/90 text-base sm:text-lg font-semibold"
+            aria-label="Key vehicle specs"
+          >
+            {SPECS.map((spec, i) => (
+              <span key={spec.label} className="flex items-center gap-2">
+                {spec.label}{" "}
+                <span className="font-bold text-[#EB0A1E]">{spec.value}</span>
+                {i < SPECS.length - 1 && (
+                  <span className="text-[#EB0A1E] font-black px-2">•</span>
+                )}
+              </span>
+            ))}
+          </motion.div>
+        </div>
+      </motion.main>
 
       {/* Image indicators & pause/play */}
       <motion.div
@@ -172,95 +257,9 @@ const HeroSection: React.FC = () => {
         </button>
       </motion.div>
 
-      {/* Glassy Floating Card: Hero Content */}
-      <motion.main
-        id="main-content"
-        tabIndex={-1}
-        className="relative flex flex-1 items-end justify-center z-20"
-        style={{ outline: "none" }}
-      >
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="
-            w-full max-w-2xl mx-auto px-2 xs:px-4 sm:px-6 md:px-10
-            pb-14 pt-10 sm:pb-24 flex flex-col items-center
-            bg-white/20 backdrop-blur-2xl rounded-3xl shadow-[0_8px_48px_rgba(0,0,0,0.38)]
-            border border-white/15
-            glass-card
-          "
-          style={{ y: contentY, boxShadow: "0 12px 64px 0 rgba(30,30,30,0.22), 0 2px 8px 0 rgba(30,30,30,0.07)" }}
-        >
-          {/* Headline */}
-          <motion.h1
-            variants={fadeUpVariants}
-            className="text-white font-black text-[2.3rem] xs:text-4xl sm:text-5xl lg:text-6xl leading-tight text-center tracking-tight drop-shadow-[0_4px_32px_#181A1B]"
-            style={{ textShadow: "0 2px 32px #EB0A1E22" }}
-          >
-            {HEADLINE}
-          </motion.h1>
-          {/* Tagline */}
-          <motion.h2
-            variants={fadeUpVariants}
-            className="mt-3 text-white/85 text-lg sm:text-2xl font-light tracking-wide text-center"
-            style={{ textShadow: "0 2px 20px #181A1B" }}
-          >
-            {TAGLINE}
-          </motion.h2>
-
-          {/* CTAs */}
-          <motion.div
-            variants={fadeUpVariants}
-            className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center"
-          >
-            <motion.button
-              type="button"
-              onClick={handleConfigure}
-              whileHover={{ y: -4, boxShadow: "0 6px 32px #EB0A1E88", scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg shadow-lg bg-[#EB0A1E] text-white transition-all duration-200 outline-none border-2 border-[#EB0A1E] hover:bg-[#c10e18] focus:ring-2 focus:ring-[#EB0A1E] focus:ring-offset-2 flex items-center justify-center gap-2"
-              aria-label="Configure and Order"
-            >
-              <Settings className="h-5 w-5" />
-              Configure & Order
-              <ArrowRight className="h-5 w-5" />
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={handleTestDrive}
-              whileHover={{ y: -4, boxShadow: "0 4px 28px #181A1B33", scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/90 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2 flex items-center justify-center gap-2"
-              aria-label="Book a Test Drive"
-            >
-              <Calendar className="h-5 w-5" />
-              Book a Test Drive
-            </motion.button>
-          </motion.div>
-
-          {/* Teaser Spec Row */}
-          <motion.div
-            variants={fadeUpVariants}
-            className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 text-white/80 text-base sm:text-lg font-medium"
-            aria-label="Key vehicle specs"
-          >
-            {SPECS.map((spec, i) => (
-              <span key={spec.label} className="flex items-center gap-2">
-                {spec.label}{" "}
-                <span className="font-bold text-white/95">{spec.value}</span>
-                {i < SPECS.length - 1 && (
-                  <span className="text-[#EB0A1E] font-black px-2">•</span>
-                )}
-              </span>
-            ))}
-          </motion.div>
-        </motion.div>
-      </motion.main>
-
       {/* Animated scroll indicator */}
       <motion.div
-        className="absolute left-1/2 bottom-5 sm:bottom-7 z-30 -translate-x-1/2 flex flex-col items-center"
+        className="absolute left-1/2 bottom-2 sm:bottom-5 z-30 -translate-x-1/2 flex flex-col items-center"
         style={{ opacity: scrollIndicatorOpacity }}
         aria-hidden="true"
       >
