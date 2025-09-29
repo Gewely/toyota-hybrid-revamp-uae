@@ -1,20 +1,9 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useInView, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VehicleModel } from "@/types/vehicle";
-import { 
-  Calendar, 
-  Shield, 
-  Award,
-  ChevronLeft,
-  ChevronRight,
-  ArrowRight,
-  Settings,
-  Play,
-  Pause
-} from "lucide-react";
+import { Calendar, Shield, Award, ArrowRight, Settings, Play, Pause } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import YouTubeEmbed from "@/components/ui/youtube-embed";
 import AnimatedCounter from "@/components/ui/animated-counter";
@@ -50,84 +39,49 @@ const EnhancedHeroSection: React.FC<EnhancedHeroSectionProps> = ({
   const heroRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
-  
-  // Reduced parallax intensity for better performance
-  const y = useTransform(scrollYProgress, [0, 0.3], [0, prefersReducedMotion ? 0 : -50]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, prefersReducedMotion ? 1 : 0.7]);
-  const scale = useTransform(scrollYProgress, [0, 0.3], [1, prefersReducedMotion ? 1 : 1.02]);
-  
+
+  // Subtle zoom/pan parallax
+  const y = useTransform(scrollYProgress, [0, 0.3], [0, prefersReducedMotion ? 0 : -60]);
+  const scale = useTransform(scrollYProgress, [0, 0.4], [1.04, 1]);
   const heroImageRef = useRef<HTMLDivElement>(null);
   const isHeroInView = useInView(heroImageRef, { margin: '100px' });
 
-  // Auto-rotate gallery images
   useEffect(() => {
     if (!isHeroInView || !isAutoPlaying || showVideo) return;
-    
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-    }, 4000);
-    
+    }, 4800);
     return () => clearInterval(interval);
   }, [isHeroInView, galleryImages.length, isAutoPlaying, showVideo]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX);
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      nextImage();
-    }
-    if (isRightSwipe) {
-      prevImage();
-    }
+    if (distance > 50) nextImage();
+    if (distance < -50) prevImage();
   };
+  const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
+  const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+  const toggleAutoPlay = () => setIsAutoPlaying(!isAutoPlaying);
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-  };
+  const handleTestDrive = () => openTestDrivePopup(vehicle);
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-  };
-
-  const toggleAutoPlay = () => {
-    setIsAutoPlaying(!isAutoPlaying);
-  };
-
-  const toggleVideo = () => {
-    setShowVideo(!showVideo);
-    if (!showVideo) {
-      setIsAutoPlaying(false);
-    }
-  };
-
-  const handleTestDrive = () => {
-    openTestDrivePopup(vehicle);
-  };
-
-  const isBestSeller = 
-    vehicle.name === "Toyota Camry" || 
-    vehicle.name === "Toyota Corolla Hybrid" || 
-    vehicle.name === "Toyota Land Cruiser" || 
+  const isBestSeller =
+    vehicle.name === "Toyota Camry" ||
+    vehicle.name === "Toyota Corolla Hybrid" ||
+    vehicle.name === "Toyota Land Cruiser" ||
     vehicle.name === "Toyota RAV4 Hybrid";
-
   const isHybrid = vehicle.name.toLowerCase().includes('hybrid');
   const isElectric = vehicle.name.toLowerCase().includes('bz4x') || vehicle.category === 'Electric';
 
   return (
-    <section ref={heroRef} className="relative h-screen overflow-hidden">
-      {/* Full Background Media */}
+    <section
+      ref={heroRef}
+      className="relative min-h-[80vh] md:min-h-[92vh] xl:min-h-[98vh] bg-neutral-950 overflow-hidden flex items-end"
+    >
+      {/* Luxury Video Background for select vehicles */}
       <motion.div
         ref={heroImageRef}
         style={{ y, scale }}
@@ -136,25 +90,22 @@ const EnhancedHeroSection: React.FC<EnhancedHeroSectionProps> = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Loading Skeleton */}
-        <div className="hero-skeleton absolute inset-0 bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 animate-pulse" style={{ display: 'block' }} />
-        
-        {/* Vehicle Images or Video */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/60 to-[#0b0b12]/80 z-10"></div>
         <AnimatePresence mode="wait">
           {showVideo ? (
             <motion.div
               key="video"
-              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 1.05 }}
+              initial={{ opacity: 0, scale: 1.02 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
-              transition={prefersReducedMotion ? { duration: 0.1 } : optimizedSprings.smooth}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={optimizedSprings.smooth}
               className="absolute inset-0 w-full h-full"
             >
               <YouTubeEmbed
                 videoId="xEkrrzLvya8"
-                className="w-full h-full"
-                autoplay={true}
-                muted={true}
+                className="w-full h-full object-cover"
+                autoplay
+                muted
                 controls={false}
               />
             </motion.div>
@@ -163,56 +114,49 @@ const EnhancedHeroSection: React.FC<EnhancedHeroSectionProps> = ({
               key={`hero-image-${currentImageIndex}`}
               src={galleryImages[currentImageIndex] || ''}
               alt={`${vehicle.name} - View ${currentImageIndex + 1}`}
-              className="absolute inset-0 w-full h-full"
+              className="absolute inset-0 w-full h-full object-cover"
               priority={currentImageIndex === 0}
-              initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 1.03 }}
+              initial={{ opacity: 0, scale: 1.07 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.97 }}
-              transition={prefersReducedMotion ? { duration: 0.1 } : optimizedSprings.fast}
-              enableGPU={!prefersReducedMotion}
-              onLoad={() => {
-                const skeleton = document.querySelector('.hero-skeleton') as HTMLElement;
-                if (skeleton) {
-                  skeleton.style.display = 'none';
-                }
-              }}
-              onError={() => {
-                console.warn('Hero image failed to load:', galleryImages[currentImageIndex]);
-              }}
+              exit={{ opacity: 0, scale: 1.01 }}
+              transition={optimizedSprings.fast}
+              enableGPU
             />
           )}
         </AnimatePresence>
-
-        {/* Minimal Gradient - Only at bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+        {/* Glassy vignette */}
+        <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+        {/* Luxury "bloom" effect */}
+        <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[60vw] h-[24vw] rounded-full bg-[#fff9]/10 blur-3xl opacity-50 pointer-events-none z-20" />
       </motion.div>
 
-      {/* Pause Button - Bottom Right Corner */}
-      <motion.div 
-        className="absolute bottom-4 right-4 z-20"
+      {/* Pause Button */}
+      <motion.div
+        className="absolute bottom-6 right-6 z-30"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.8, duration: 0.6 }}
       >
         <button
           onClick={toggleAutoPlay}
-          className="p-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 transition-all duration-200 shadow-lg"
+          className="p-3 rounded-full bg-black/30 backdrop-blur-lg border border-white/30 hover:bg-white/20 transition-all duration-200 shadow-2xl"
+          aria-label={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
         >
           {isAutoPlaying ? (
-            <Pause className="h-4 w-4 text-white" />
+            <Pause className="h-5 w-5 text-white" />
           ) : (
-            <Play className="h-4 w-4 text-white" />
+            <Play className="h-5 w-5 text-white" />
           )}
         </button>
       </motion.div>
 
-      {/* Compact Content Overlay - Much smaller area */}
-      <div className="absolute bottom-0 left-0 right-0 z-10">
-        <div className="toyota-container pb-4">
-          {/* Image Indicators */}
+      {/* Content */}
+      <div className="relative z-30 w-full">
+        <div className="max-w-screen-xl mx-auto px-4 pt-16 pb-6 md:py-24 flex flex-col justify-end h-full">
+          {/* Image indicators */}
           {!showVideo && (
-            <motion.div 
-              className="flex justify-center space-x-1 mb-2"
+            <motion.div
+              className="flex justify-center space-x-1 mb-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 0.6 }}
@@ -221,137 +165,113 @@ const EnhancedHeroSection: React.FC<EnhancedHeroSectionProps> = ({
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    index === currentImageIndex 
-                      ? 'bg-white w-4' 
-                      : 'bg-white/40 w-1 hover:bg-white/60'
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentImageIndex
+                      ? 'bg-white w-6'
+                      : 'bg-white/40 w-2 hover:bg-white/60'
                   }`}
+                  aria-label={`Go to image ${index + 1}`}
                 />
               ))}
             </motion.div>
           )}
 
-          {/* Badges */}
+          {/* Luxury Content Card */}
           <motion.div
-            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0.1 } : { delay: 0.3, ...optimizedSprings.fast }}
-            className="flex flex-wrap gap-1 justify-center mb-2"
+            transition={{ delay: 0.5, duration: 0.7 }}
+            className="bg-white/10 backdrop-blur-2xl rounded-3xl shadow-[0_8px_48px_rgba(0,0,0,0.55)] border border-white/10 px-4 py-8 md:px-10 md:py-12 max-w-2xl mx-auto w-full"
           >
-            {isBestSeller && (
-              <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-1.5 py-0.5 text-xs">
-                <Award className="h-2.5 w-2.5 mr-1" />
-                Best Seller
+            {/* Badges */}
+            <div className="flex gap-3 mb-3 justify-center flex-wrap">
+              <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-2 py-1 text-xs font-semibold shadow-md">
+                <Award className="h-3 w-3 mr-1" /> {isBestSeller ? "Best Seller" : "Signature Edition"}
               </Badge>
-            )}
-            <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-1.5 py-0.5 text-xs">
-              <Shield className="h-2.5 w-2.5 mr-1" />
-              5-Star Safety
-            </Badge>
-          </motion.div>
+              <Badge className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-2 py-1 text-xs font-semibold shadow-md">
+                <Shield className="h-3 w-3 mr-1" /> 5-Star Safety
+              </Badge>
+              {isHybrid && (
+                <Badge className="bg-gradient-to-r from-green-500 to-lime-400 text-white px-2 py-1 text-xs font-semibold shadow-md">
+                  Hybrid Power
+                </Badge>
+              )}
+              {isElectric && (
+                <Badge className="bg-gradient-to-r from-fuchsia-500 to-blue-400 text-white px-2 py-1 text-xs font-semibold shadow-md">
+                  100% Electric
+                </Badge>
+              )}
+              <Badge className="bg-neutral-900/60 text-white px-2 py-1 text-xs font-semibold shadow-md border border-white/10">
+                {vehicle.year || "2025"} Model
+              </Badge>
+            </div>
 
-          {/* Vehicle Title */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-center mb-2"
-          >
-            <h1 className="text-xl md:text-2xl font-black text-white leading-tight">
+            <h1 className="text-center text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-lg mb-2">
               {vehicle.name}
             </h1>
-          </motion.div>
+            <div className="text-center text-lg md:text-2xl text-neutral-200 font-light mb-6">
+              The new benchmark for luxury hybrid. <span className="hidden md:inline">Redefining comfort and innovation.</span>
+            </div>
 
-          {/* Very Compact Price Box */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="bg-black/60 backdrop-blur-md rounded-lg p-3 mb-3 border border-white/20 max-w-xs mx-auto"
-          >
-            {/* Main Pricing - Horizontal Layout */}
-            <div className="flex justify-between items-center mb-2">
-              <div className="text-center flex-1">
-                <div className="text-xs text-white/60 uppercase font-medium">Starting From</div>
-                <div className="text-lg font-black text-white">
+            {/* Pricing & Stats */}
+            <div className="flex flex-col md:flex-row md:justify-center gap-3 mb-6">
+              <div className="flex-1 text-center">
+                <div className="text-xs text-white/80 uppercase font-medium mb-1">Starting From</div>
+                <div className="text-2xl md:text-3xl font-black text-white drop-shadow-sm">
                   AED <AnimatedCounter value={vehicle.price} duration={2.5} />
                 </div>
-                <div className="text-xs text-white/80">*Price includes VAT</div>
+                <div className="text-xs text-white/60">*VAT Included</div>
               </div>
-              
-              <div className="w-px h-10 bg-white/20 mx-2"></div>
-              
-              <div className="text-center flex-1">
-                <div className="text-xs text-white/60 uppercase font-medium">Monthly EMI</div>
-                <div className="text-lg font-black text-white">
+              <div className="hidden md:block w-px bg-white/15 my-2"></div>
+              <div className="flex-1 text-center">
+                <div className="text-xs text-white/80 uppercase font-medium mb-1">Monthly EMI</div>
+                <div className="text-2xl md:text-3xl font-black text-white drop-shadow-sm">
                   AED <AnimatedCounter value={monthlyEMI} duration={2} />
                   <span className="text-sm font-normal text-white/80">/mo</span>
                 </div>
-                <div className="text-xs text-white/80">*80% financing</div>
+                <div className="text-xs text-white/60">*80% financing</div>
               </div>
             </div>
 
-            {/* Performance Stats - Horizontal */}
-            <div className="flex justify-between items-center pt-2 border-t border-white/20">
-              <div className="text-center">
-                <div className="text-base font-black text-white">
-                  <AnimatedCounter 
-                    value={isHybrid ? 25.2 : isElectric ? 450 : 22.2} 
-                    decimals={1}
-                    duration={2}
-                  />
-                  <span className="text-sm font-normal text-white/80 ml-1">
-                    {isElectric ? "km" : "km/L"}
-                  </span>
+            {/* Stats */}
+            <div className="flex justify-between items-center pt-4 border-t border-white/10 mb-6">
+              <div className="flex-1 text-center">
+                <div className="text-lg md:text-xl font-black text-white">
+                  <AnimatedCounter value={isHybrid ? 25.2 : isElectric ? 450 : 22.2} decimals={1} duration={2} />
+                  <span className="text-sm font-normal text-white/80 ml-1">{isElectric ? "km" : "km/L"}</span>
                 </div>
-                <div className="text-xs text-white/70">
-                  {isElectric ? "Range" : "Fuel Efficiency"}
-                </div>
+                <div className="text-xs text-white/70">{isElectric ? "Range" : "Fuel Efficiency"}</div>
               </div>
-              
-              <div className="text-center">
-                <div className="text-base font-black text-white">
-                  <AnimatedCounter 
-                    value={isHybrid ? 218 : isElectric ? 201 : 203}
-                    duration={2}
-                  />
+              <div className="flex-1 text-center">
+                <div className="text-lg md:text-xl font-black text-white">
+                  <AnimatedCounter value={isHybrid ? 218 : isElectric ? 201 : 203} duration={2} />
                   <span className="text-sm font-normal text-white/80 ml-1">HP</span>
                 </div>
                 <div className="text-xs text-white/70">Total Power</div>
               </div>
             </div>
-          </motion.div>
 
-          {/* Action Buttons - Compact */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
-            className="flex flex-col gap-2"
-          >
-            <Button 
-  onClick={handleTestDrive}
-  size="sm"
-  className="bg-[#EB0A1E] hover:bg-[#c10e18] text-white font-bold px-4 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 group 
-             w-full sm:w-auto sm:px-6 sm:py-3 mx-auto"
->
-  <Calendar className="h-3.5 w-3.5 mr-2 group-hover:scale-110 transition-transform" />
-  Book Test Drive
-  <div className="ml-2 animate-pulse">
-    <ArrowRight className="h-3.5 w-3.5" />
-  </div>
-</Button>
-            
-            <Button 
-  onClick={onCarBuilder}
-  variant="outline"
-  size="sm"
-  className="border-2 border-[#EB0A1E] text-[#EB0A1E] hover:bg-[#EB0A1E] hover:text-white font-bold px-4 py-2.5 rounded-lg transition-all duration-300 group 
-             w-full sm:w-auto sm:px-6 sm:py-3 mx-auto"
->
-  <Settings className="h-3.5 w-3.5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-  Configure Your Car
-</Button>
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                onClick={handleTestDrive}
+                size="lg"
+                className="bg-[#EB0A1E] hover:bg-[#c10e18] text-white text-base font-bold px-8 py-3 rounded-full shadow-xl group flex-1 transition-all duration-300"
+              >
+                <Calendar className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+                Book Test Drive
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+              <Button
+                onClick={onCarBuilder}
+                variant="outline"
+                size="lg"
+                className="border-2 border-[#EB0A1E] text-[#EB0A1E] hover:bg-[#EB0A1E] hover:text-white text-base font-bold px-8 py-3 rounded-full transition-all duration-300 flex-1"
+              >
+                <Settings className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                Configure Your Car
+              </Button>
+            </div>
           </motion.div>
         </div>
       </div>
