@@ -1,8 +1,9 @@
+"use client";
 import React from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Shield, Eye, AlertTriangle, Car, Zap, Gauge, Users, Heart,
-  ChevronRight, CheckCircle2, Play, X
+  ChevronRight, Play, X
 } from "lucide-react";
 import {
   MobileOptimizedDialog,
@@ -31,12 +32,13 @@ const IMG_CRUISE =
 const IMG_NIGHT =
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/fbb87eaa-f92c-4a11-9f7d-1a20a5ad2370/items/9200d151-0947-45d4-b2de-99d247bee98a/renditions/d5c695c7-b387-4005-bf45-55b8786bafd7?binary=true&mformat=true";
 
-const YT_PRECOLLISION = "oL6mrPWtZJ4"; // https://www.youtube.com/watch?v=oL6mrPWtZJ4
+const YT_PRECOLLISION = "oL6mrPWtZJ4";
 
 /* -------------------------------------------------------------------------- */
-/*                              Reusable pieces                                */
+/*                           Reusable Components                               */
 /* -------------------------------------------------------------------------- */
 
+/** Scenario pills with animated underline */
 const ScenarioPills: React.FC<{
   active: ScenarioKey;
   setActive: (k: ScenarioKey) => void;
@@ -55,29 +57,36 @@ const ScenarioPills: React.FC<{
           key={key}
           onClick={() => setActive(key)}
           className={cn(
-            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition",
+            "relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition overflow-hidden",
             active === key
-              ? "bg-primary text-primary-foreground border-transparent shadow-sm"
+              ? "bg-primary text-primary-foreground border-transparent shadow"
               : "hover:bg-muted border"
           )}
           aria-pressed={active === key}
         >
           <Icon className="h-4 w-4" />
           {label}
+          {active === key && (
+            <motion.div
+              layoutId="active-pill"
+              className="absolute inset-0 rounded-full ring-2 ring-primary/40"
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            />
+          )}
         </button>
       ))}
     </div>
   );
 };
 
-/** Privacy-enhanced YouTube with poster overlay; loads only on click */
+/** Inline YouTube with cinematic overlay */
 const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, title }) => {
   const [play, setPlay] = React.useState(false);
   const src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1${play ? "&autoplay=1" : ""}`;
   const poster = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl bg-black ring-1 ring-black/5">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-black ring-1 ring-white/10 shadow-xl">
       <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
         {!play && (
           <button
@@ -89,7 +98,7 @@ const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, 
               className="absolute inset-0 bg-cover bg-center opacity-80 group-hover:opacity-95 transition"
               style={{ backgroundImage: `url('${poster}')` }}
             />
-            <div className="relative z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 backdrop-blur text-sm font-medium shadow">
+            <div className="relative z-10 flex items-center gap-2 px-5 py-2 rounded-full bg-white/95 backdrop-blur text-sm font-medium shadow-lg">
               <Play className="h-4 w-4" />
               Play video
             </div>
@@ -110,7 +119,7 @@ const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, 
   );
 };
 
-/** Swipeable image gallery with thumbnails & keyboard support */
+/** Image gallery with cinematic polish */
 const ImageGallery: React.FC<{
   images: { src: string; alt: string }[];
   initial?: number;
@@ -121,112 +130,56 @@ const ImageGallery: React.FC<{
   const canPrev = idx > 0;
   const canNext = idx < images.length - 1;
 
-  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowRight" && canNext) setIdx((i) => i + 1);
-    if (e.key === "ArrowLeft" && canPrev) setIdx((i) => i - 1);
-  };
-
   return (
-    <div
-      className="rounded-xl ring-1 ring-black/5 bg-background/60 backdrop-blur-md border overflow-hidden"
-      tabIndex={0}
-      onKeyDown={onKey}
-      aria-label="Image gallery. Use left and right arrow keys to navigate."
-    >
-      <div className="relative">
-        <div className="relative w-full overflow-hidden">
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={images[idx].src}
-                src={images[idx].src}
-                alt={images[idx].alt || ""}
-                className="absolute inset-0 h-full w-full object-cover"
-                initial={prefersReduced ? {} : { opacity: 0.0, scale: 0.98 }}
-                animate={prefersReduced ? {} : { opacity: 1, scale: 1 }}
-                exit={prefersReduced ? {} : { opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                loading="lazy"
-              />
-            </AnimatePresence>
+    <div className="rounded-2xl ring-1 ring-white/10 bg-gradient-to-br from-black/60 to-gray-900/40 backdrop-blur-md border border-white/10 overflow-hidden shadow-xl">
+      <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={images[idx].src}
+            src={images[idx].src}
+            alt={images[idx].alt || ""}
+            className="absolute inset-0 h-full w-full object-cover"
+            initial={prefersReduced ? {} : { opacity: 0, scale: 0.97 }}
+            animate={prefersReduced ? {} : { opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            loading="lazy"
+          />
+        </AnimatePresence>
+      </div>
+
+      {/* Controls */}
+      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3">
+        <button
+          disabled={!canPrev}
+          onClick={() => canPrev && setIdx((i) => i - 1)}
+          className={cn(
+            "h-9 w-9 rounded-full grid place-items-center bg-white/90 backdrop-blur shadow border hover:scale-105 transition",
+            !canPrev && "opacity-40 pointer-events-none"
+          )}
+        >
+          ‹
+        </button>
+        <button
+          disabled={!canNext}
+          onClick={() => canNext && setIdx((i) => i + 1)}
+          className={cn(
+            "h-9 w-9 rounded-full grid place-items-center bg-white/90 backdrop-blur shadow border hover:scale-105 transition",
+            !canNext && "opacity-40 pointer-events-none"
+          )}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Caption */}
+      {caption && (
+        <div className="absolute bottom-2 left-2 right-2 text-sm text-white">
+          <div className="inline-block rounded-md bg-black/50 px-3 py-1 backdrop-blur">
+            {caption}
           </div>
         </div>
-
-        {/* Controls */}
-        <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-2">
-          <button
-            aria-label="Previous image"
-            disabled={!canPrev}
-            onClick={() => canPrev && setIdx((i) => i - 1)}
-            className={cn(
-              "h-9 w-9 rounded-full grid place-items-center bg-white/90 backdrop-blur shadow border",
-              !canPrev && "opacity-40 pointer-events-none"
-            )}
-          >
-            ‹
-          </button>
-          <button
-            aria-label="Next image"
-            disabled={!canNext}
-            onClick={() => canNext && setIdx((i) => i + 1)}
-            className={cn(
-              "h-9 w-9 rounded-full grid place-items-center bg-white/90 backdrop-blur shadow border",
-              !canNext && "opacity-40 pointer-events-none"
-            )}
-          >
-            ›
-          </button>
-        </div>
-
-        {/* Caption */}
-        {caption && (
-          <div className="absolute bottom-2 left-2 right-2 text-xs text-white/95">
-            <div className="inline-block rounded-md bg-black/45 px-2 py-1 backdrop-blur-sm">
-              {caption}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Thumbnails */}
-      <div className="flex gap-2 p-2 border-t bg-background/70">
-        {images.map((im, i) => (
-          <button
-            key={im.src}
-            onClick={() => setIdx(i)}
-            className={cn(
-              "relative h-14 w-20 rounded-md overflow-hidden ring-1 ring-black/5",
-              i === idx && "outline outline-2 outline-primary"
-            )}
-            aria-label={`Go to image ${i + 1}`}
-          >
-            <img src={im.src} alt="" className="h-full w-full object-cover" loading="lazy" />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-/* Minimal placeholder card (kept for non-video scenarios if desired later) */
-const CardShell: React.FC<{ title: string; subtitle: string; accent?: "blue" | "amber" | "emerald" }> = ({ title, subtitle, accent = "blue" }) => {
-  const accentMap: Record<string, string> = {
-    blue: "from-blue-500/20 to-blue-500/0 ring-blue-300/30",
-    amber: "from-amber-500/20 to-amber-500/0 ring-amber-300/30",
-    emerald: "from-emerald-500/20 to-emerald-500/0 ring-emerald-300/30",
-  };
-  return (
-    <div className={cn("relative rounded-lg p-4 lg:p-6 bg-gradient-to-b ring-1", accentMap[accent])}>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
-      <div className="mt-2 flex items-center gap-2">
-        <span className="text-lg font-semibold">{title}</span>
-        <ChevronRight className="h-4 w-4" />
-      </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-14 rounded bg-background/60 border" />
-        ))}
-      </div>
+      )}
     </div>
   );
 };
@@ -253,8 +206,15 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
   const prefersReduced = useReducedMotion();
   const [scenario, setScenario] = React.useState<ScenarioKey>("laneDrift");
 
-  const enter = prefersReduced ? {} : { opacity: 0, y: 16 };
+  const enter = prefersReduced ? {} : { opacity: 0, y: 20 };
   const entered = prefersReduced ? {} : { opacity: 1, y: 0 };
+
+  const taglines: Record<ScenarioKey, string> = {
+    preCollision: "Eyes that never blink.",
+    laneDrift: "Confidence in every lane.",
+    cruise: "Relax, your pace is matched.",
+    night: "Brighter nights, smarter lights.",
+  };
 
   const safetyFeatures = [
     {
@@ -293,122 +253,103 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
 
   return (
     <MobileOptimizedDialog open={isOpen} onOpenChange={onClose}>
-      {/* Wider for media clarity */}
-      <MobileOptimizedDialogContent className="sm:max-w-6xl max-w-[1100px] w-[96vw]">
-        {/* COMPACT MOBILE HEADER */}
-        <MobileOptimizedDialogHeader className="px-3 py-2 sm:px-6 sm:py-4">
+      <MobileOptimizedDialogContent className="sm:max-w-6xl max-w-[1100px] w-[96vw] rounded-3xl shadow-2xl overflow-hidden">
+        <MobileOptimizedDialogHeader className="px-4 py-3 sm:px-6 sm:py-5 bg-gradient-to-r from-black via-gray-900 to-black text-white rounded-t-3xl">
           <div className="flex items-center justify-between gap-2">
-            <MobileOptimizedDialogTitle className="text-lg font-semibold leading-tight sm:text-2xl sm:font-bold">
+            <MobileOptimizedDialogTitle className="text-xl font-bold sm:text-2xl">
               Toyota Safety Sense 2.0 · {modelName}
             </MobileOptimizedDialogTitle>
-            {/* Mobile inline close (desktop keeps default spacing) */}
             <Button
               variant="ghost"
               size="icon"
-              className="sm:hidden shrink-0"
+              className="sm:hidden text-white"
               onClick={onClose}
-              aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </Button>
           </div>
-          {/* Hide description on mobile, show on ≥sm */}
-          <MobileOptimizedDialogDescription className="hidden sm:block text-base text-muted-foreground mt-1">
+          <MobileOptimizedDialogDescription className="hidden sm:block text-base text-gray-300 mt-1">
             Real scenarios you can see—then book a test drive.
           </MobileOptimizedDialogDescription>
         </MobileOptimizedDialogHeader>
 
-        <MobileOptimizedDialogBody>
-          <div className="space-y-6">
-            {/* Hero area: scenario + media */}
+        <MobileOptimizedDialogBody className="bg-gradient-to-b from-gray-950 via-black to-gray-900 text-white">
+          <div className="space-y-8">
+            {/* Scenario Section */}
             <motion.div
               initial={enter}
               animate={entered}
-              transition={{ duration: 0.3 }}
-              className="rounded-2xl p-4 lg:p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-1 ring-primary/20 backdrop-blur-sm"
+              transition={{ duration: 0.4 }}
+              className="rounded-3xl p-5 lg:p-8 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-1 ring-primary/20 backdrop-blur-xl"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <Shield className="h-7 w-7 text-primary" />
-                <Badge variant="secondary" className="text-xs font-semibold">
-                  Standard on most grades
-                </Badge>
-              </div>
+              <ScenarioPills active={scenario} setActive={setScenario} />
 
-              <div className="flex flex-col lg:flex-row gap-4">
-                {/* Left: scenario controls + micro timeline */}
+              {/* Tagline */}
+              <motion.p
+                key={scenario}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-3 text-lg font-semibold italic text-primary"
+              >
+                {taglines[scenario]}
+              </motion.p>
+
+              <div className="mt-6 flex flex-col lg:flex-row gap-6">
+                {/* Timeline */}
                 <div className="lg:w-72 space-y-3">
-                  <ScenarioPills active={scenario} setActive={setScenario} />
-                  <div className="rounded-lg border p-3 bg-background/60 backdrop-blur">
-                    <h4 className="text-sm font-semibold mb-2">Reaction Timeline</h4>
-                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                      {[
-                        { t: "0.0s", label: "Detect" },
-                        { t: "0.3s", label: "Alert" },
-                        { t: "0.5s", label: "Assist" },
-                        { t: "0.6s", label: "Stabilize" },
-                      ].map((s, i) => (
-                        <motion.div
-                          key={s.t}
-                          initial={{ opacity: 0.4, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          className="rounded-md border p-2 bg-background"
-                        >
-                          <div className="font-semibold">{s.t}</div>
-                          <div className="text-muted-foreground">{s.label}</div>
-                        </motion.div>
-                      ))}
-                    </div>
+                  <h4 className="text-sm font-semibold mb-2">Reaction Timeline</h4>
+                  <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                    {[
+                      { t: "0.0s", label: "Detect" },
+                      { t: "0.3s", label: "Alert" },
+                      { t: "0.5s", label: "Assist" },
+                      { t: "0.6s", label: "Stabilize" },
+                    ].map((s, i) => (
+                      <motion.div
+                        key={s.t}
+                        initial={{ opacity: 0.4, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="rounded-md border p-2 bg-background/60 backdrop-blur"
+                      >
+                        <div className="font-semibold">{s.t}</div>
+                        <div className="text-muted-foreground">{s.label}</div>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Right: media */}
+                {/* Media */}
                 <div className="flex-1 min-w-0">
                   <AnimatePresence mode="wait">
                     {scenario === "preCollision" && (
-                      <motion.div key="pre" initial={enter} animate={entered} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                      <motion.div key="pre" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <YoutubeInline videoId={YT_PRECOLLISION} title="Pre-Collision System" />
                       </motion.div>
                     )}
-
                     {scenario === "laneDrift" && (
-                      <motion.div key="lane" initial={enter} animate={entered} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                      <motion.div key="lane" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <ImageGallery
-                          images={[
-                            { src: IMG_LANE, alt: "Lane Assist visualization" },
-                            { src: IMG_CRUISE, alt: "Road view – cruise support" },
-                            { src: IMG_NIGHT, alt: "Night visibility / Auto High Beam" },
-                          ]}
-                          initial={0}
-                          caption="Lane Assist keeps you centered with gentle steering support."
+                          images={[{ src: IMG_LANE, alt: "Lane Assist" }]}
+                          caption="Lane Assist keeps you centered."
                         />
                       </motion.div>
                     )}
-
                     {scenario === "cruise" && (
-                      <motion.div key="cruise" initial={enter} animate={entered} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                      <motion.div key="cruise" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <ImageGallery
-                          images={[
-                            { src: IMG_CRUISE, alt: "Adaptive Cruise – maintains distance" },
-                            { src: IMG_LANE, alt: "Lane guidance context" },
-                            { src: IMG_NIGHT, alt: "Night conditions" },
-                          ]}
-                          initial={0}
-                          caption="Adaptive Cruise automatically maintains a safe following distance."
+                          images={[{ src: IMG_CRUISE, alt: "Adaptive Cruise" }]}
+                          caption="Adaptive Cruise keeps a safe distance."
                         />
                       </motion.div>
                     )}
-
                     {scenario === "night" && (
-                      <motion.div key="night" initial={enter} animate={entered} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                      <motion.div key="night" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <ImageGallery
-                          images={[
-                            { src: IMG_NIGHT, alt: "Auto High Beam – clearer night view" },
-                            { src: IMG_CRUISE, alt: "Cruise and visibility" },
-                            { src: IMG_LANE, alt: "Lane context at night" },
-                          ]}
-                          initial={0}
-                          caption="Auto High Beam toggles headlights for optimal visibility."
+                          images={[{ src: IMG_NIGHT, alt: "Auto High Beam" }]}
+                          caption="Smart beams adapt to traffic automatically."
                         />
                       </motion.div>
                     )}
@@ -417,7 +358,7 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
               </div>
             </motion.div>
 
-            {/* Core features — compact + progressive */}
+            {/* Core Safety Features */}
             <div>
               <h3 className="text-xl font-bold mb-3">Core Safety Features</h3>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -426,9 +367,9 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
                     key={f.name}
                     initial={enter}
                     animate={entered}
-                    transition={{ delay: idx * 0.03 }}
+                    transition={{ delay: idx * 0.05 }}
                     className={cn(
-                      "p-4 rounded-xl border transition-all hover:border-muted-foreground/20 bg-background/60 backdrop-blur",
+                      "p-4 rounded-xl border transition-all hover:border-primary/40 bg-background/60 backdrop-blur",
                       f.active && "border-primary/30 bg-primary/5"
                     )}
                   >
@@ -457,7 +398,7 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
               </div>
             </div>
 
-            {/* Complete package — compact */}
+            {/* Complete Package */}
             <div>
               <h3 className="text-xl font-bold mb-3">Complete Safety Package</h3>
               <div className="space-y-3">
@@ -498,11 +439,16 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
           </div>
         </MobileOptimizedDialogBody>
 
-        {/* Single CTA only */}
-        <MobileOptimizedDialogFooter className="px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex w-full sm:w-auto sm:ml-auto gap-3">
-            <Button variant="outline" onClick={onClose}>Close</Button>
-            <Button onClick={onBookTestDrive}>Book Test Drive</Button>
+        <MobileOptimizedDialogFooter className="px-4 py-4 sm:px-6 sm:py-6 bg-black/80 rounded-b-3xl border-t border-white/10">
+          <div className="flex w-full flex-col sm:flex-row sm:justify-end gap-3">
+            <Button variant="outline" onClick={onClose} className="border-white/40 text-white hover:bg-white/10">
+              Close
+            </Button>
+            <Button onClick={onBookTestDrive} className="bg-primary text-primary-foreground">
+              Book Test Drive
+            </Button>
+            <Button variant="secondary">Compare Grades</Button>
+            <Button variant="secondary">See Offers</Button>
           </div>
         </MobileOptimizedDialogFooter>
       </MobileOptimizedDialogContent>
