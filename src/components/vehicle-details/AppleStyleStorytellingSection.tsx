@@ -14,29 +14,33 @@ import {
   VolumeX,
 } from "lucide-react";
 
-/** ============================ Types ============================ */
+/* ============================= Types ============================= */
 type CTA = { label: string; action: () => void; variant?: "primary" | "secondary" };
-
-type Stat = {
-  value: number;
-  suffix?: string; // e.g. " km", "s", "★"
-  label: string;
-  icon?: React.ReactNode;
-};
-
+type Stat = { value: number; suffix?: string; label: string; icon?: React.ReactNode };
 type Scene = {
   id: string;
   title: string;
   subtitle: string;
-  backgroundImage: string; // DAM fallback + default
-  backgroundVideoWistiaId?: string; // If present → Wistia hero bg
+  backgroundImage: string;
+  backgroundVideoWistiaId?: string;
   cta?: CTA;
   secondaryCta?: CTA;
   stats?: Stat[];
   features?: string[];
 };
 
-/** ======================= Animated Counter ====================== */
+interface Props {
+  setIsBookingOpen: (open: boolean) => void;
+  setIsFinanceOpen: (open: boolean) => void;
+  navigate: (path: string) => void;
+  onInteriorExplore: () => void;
+  onConnectivityExplore: () => void;
+  onHybridTechExplore: () => void; // reserved if you add a hybrid scene later
+  onSafetyExplore: () => void;     // reserved if you add a safety scene later
+  heroWistiaVideoId: string;       // your Wistia video ID
+}
+
+/* ====================== Animated Counter ====================== */
 const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
   value,
   duration = 900,
@@ -48,28 +52,32 @@ const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: stri
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      setDisplay(Math.round(value * t * 100) / 100);
+      const v = value * t;
+      setDisplay(v);
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
+  const out =
+    Number.isInteger(value) ? Math.round(display).toString() : display.toFixed(1);
   return (
     <span>
-      {Number.isInteger(value) ? Math.round(display) : display.toFixed(1)}
+      {out}
       {suffix}
     </span>
   );
 };
 
-/** ======================= Wistia Player Hook ==================== */
+/* ======================= Wistia Player Hook ===================== */
 function useWistiaPlayer(videoId?: string) {
   const playerRef = useRef<any>(null);
 
-  // Load script once
+  // Load Wistia E-v1 script once and bind to this video ID
   useEffect(() => {
     if (!videoId) return;
     (window as any)._wq = (window as any)._wq || [];
+
     if (!document.getElementById("wistia-e-v1")) {
       const s = document.createElement("script");
       s.id = "wistia-e-v1";
@@ -77,6 +85,7 @@ function useWistiaPlayer(videoId?: string) {
       s.async = true;
       document.head.appendChild(s);
     }
+
     (window as any)._wq.push({
       id: videoId,
       onReady: (video: any) => {
@@ -95,45 +104,34 @@ function useWistiaPlayer(videoId?: string) {
   const pause = () => playerRef.current?.pause?.();
   const play = () => playerRef.current?.play?.();
 
-  return { mute, unmute, pause, play, hasPlayer: !!playerRef.current };
+  return { mute, unmute, pause, play };
 }
 
-/** ======================= Storytelling Section ================== */
-interface Props {
-  setIsBookingOpen: (open: boolean) => void;
-  setIsFinanceOpen: (open: boolean) => void;
-  navigate: (path: string) => void;
-  onInteriorExplore: () => void;
-  onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void;
-  onSafetyExplore: () => void;
-  heroWistiaVideoId: string; // YOUR_WISTIA_VIDEO_ID
-}
-
+/* ======================= Main Component ======================== */
 const StorytellingSection: React.FC<Props> = ({
   setIsBookingOpen,
   setIsFinanceOpen,
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore, // reserved if you add a hybrid scene later
-  onSafetyExplore, // reserved if you add a safety scene later
+  onHybridTechExplore, // reserved
+  onSafetyExplore,     // reserved
   heroWistiaVideoId,
 }) => {
   const prefersReduced = useReducedMotion();
 
-  /** ---------- Your DAM images (exact URLs you gave) ---------- */
+  /* ---------- DAM images (exact URLs you provided) ---------- */
   const damImages = useMemo(
     () => [
-      "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
-      "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
-      "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
-      "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg",
+      "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+      "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/27c33e82-7b5a-4f89-8e5c-8b9c4c8d5f7a/renditions/e4f5a6b7-8c9d-4e1f-a2b3-c4d5e6f7a8b9?binary=true&mformat=true",
+      "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/f8e9d0c1-b2a3-4c5d-6e7f-a8b9c0d1e2f3/renditions/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6?binary=true&mformat=true",
+      "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/renditions/f0e1d2c3-b4a5-968a7-8b9c-0d1e2f3a4b5c?binary=true&mformat=true",
     ],
     []
   );
 
-  /** ----------------- Scenes (Hero uses Wistia) ----------------- */
+  /* ------------------- Scenes (hero uses Wistia) ------------------- */
   const scenes: Scene[] = useMemo(
     () => [
       {
@@ -179,14 +177,51 @@ const StorytellingSection: React.FC<Props> = ({
     [damImages, heroWistiaVideoId, setIsBookingOpen, setIsFinanceOpen, navigate, onInteriorExplore, onConnectivityExplore]
   );
 
-  /** ------------------- State & Scroll-Jacking ------------------ */
-  const [index, setIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const isLocked = index < scenes.length - 1;
-  const active = scenes[index];
+  /* ------------------ Index + restart-from-1 fix ------------------ */
+  const START_AT = 0;
+  const [index, setIndex] = useState(START_AT);
 
-  // Preload neighbor images (avoid black gaps)
+  useEffect(() => {
+    // Always start from the first scene on hard reload
+    setIndex(START_AT);
+    // Disable browser scroll restoration
+    if ("scrollRestoration" in window.history) {
+      const prev = (window.history as any).scrollRestoration;
+      (window.history as any).scrollRestoration = "manual";
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      return () => {
+        (window.history as any).scrollRestoration = prev || "auto";
+      };
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Handle back/forward cache restores
+    const onPageShow = (e: any) => {
+      if (e.persisted) {
+        setIndex(START_AT);
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
+  useEffect(() => {
+    // Optional: remove hash to avoid jumping to anchors
+    if (window.location.hash) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
+
+  /* -------------------- Scroll-jacking (debounced) -------------------- */
+  const prefersReducedMotion = prefersReduced;
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const isLocked = index < scenes.length - 1;
+
+  // Preload neighbors to avoid black gaps
   useEffect(() => {
     const preload = (src?: string) => {
       if (!src) return;
@@ -197,21 +232,19 @@ const StorytellingSection: React.FC<Props> = ({
     preload(scenes[index - 1]?.backgroundImage);
   }, [index, scenes]);
 
-  // Wheel (debounced)
   const onWheel = useCallback(
     (e: WheelEvent) => {
-      if (!isLocked) return; // release wheel at last scene
+      if (!isLocked) return; // allow normal scroll after last scene
       e.preventDefault();
       if (isTransitioning) return;
       setIsTransitioning(true);
       const dir = e.deltaY > 0 ? 1 : -1;
       setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
+      setTimeout(() => setIsTransitioning(false), prefersReducedMotion ? 250 : 750);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isTransitioning, scenes.length, prefersReducedMotion]
   );
 
-  // Touch (debounced)
   const touchStartY = useRef<number | null>(null);
   const onTouchStart = useCallback((e: TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
@@ -225,12 +258,11 @@ const StorytellingSection: React.FC<Props> = ({
       setIsTransitioning(true);
       const dir = dy > 0 ? 1 : -1;
       setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
+      setTimeout(() => setIsTransitioning(false), prefersReducedMotion ? 250 : 750);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isTransitioning, scenes.length, prefersReducedMotion]
   );
 
-  // Keyboard
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!isLocked) return;
@@ -240,12 +272,11 @@ const StorytellingSection: React.FC<Props> = ({
       setIsTransitioning(true);
       const dir = e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " ? 1 : -1;
       setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
+      setTimeout(() => setIsTransitioning(false), prefersReducedMotion ? 250 : 750);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isTransitioning, scenes.length, prefersReducedMotion]
   );
 
-  // Attach handlers while locked (unlock at last scene)
   useEffect(() => {
     if (isLocked) {
       window.addEventListener("wheel", onWheel, { passive: false });
@@ -261,29 +292,27 @@ const StorytellingSection: React.FC<Props> = ({
     };
   }, [isLocked, onWheel, onTouchStart, onTouchEnd, onKeyDown]);
 
-  /** -------------------- Wistia controls -------------------- */
+  /* -------------------- Wistia controls (hero) -------------------- */
+  const active = scenes[index];
   const { mute, unmute, pause, play } = useWistiaPlayer(
     active.backgroundVideoWistiaId ? active.backgroundVideoWistiaId : undefined
   );
+  const [isMuted, setIsMuted] = useState(true);
 
-  // Keep mute state synced
+  // keep mute state synced and avoid sound leaking when leaving hero
   useEffect(() => {
     if (active.backgroundVideoWistiaId) {
       if (isMuted) mute();
       else unmute();
       play();
     } else {
-      // leaving hero scene: ensure no sound leak
       mute();
       pause();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, isMuted, active.backgroundVideoWistiaId]);
 
-  /** ------------------- Progress + Parallax ------------------ */
-  const progressPct = ((index + 1) / scenes.length) * 100;
-
-  // Parallax: tiny based on mouse (works with scroll-jack)
+  /* -------------------- Parallax (mouse-based) -------------------- */
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -295,7 +324,10 @@ const StorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  /** --------------------------- UI --------------------------- */
+  /* -------------------- Progress -------------------- */
+  const progressPct = ((index + 1) / scenes.length) * 100;
+
+  /* ============================ Render ============================ */
   return (
     <section className="relative h-screen bg-black text-white overflow-hidden" aria-label="Cinematic automotive storytelling">
       {/* MEDIA LAYER */}
@@ -308,7 +340,7 @@ const StorytellingSection: React.FC<Props> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: prefersReduced ? 0.2 : 0.6, ease: "easeOut" }}
         >
-          {/* DAM fallback always rendered behind Wistia to avoid black frames */}
+          {/* DAM fallback always present (prevents black frames) */}
           <img
             src={active.backgroundImage}
             alt={active.title}
@@ -320,28 +352,31 @@ const StorytellingSection: React.FC<Props> = ({
             }}
           />
 
-          {/* Wistia video (hero) */}
+          {/* Wistia hero video (over the image) */}
           {active.backgroundVideoWistiaId && (
-            <div className="absolute inset-0">
-              {/* Wistia responsive embed */}
-              <div className="w-full h-full relative">
-                <div className="absolute inset-0">
-                  <div
-                    className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} videoFoam=true`}
-                    style={{ width: "100%", height: "100%" }}
-                  />
+            <>
+              <div className="absolute inset-0">
+                <div className="w-full h-full relative">
+                  <div className="absolute inset-0">
+                    <div
+                      className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} videoFoam=true`}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+              {/* JSONP improves poster/metadata warm-up */}
+              <script async src={`https://fast.wistia.com/embed/medias/${active.backgroundVideoWistiaId}.jsonp`} />
+            </>
           )}
 
-          {/* Soft vignettes only (don’t hide imagery) */}
+          {/* Soft vignettes (keep imagery visible) */}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         </motion.div>
       </AnimatePresence>
 
-      {/* CONTENT LAYER (parallaxed glass panel) */}
+      {/* CONTENT LAYER */}
       <div className="relative z-10 flex h-full items-center justify-center px-6">
         <motion.div
           key={`content-${active.id}`}
@@ -367,7 +402,7 @@ const StorytellingSection: React.FC<Props> = ({
               {active.subtitle}
             </motion.p>
 
-            {/* Stats (animated counters) */}
+            {/* Stats */}
             {active.stats && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-8 mb-6 md:mb-8">
                 {active.stats.map((s, i) => (
@@ -382,7 +417,7 @@ const StorytellingSection: React.FC<Props> = ({
               </div>
             )}
 
-            {/* Feature badges */}
+            {/* Features */}
             {active.features && (
               <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
                 {active.features.map((f, i) => (
@@ -423,7 +458,7 @@ const StorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* SOUND TOGGLE (only when hero video scene is active) */}
+      {/* SOUND TOGGLE (only visible on hero with video) */}
       {active.backgroundVideoWistiaId && (
         <button
           onClick={() => setIsMuted((m) => !m)}
@@ -473,11 +508,6 @@ const StorytellingSection: React.FC<Props> = ({
             <ChevronDown className="w-6 h-6 mx-auto" />
           </motion.div>
         </motion.div>
-      )}
-
-      {/* Wistia JSONP (improves poster/metadata load) */}
-      {active.backgroundVideoWistiaId && (
-        <script async src={`https://fast.wistia.com/embed/medias/${active.backgroundVideoWistiaId}.jsonp`} />
       )}
     </section>
   );
