@@ -31,7 +31,7 @@ import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-m
 import { OptimizedModalProvider } from '@/components/ui/optimized-modal-manager';
 import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
-
+import VehicleModals from "@/components/vehicle-details/VehicleModals";
 
 // Lazy load heavy components with intelligent preloading
 const VehicleSpecs = createLazyComponent(
