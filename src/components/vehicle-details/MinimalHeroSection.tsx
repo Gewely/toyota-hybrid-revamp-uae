@@ -2,8 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { ArrowDown, Menu, ArrowRight, Settings, Calendar, Pause, Play } from "lucide-react";
 
-// --- CONFIGURABLE DATA ---
-
+// CONFIGURABLE DATA
 const galleryImages = [
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/cbbefa79-6002-4f61-94e0-ee097a8dc6c6/items/e79b990a-9343-4559-b7cc-772c1c52696b/renditions/3964658f-a7d0-4b11-8b8a-cf5b70fe2bff?binary=true&mformat=true",
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/5103fe2b-5c90-47cc-a37a-9b9d2dbc1c2e/items/278810b0-4e58-400a-8510-158e058c3ca1/renditions/5a278171-17e4-4c66-b4f7-f13c6a6254db?binary=true&mformat=true",
@@ -25,14 +24,27 @@ const SPECS = [
   { label: "AWD", value: "Dual Motor" }
 ];
 
-// --- END CONFIGURABLE DATA ---
+// FRAMER VARIANTS
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.18,
+      delayChildren: 0.35,
+    },
+  },
+};
+const fadeUpVariants = {
+  hidden: { opacity: 0, y: 32 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 18 } },
+};
 
 const HeroSection: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ target: heroRef });
-  const bgScale = useTransform(scrollY, [0, 300], [1, 1.035]);
-  const bgY = useTransform(scrollY, [0, 300], [0, -40]);
-  const contentY = useTransform(scrollY, [0, 200], [0, -24]);
+  const bgScale = useTransform(scrollY, [0, 300], [1, 1.04]);
+  const bgY = useTransform(scrollY, [0, 300], [0, -30]);
+  const contentY = useTransform(scrollY, [0, 200], [0, -20]);
   const scrollIndicatorOpacity = useTransform(scrollY, [0, 80], [1, 0]);
 
   // Slideshow state & logic
@@ -43,7 +55,7 @@ const HeroSection: React.FC = () => {
     if (!isAutoPlaying) return;
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-    }, 4500);
+    }, 4800);
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
 
@@ -65,24 +77,9 @@ const HeroSection: React.FC = () => {
   const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
   const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
 
-  // Button handlers (replace these stubs with your app logic)
-  const handleConfigure = () => alert("Configure & Order clicked!");
-  const handleTestDrive = () => alert("Book a Test Drive clicked!");
-
-  // Framer staggered reveal variants
-  const containerVariants = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: 0.18,
-        delayChildren: 0.35,
-      },
-    },
-  };
-  const fadeUpVariants = {
-    hidden: { opacity: 0, y: 32 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 18 } },
-  };
+  // Navigation
+  const handleConfigure = () => { window.location.href = "/car-builder"; };
+  const handleTestDrive = () => { window.location.href = "/test-drive"; };
 
   return (
     <section
@@ -91,7 +88,7 @@ const HeroSection: React.FC = () => {
       aria-label="Premium Automotive Hero section"
     >
       {/* Sticky Navigation */}
-      <nav className="sticky top-0 left-0 w-full z-30 bg-gradient-to-b from-[#141415ed] via-[#181A1Bcc] to-[#181A1B00] backdrop-blur-md flex items-center px-4 sm:px-12 py-4 lg:py-6">
+      <nav className="sticky top-0 left-0 w-full z-30 bg-gradient-to-b from-[#141415ed] via-[#181A1Bcc] to-[#181A1B00] backdrop-blur-md flex items-center px-4 sm:px-10 py-4 lg:py-6">
         <ul className="flex ml-0 space-x-8 text-white/90 text-base font-medium tracking-wide">
           {NAV_ITEMS.map((item) => (
             <li key={item.label}>
@@ -109,12 +106,9 @@ const HeroSection: React.FC = () => {
         </button>
       </nav>
 
-      {/* Background Image slideshow with Ken Burns */}
+      {/* Background slideshow & bloom accent */}
       <motion.div
-        style={{
-          scale: bgScale,
-          y: bgY,
-        }}
+        style={{ scale: bgScale, y: bgY }}
         className="absolute inset-0 w-full h-full z-0"
         aria-hidden="true"
         onTouchStart={handleTouchStart}
@@ -132,22 +126,22 @@ const HeroSection: React.FC = () => {
             exit={{ opacity: 0, scale: 0.99 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
             draggable={false}
-            style={{ filter: "brightness(0.82) saturate(1.2)" }}
+            style={{ filter: "brightness(0.92) saturate(1.1)" }}
           />
         </AnimatePresence>
-        {/* Carbon-matte + neon accent overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-[#181A1Bcc] to-[#181A1B00]" />
-        {/* Neon accent glow */}
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[60vw] h-[10vw] pointer-events-none z-10"
+        {/* Subtle bottom gradient for text readability */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+        {/* Neon accent bloom */}
+        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[55vw] h-[13vw] pointer-events-none z-10"
           style={{
-            background: "radial-gradient(ellipse at center, #EB0A1E66 0%, transparent 90%)",
-            filter: "blur(36px)",
-            opacity: 0.45,
+            background: "radial-gradient(ellipse at center, #fff 0%, #EB0A1E88 40%, transparent 100%)",
+            filter: "blur(38px)",
+            opacity: 0.23,
           }}
         />
       </motion.div>
 
-      {/* Image indicators */}
+      {/* Image indicators & pause/play */}
       <motion.div
         className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 flex flex-row items-center gap-2"
         aria-label="Change hero image"
@@ -169,7 +163,6 @@ const HeroSection: React.FC = () => {
             />
           ))}
         </AnimatePresence>
-        {/* Pause/Play button */}
         <button
           className="ml-4 p-2 rounded-full bg-black/40 hover:bg-black/70 transition-all border border-white/20 text-white"
           onClick={() => setIsAutoPlaying((p) => !p)}
@@ -179,7 +172,7 @@ const HeroSection: React.FC = () => {
         </button>
       </motion.div>
 
-      {/* Hero Content */}
+      {/* Glassy Floating Card: Hero Content */}
       <motion.main
         id="main-content"
         tabIndex={-1}
@@ -190,13 +183,20 @@ const HeroSection: React.FC = () => {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="w-full max-w-3xl mx-auto px-4 sm:px-8 pb-16 pt-10 sm:pb-28 flex flex-col items-center"
-          style={{ y: contentY }}
+          className="
+            w-full max-w-2xl mx-auto px-2 xs:px-4 sm:px-6 md:px-10
+            pb-14 pt-10 sm:pb-24 flex flex-col items-center
+            bg-white/20 backdrop-blur-2xl rounded-3xl shadow-[0_8px_48px_rgba(0,0,0,0.38)]
+            border border-white/15
+            glass-card
+          "
+          style={{ y: contentY, boxShadow: "0 12px 64px 0 rgba(30,30,30,0.22), 0 2px 8px 0 rgba(30,30,30,0.07)" }}
         >
           {/* Headline */}
           <motion.h1
             variants={fadeUpVariants}
-            className="text-white font-black text-[2.7rem] sm:text-5xl lg:text-6xl leading-tight text-center tracking-tight drop-shadow-[0_4px_32px_#181A1B]"
+            className="text-white font-black text-[2.3rem] xs:text-4xl sm:text-5xl lg:text-6xl leading-tight text-center tracking-tight drop-shadow-[0_4px_32px_#181A1B]"
+            style={{ textShadow: "0 2px 32px #EB0A1E22" }}
           >
             {HEADLINE}
           </motion.h1>
@@ -204,6 +204,7 @@ const HeroSection: React.FC = () => {
           <motion.h2
             variants={fadeUpVariants}
             className="mt-3 text-white/85 text-lg sm:text-2xl font-light tracking-wide text-center"
+            style={{ textShadow: "0 2px 20px #181A1B" }}
           >
             {TAGLINE}
           </motion.h2>
@@ -216,7 +217,7 @@ const HeroSection: React.FC = () => {
             <motion.button
               type="button"
               onClick={handleConfigure}
-              whileHover={{ y: -4, boxShadow: "0 6px 32px #EB0A1E66", scale: 1.025 }}
+              whileHover={{ y: -4, boxShadow: "0 6px 32px #EB0A1E88", scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
               className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg shadow-lg bg-[#EB0A1E] text-white transition-all duration-200 outline-none border-2 border-[#EB0A1E] hover:bg-[#c10e18] focus:ring-2 focus:ring-[#EB0A1E] focus:ring-offset-2 flex items-center justify-center gap-2"
               aria-label="Configure and Order"
@@ -228,9 +229,9 @@ const HeroSection: React.FC = () => {
             <motion.button
               type="button"
               onClick={handleTestDrive}
-              whileHover={{ y: -4, boxShadow: "0 4px 28px #181A1B33", scale: 1.02 }}
+              whileHover={{ y: -4, boxShadow: "0 4px 28px #181A1B33", scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/80 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/90 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2 flex items-center justify-center gap-2"
               aria-label="Book a Test Drive"
             >
               <Calendar className="h-5 w-5" />
@@ -280,21 +281,6 @@ const HeroSection: React.FC = () => {
       </motion.div>
     </section>
   );
-};
-
-// Framer variants outside component to prevent recreation
-const containerVariants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.18,
-      delayChildren: 0.35,
-    },
-  },
-};
-const fadeUpVariants = {
-  hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 18 } },
 };
 
 export default HeroSection;
