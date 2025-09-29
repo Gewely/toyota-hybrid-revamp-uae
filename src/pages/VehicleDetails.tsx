@@ -400,8 +400,7 @@ const VehicleDetails = () => {
         {/* <ModernSectionNavigation /> */}
       </div>
 
-      {/* VehicleModals temporarily disabled */}
-      {/*
+      {/* Vehicle Modals */}
       <VehicleModals
         vehicle={vehicle}
         isBookingOpen={modals.isBookingOpen}
@@ -424,7 +423,6 @@ const VehicleDetails = () => {
         setIsInteriorModalOpen={(value) => modalHandlers.updateModal('isInteriorModalOpen', value)}
         carBuilderInitialGrade={carBuilderInitialGrade}
       />
-      */}
         </ToyotaLayout>
       </PerformanceErrorBoundary>
     </OptimizedModalProvider>

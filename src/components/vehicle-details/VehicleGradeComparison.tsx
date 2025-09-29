@@ -148,7 +148,7 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${getDialogSize()} overflow-y-auto`}>
+      <DialogContent className={`${getDialogSize()} overflow-y-auto bg-card text-card-foreground`}>
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="flex items-center justify-between">
             <span className="text-lg lg:text-xl">Compare {engineName} Grades</span>

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Car, Zap, Shield, Sparkles, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
-import { useIntersectionLock } from '@/hooks/useIntersectionLock';
+
 
 interface StoryScene {
   id: string;
@@ -261,9 +261,9 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentScene, setCurrentScene] = useState(0);
-  const [isWheelLocked, setIsWheelLocked] = useState(false);
+  
   const reduceMotion = useReducedMotionSafe();
-  const { lockScroll, unlockScroll } = useIntersectionLock();
+  
 
   // Default high-quality images
   const defaultImages = [
@@ -337,42 +337,11 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
 
   // Intersection observer for scroll lock
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-          lockScroll();
-        } else {
-          unlockScroll();
-        }
-      },
-      { threshold: [0, 0.5, 1] }
-    );
+    // Disable scroll locking to prevent page scroll blocking
+    return () => {};
+  }, []);
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-      unlockScroll();
-    };
-  }, [lockScroll, unlockScroll]);
-
-  // Wheel event handler
-  const handleWheel = useCallback((e: WheelEvent) => {
-    if (isWheelLocked) return;
-    
-    e.preventDefault();
-    
-    setIsWheelLocked(true);
-    setTimeout(() => setIsWheelLocked(false), 800);
-
-    if (e.deltaY > 0 && currentScene < storyScenes.length - 1) {
-      setCurrentScene(prev => prev + 1);
-    } else if (e.deltaY < 0 && currentScene > 0) {
-      setCurrentScene(prev => prev - 1);
-    }
-  }, [currentScene, storyScenes.length, isWheelLocked]);
+  // Wheel navigation disabled to allow natural page scrolling
 
   // Touch/swipe handler
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -423,18 +392,12 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
     };
 
     const container = containerRef.current;
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false });
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      if (container) {
-        container.removeEventListener('wheel', handleWheel);
-      }
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleWheel, currentScene, storyScenes.length]);
+  }, [currentScene, storyScenes.length]);
 
   return (
     <section
