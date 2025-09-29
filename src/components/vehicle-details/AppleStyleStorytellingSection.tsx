@@ -1,15 +1,11 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  motion,
-  AnimatePresence,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "framer-motion";
-import {
-  Car,
   Zap,
+  Car,
   Shield,
   Sparkles,
   ChevronRight,
@@ -17,21 +13,15 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 interface StoryScene {
   id: string;
   title: string;
   subtitle: string;
   backgroundImage: string;
-  backgroundVideo?: string;
-  cta?: {
-    label: string;
-    action: () => void;
-    variant?: "primary" | "secondary";
-  };
-  stats?: { value: number; label: string; icon?: React.ReactNode }[];
+  backgroundVideo?: "wistia";
+  cta?: { label: string; action: () => void; variant?: "primary" | "secondary" };
+  stats?: { value: string; label: string; icon?: React.ReactNode }[];
   features?: string[];
 }
 
@@ -41,6 +31,38 @@ interface Props {
   navigate: (path: string) => void;
   onInteriorExplore: () => void;
   onConnectivityExplore: () => void;
+  heroWistiaVideoId: string;
+}
+
+function useWistia(videoId?: string) {
+  const playerRef = useRef<any>(null);
+  useEffect(() => {
+    if (!videoId) return;
+    (window as any)._wq = (window as any)._wq || [];
+    (window as any)._wq.push({
+      id: videoId,
+      onReady: (video: any) => {
+        playerRef.current = video;
+        try {
+          video.play();
+          video.mute();
+          video.loop(true);
+        } catch {}
+      },
+    });
+    if (!document.getElementById("wistia-script")) {
+      const s = document.createElement("script");
+      s.id = "wistia-script";
+      s.src = "https://fast.wistia.com/assets/external/E-v1.js";
+      s.async = true;
+      document.body.appendChild(s);
+    }
+  }, [videoId]);
+
+  return {
+    mute: () => playerRef.current?.mute(),
+    unmute: () => playerRef.current?.unmute(),
+  };
 }
 
 const StorytellingSection: React.FC<Props> = ({
@@ -49,263 +71,252 @@ const StorytellingSection: React.FC<Props> = ({
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
+  heroWistiaVideoId,
 }) => {
-  const [currentScene, setCurrentScene] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
-  const [scrolling, setScrolling] = useState(false);
-
   const reducedMotion = useReducedMotion();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [current, setCurrent] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { mute, unmute } = useWistia(
+    current === 0 ? heroWistiaVideoId : undefined
+  );
 
-  /* Parallax */
-  const { scrollY } = useScroll();
-  const yParallax = useTransform(scrollY, [0, 300], [0, -60]);
+  const damImages = [
+    "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+    "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/27c33e82-7b5a-4f89-8e5c-8b9c4c8d5f7a/renditions/e4f5a6b7-8c9d-4e1f-a2b3-c4d5e6f7a8b9?binary=true&mformat=true",
+    "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/f8e9d0c1-b2a3-4c5d-6e7f-a8b9c0d1e2f3/renditions/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6?binary=true&mformat=true",
+    "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/renditions/f0e1d2c3-b4a5-968a7-8b9c-0d1e2f3a4b5c?binary=true&mformat=true",
+  ];
 
-  /* Animated counters */
-  const [animatedValues, setAnimatedValues] = useState<number[]>([]);
+  const scenes: StoryScene[] = useMemo(
+    () => [
+      {
+        id: "hero",
+        title: "Redefine Your Journey",
+        subtitle: "Power, efficiency, and innovation in perfect harmony.",
+        backgroundImage: damImages[0],
+        backgroundVideo: "wistia",
+        cta: {
+          label: "Reserve Now",
+          action: () => setIsBookingOpen(true),
+          variant: "primary",
+        },
+        stats: [
+          {
+            value: "268",
+            label: "Horsepower",
+            icon: <Zap className="w-6 h-6 text-yellow-400" />,
+          },
+          {
+            value: "7.1s",
+            label: "0–100 km/h",
+            icon: <Car className="w-6 h-6 text-blue-400" />,
+          },
+          {
+            value: "850 km",
+            label: "Range",
+            icon: <Sparkles className="w-6 h-6 text-green-400" />,
+          },
+          {
+            value: "5★",
+            label: "Safety",
+            icon: <Shield className="w-6 h-6 text-red-400" />,
+          },
+        ],
+      },
+      {
+        id: "interior",
+        title: "Luxury Redefined",
+        subtitle: "Comfort meets cutting-edge technology.",
+        backgroundImage: damImages[1],
+        cta: {
+          label: "Experience Interior",
+          action: onInteriorExplore,
+          variant: "primary",
+        },
+        features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Audio"],
+      },
+      {
+        id: "technology",
+        title: "Innovation at Your Fingertips",
+        subtitle: "Smart features for the modern driver.",
+        backgroundImage: damImages[2],
+        cta: {
+          label: "Discover Tech",
+          action: onConnectivityExplore,
+          variant: "secondary",
+        },
+        features: ["Hybrid Drive", "Safety Sense", "Connected Services", "Wireless Charging"],
+      },
+      {
+        id: "finance",
+        title: "Smart Finance Options",
+        subtitle: "Flexible plans tailored to your journey.",
+        backgroundImage: damImages[3],
+        cta: {
+          label: "Explore Finance",
+          action: () => setIsFinanceOpen(true),
+          variant: "secondary",
+        },
+      },
+    ],
+    [damImages, onInteriorExplore, onConnectivityExplore, setIsBookingOpen, setIsFinanceOpen]
+  );
 
-  const animateCounters = (stats?: { value: number }[]) => {
-    if (!stats) return;
-    let frame = 0;
-    const duration = 60; // ~1s at 60fps
-    const values = stats.map(() => 0);
-    const animate = () => {
-      frame++;
-      const progress = Math.min(frame / duration, 1);
-      const newValues = stats.map((stat, i) =>
-        Math.floor(stat.value * progress)
-      );
-      setAnimatedValues(newValues);
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    animate();
-  };
-
-  useEffect(() => {
-    animateCounters(scenes[currentScene].stats);
-  }, [currentScene]);
-
-  /* Scroll lock */
-  const handleScroll = useCallback(
-    (deltaY: number) => {
-      if (scrolling) return;
-      setScrolling(true);
-
-      if (deltaY > 0 && currentScene < scenes.length - 1) {
-        setCurrentScene((s) => s + 1);
-      } else if (deltaY < 0 && currentScene > 0) {
-        setCurrentScene((s) => s - 1);
-      }
-
-      setTimeout(() => setScrolling(false), 1000);
+  /* Scroll-jacking logic */
+  const isLocked = current < scenes.length - 1;
+  const onWheel = useCallback(
+    (e: WheelEvent) => {
+      if (!isLocked || isTransitioning) return;
+      e.preventDefault();
+      setIsTransitioning(true);
+      setCurrent((c) => {
+        const dir = e.deltaY > 0 ? 1 : -1;
+        return Math.min(Math.max(c + dir, 0), scenes.length - 1);
+      });
+      setTimeout(() => setIsTransitioning(false), 700);
     },
-    [scrolling, currentScene]
+    [isLocked, isTransitioning, scenes.length]
   );
 
   useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      handleScroll(e.deltaY);
-    };
-    if (currentScene < scenes.length - 1) {
+    if (isLocked) {
       window.addEventListener("wheel", onWheel, { passive: false });
     }
-    return () => window.removeEventListener("wheel", onWheel);
-  }, [currentScene, handleScroll]);
+    return () => window.removeEventListener("wheel", onWheel as any);
+  }, [isLocked, onWheel]);
 
-  /* Scenes with DAM images & video */
-  const scenes: StoryScene[] = [
-    {
-      id: "hero",
-      title: "Redefine Your Journey",
-      subtitle: "Experience the harmony of power, efficiency, and innovation",
-      backgroundImage:
-        "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa.../hero-poster.jpg",
-      backgroundVideo:
-        "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa.../hero-video.mp4",
-      cta: {
-        label: "Reserve Now",
-        action: () => setIsBookingOpen(true),
-        variant: "primary",
-      },
-      stats: [
-        { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6 text-yellow-400" /> },
-        { value: 7, label: "0-100 km/h (s)", icon: <Car className="w-6 h-6 text-blue-400" /> },
-        { value: 850, label: "Range (km)", icon: <Sparkles className="w-6 h-6 text-green-400" /> },
-        { value: 5, label: "Safety ★", icon: <Shield className="w-6 h-6 text-red-400" /> },
-      ],
-    },
-    {
-      id: "interior",
-      title: "Luxury Redefined",
-      subtitle: "Step into a world of comfort & cutting-edge technology",
-      backgroundImage:
-        "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa.../interior.jpg",
-      cta: {
-        label: "Explore Interior",
-        action: onInteriorExplore,
-        variant: "secondary",
-      },
-      features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "Premium Audio"],
-    },
-    {
-      id: "technology",
-      title: "Innovation at Your Fingertips",
-      subtitle: "Smart features that enhance every drive",
-      backgroundImage:
-        "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa.../tech.jpg",
-      cta: {
-        label: "Discover Tech",
-        action: onConnectivityExplore,
-        variant: "primary",
-      },
-      features: ["Hybrid Drive", "Safety Sense", "Connected Services", "Wireless Charging"],
-    },
-    {
-      id: "finance",
-      title: "Smart Finance Options",
-      subtitle: "Tailored solutions for your journey",
-      backgroundImage:
-        "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa.../finance.jpg",
-      cta: {
-        label: "Explore Finance",
-        action: () => setIsFinanceOpen(true),
-        variant: "secondary",
-      },
-    },
-  ];
+  useEffect(() => {
+    if (isMuted) mute();
+    else unmute();
+  }, [isMuted, mute, unmute]);
 
-  const progress = ((currentScene + 1) / scenes.length) * 100;
+  const active = scenes[current];
+  const progress = ((current + 1) / scenes.length) * 100;
 
   return (
-    <section ref={containerRef} className="relative h-screen overflow-hidden bg-black text-white">
+    <section className="relative h-screen overflow-hidden bg-black text-white">
       <AnimatePresence mode="wait">
         <motion.div
-          key={scenes[currentScene].id}
+          key={active.id}
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: reducedMotion ? 0.2 : 0.6 }}
         >
-          {scenes[currentScene].backgroundVideo && !reducedMotion ? (
-            <motion.video
-              style={{ y: yParallax }}
-              className="w-full h-full object-cover"
-              src={scenes[currentScene].backgroundVideo}
-              poster={scenes[currentScene].backgroundImage}
-              muted={isMuted}
-              autoPlay
-              loop
-              playsInline
-            />
+          {active.backgroundVideo === "wistia" ? (
+            <div className="absolute inset-0">
+              <div style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+                <div
+                  className={`wistia_embed wistia_async_${heroWistiaVideoId} videoFoam=true`}
+                  style={{ height: "100%", width: "100%", position: "absolute", top: 0, left: 0 }}
+                />
+              </div>
+            </div>
           ) : (
-            <motion.img
-              style={{ y: yParallax }}
-              src={scenes[currentScene].backgroundImage}
-              alt={scenes[currentScene].title}
-              className="w-full h-full object-cover"
+            <img
+              src={active.backgroundImage}
+              alt={active.title}
+              className="absolute inset-0 w-full h-full object-cover"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         </motion.div>
       </AnimatePresence>
 
       {/* Content */}
-      <div className="relative z-20 flex flex-col justify-center items-center h-full px-6 text-center">
-        <motion.h2
-          key={scenes[currentScene].title}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-4xl md:text-6xl font-light mb-4"
-        >
-          {scenes[currentScene].title}
-        </motion.h2>
-        <motion.p
-          key={scenes[currentScene].subtitle}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg md:text-2xl text-white/80 mb-6"
-        >
-          {scenes[currentScene].subtitle}
-        </motion.p>
+      <div className="relative z-10 flex h-full items-center justify-center px-6 text-center">
+        <div className="bg-black/40 backdrop-blur-md rounded-2xl p-6 md:p-10 max-w-4xl mx-auto">
+          <h2 className="text-3xl md:text-6xl font-extralight mb-4">{active.title}</h2>
+          <p className="text-base md:text-2xl text-white/90 mb-6">{active.subtitle}</p>
 
-        {scenes[currentScene].stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            {scenes[currentScene].stats.map((stat, i) => (
-              <div key={i}>
-                <div>{stat.icon}</div>
-                <p className="text-2xl md:text-3xl">
-                  {animatedValues[i] ?? 0}
-                  {stat.label.includes("★") ? "★" : ""}
-                </p>
-                <p className="text-sm text-white/70">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        )}
+          {active.stats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+              {active.stats.map((s, i) => (
+                <div key={i}>
+                  <div className="flex justify-center mb-2">{s.icon}</div>
+                  <div className="text-xl md:text-3xl">{s.value}</div>
+                  <div className="text-sm text-white/70">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {scenes[currentScene].features && (
-          <div className="flex flex-wrap justify-center gap-3 mb-6">
-            {scenes[currentScene].features.map((f, i) => (
-              <Badge
-                key={i}
-                className="bg-white/10 border border-white/20 backdrop-blur-md px-4 py-2"
-              >
-                {f}
-              </Badge>
-            ))}
-          </div>
-        )}
+          {active.features && (
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {active.features.map((f, i) => (
+                <Badge key={i} className="bg-white/10 border border-white/20 backdrop-blur-sm">
+                  {f}
+                </Badge>
+              ))}
+            </div>
+          )}
 
-        {scenes[currentScene].cta && (
-          <Button
-            onClick={scenes[currentScene].cta.action}
-            className={`px-6 py-3 backdrop-blur-md ${
-              scenes[currentScene].cta.variant === "primary"
-                ? "bg-white text-black hover:bg-white/90"
-                : "border border-white/40 text-white hover:bg-white/10"
-            }`}
-          >
-            {scenes[currentScene].cta.label}
-            <ChevronRight className="ml-2 w-5 h-5" />
-          </Button>
-        )}
+          {active.cta && (
+            <Button
+              onClick={active.cta.action}
+              className={`px-6 py-3 ${
+                active.cta.variant === "primary"
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "border border-white/40 text-white hover:bg-white/10"
+              }`}
+            >
+              {active.cta.label}
+              <ChevronRight className="ml-2 w-5 h-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Sound toggle */}
-      {scenes[currentScene].backgroundVideo && (
+      {active.backgroundVideo === "wistia" && (
         <button
           onClick={() => setIsMuted((m) => !m)}
-          className="absolute top-6 left-6 z-30 bg-black/50 p-2 rounded-full"
+          className="absolute top-6 left-6 z-20 bg-black/50 p-2 rounded-full"
         >
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </button>
       )}
 
+      {/* Progress dots */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-3">
+        {scenes.map((s, i) => (
+          <button
+            key={s.id}
+            onClick={() => setCurrent(i)}
+            className={`h-2 rounded-full transition-all ${
+              i === current ? "bg-white w-8" : "bg-white/40 hover:bg-white/60 w-2"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <motion.div
+        className="absolute bottom-0 left-0 h-1 bg-red-600 z-20"
+        animate={{ width: `${progress}%` }}
+        transition={{ duration: 0.4 }}
+      />
+
       {/* Scroll hint */}
-      {currentScene === 0 && (
+      {current === 0 && (
         <motion.div
-          className="absolute bottom-16 left-1/2 -translate-x-1/2 text-center text-white/70"
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 text-white/80 text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
         >
-          <p>Scroll to explore</p>
-          <motion.div animate={{ y: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+          <p className="mb-2">Scroll to explore</p>
+          <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.4 }}>
             <ChevronDown className="w-6 h-6 mx-auto" />
           </motion.div>
         </motion.div>
       )}
 
-      {/* Progress bar */}
-      <motion.div
-        className="absolute bottom-0 left-0 h-1 bg-red-600"
-        animate={{ width: `${progress}%` }}
-        transition={{ duration: 0.4 }}
-      />
+      {/* Load wistia JSONP for hero */}
+      {active.backgroundVideo === "wistia" && heroWistiaVideoId && (
+        <script async src={`https://fast.wistia.com/embed/medias/${heroWistiaVideoId}.jsonp`} />
+      )}
     </section>
   );
 };
