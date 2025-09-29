@@ -1,27 +1,23 @@
-import React, { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown, Menu } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { ArrowDown, Menu, ArrowRight, Settings, Calendar, Pause, Play } from "lucide-react";
 
 // --- BEGIN CONFIGURABLE DATA ---
 
 // Reuse your MinimalHeroSection images here:
 const galleryImages = [
-  // Replace with your real images:
-  "https://images.unsplash.com/photo-1511918984145-48de785d4c4e?auto=format&fit=crop&w=1500&q=80",
-  "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1500&q=80",
-  "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1500&q=80"
+  "https://dam.alfuttaim.com/dx/api/dam/v1/collections/cbbefa79-6002-4f61-94e0-ee097a8dc6c6/items/e79b990a-9343-4559-b7cc-772c1c52696b/renditions/3964658f-a7d0-4b11-8b8a-cf5b70fe2bff?binary=true&mformat=true",
+  "https://dam.alfuttaim.com/dx/api/dam/v1/collections/5103fe2b-5c90-47cc-a37a-9b9d2dbc1c2e/items/278810b0-4e58-400a-8510-158e058c3ca1/renditions/5a278171-17e4-4c66-b4f7-f13c6a6254db?binary=true&mformat=true",
+  "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-2160.jpg"
 ];
-// Use the first image as the main hero visual
-const HERO_BG = galleryImages[0];
 
-const LOGO_URL =
-  "https://svgshare.com/i/14bT.svg"; // Placeholder logo
+
 
 const NAV_ITEMS = [
   { label: "Models", href: "#models" },
   { label: "Gallery", href: "#gallery" },
   { label: "Specs", href: "#specs" },
-  { label: "Build", href: "#build" },
+  { label: "Build", href: "#build" }
 ];
 
 const HEADLINE = "2026 Toyota GR Carbon";
@@ -29,7 +25,7 @@ const TAGLINE = "Electrified performance meets everyday usability";
 const SPECS = [
   { label: "0–100 km/h", value: "3.2s" },
   { label: "Range", value: "650 km" },
-  { label: "AWD", value: "Dual Motor" },
+  { label: "AWD", value: "Dual Motor" }
 ];
 
 // --- END CONFIGURABLE DATA ---
@@ -41,6 +37,40 @@ const HeroSection: React.FC = () => {
   const bgY = useTransform(scrollY, [0, 300], [0, -40]);
   const contentY = useTransform(scrollY, [0, 200], [0, -24]);
   const scrollIndicatorOpacity = useTransform(scrollY, [0, 80], [1, 0]);
+
+  // Slideshow state & logic
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying]);
+
+  // Touch controls for swipe gallery on mobile
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX);
+  const handleTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX);
+  const handleTouchEnd = () => {
+    if (touchStart == null || touchEnd == null) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 35) nextImage();
+    if (distance < -35) prevImage();
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
+  const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+
+  // Button handlers (replace these stubs with your app logic)
+  const handleConfigure = () => alert("Configure & Order clicked!");
+  const handleTestDrive = () => alert("Book a Test Drive clicked!");
 
   // Framer staggered reveal variants
   const containerVariants = {
@@ -91,7 +121,7 @@ const HeroSection: React.FC = () => {
         </button>
       </nav>
 
-      {/* Background Image w/ Ken Burns */}
+      {/* Background Image slideshow with Ken Burns */}
       <motion.div
         style={{
           scale: bgScale,
@@ -99,14 +129,24 @@ const HeroSection: React.FC = () => {
         }}
         className="absolute inset-0 w-full h-full z-0"
         aria-hidden="true"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        <img
-          src={HERO_BG}
-          alt="Cinematic hero background"
-          className="w-full h-full object-cover object-center"
-          draggable={false}
-          style={{ filter: "brightness(0.82) saturate(1.2)" }}
-        />
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={galleryImages[currentImageIndex]}
+            src={galleryImages[currentImageIndex]}
+            alt={`Cinematic hero car view ${currentImageIndex + 1}`}
+            className="w-full h-full object-cover object-center absolute inset-0 transition-all duration-700"
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            draggable={false}
+            style={{ filter: "brightness(0.82) saturate(1.2)" }}
+          />
+        </AnimatePresence>
         {/* Carbon-matte + neon accent overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-[#181A1Bcc] to-[#181A1B00]" />
         {/* Neon accent glow */}
@@ -117,6 +157,38 @@ const HeroSection: React.FC = () => {
             opacity: 0.45,
           }}
         />
+      </motion.div>
+
+      {/* Image indicators */}
+      <motion.div
+        className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 flex flex-row items-center gap-2"
+        aria-label="Change hero image"
+      >
+        <AnimatePresence>
+          {galleryImages.map((_, idx) => (
+            <motion.button
+              key={idx}
+              onClick={() => setCurrentImageIndex(idx)}
+              aria-label={`Show image ${idx + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                idx === currentImageIndex
+                  ? 'bg-[#EB0A1E] w-7'
+                  : 'bg-[#EB0A1E]/40 w-2 hover:bg-[#EB0A1E]/60'
+              }`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+            />
+          ))}
+        </AnimatePresence>
+        {/* Pause/Play button */}
+        <button
+          className="ml-4 p-2 rounded-full bg-black/40 hover:bg-black/70 transition-all border border-white/20 text-white"
+          onClick={() => setIsAutoPlaying((p) => !p)}
+          aria-label={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
+        >
+          {isAutoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </button>
       </motion.div>
 
       {/* Hero Content */}
@@ -153,24 +225,29 @@ const HeroSection: React.FC = () => {
             variants={fadeUpVariants}
             className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center"
           >
-            <motion.a
-              href="#build"
+            <motion.button
+              type="button"
+              onClick={handleConfigure}
               whileHover={{ y: -4, boxShadow: "0 6px 32px #EB0A1E66", scale: 1.025 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg shadow-lg bg-[#EB0A1E] text-white transition-all duration-200 outline-none border-2 border-[#EB0A1E] hover:bg-[#c10e18] focus:ring-2 focus:ring-[#EB0A1E] focus:ring-offset-2"
+              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg shadow-lg bg-[#EB0A1E] text-white transition-all duration-200 outline-none border-2 border-[#EB0A1E] hover:bg-[#c10e18] focus:ring-2 focus:ring-[#EB0A1E] focus:ring-offset-2 flex items-center justify-center gap-2"
               aria-label="Configure and Order"
             >
+              <Settings className="h-5 w-5" />
               Configure & Order
-            </motion.a>
-            <motion.a
-              href="#testdrive"
+              <ArrowRight className="h-5 w-5" />
+            </motion.button>
+            <motion.button
+              type="button"
+              onClick={handleTestDrive}
               whileHover={{ y: -4, boxShadow: "0 4px 28px #181A1B33", scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/80 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2"
+              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/80 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2 flex items-center justify-center gap-2"
               aria-label="Book a Test Drive"
             >
+              <Calendar className="h-5 w-5" />
               Book a Test Drive
-            </motion.a>
+            </motion.button>
           </motion.div>
 
           {/* Teaser Spec Row */}
