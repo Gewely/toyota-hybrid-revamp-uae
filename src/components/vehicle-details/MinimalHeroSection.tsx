@@ -2,16 +2,13 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { ArrowDown, Menu, ArrowRight, Settings, Calendar, Pause, Play } from "lucide-react";
 
-// --- BEGIN CONFIGURABLE DATA ---
+// --- CONFIGURABLE DATA ---
 
-// Reuse your MinimalHeroSection images here:
 const galleryImages = [
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/cbbefa79-6002-4f61-94e0-ee097a8dc6c6/items/e79b990a-9343-4559-b7cc-772c1c52696b/renditions/3964658f-a7d0-4b11-8b8a-cf5b70fe2bff?binary=true&mformat=true",
   "https://dam.alfuttaim.com/dx/api/dam/v1/collections/5103fe2b-5c90-47cc-a37a-9b9d2dbc1c2e/items/278810b0-4e58-400a-8510-158e058c3ca1/renditions/5a278171-17e4-4c66-b4f7-f13c6a6254db?binary=true&mformat=true",
   "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-2160.jpg"
 ];
-
-
 
 const NAV_ITEMS = [
   { label: "Models", href: "#models" },
@@ -95,16 +92,7 @@ const HeroSection: React.FC = () => {
     >
       {/* Sticky Navigation */}
       <nav className="sticky top-0 left-0 w-full z-30 bg-gradient-to-b from-[#141415ed] via-[#181A1Bcc] to-[#181A1B00] backdrop-blur-md flex items-center px-4 sm:px-12 py-4 lg:py-6">
-        <a href="/" aria-label="Home" className="flex items-center gap-3">
-          <img
-            src={LOGO_URL}
-            alt="Brand Logo"
-            className="h-8 w-auto md:h-10 rounded"
-            style={{ filter: "drop-shadow(0 2px 4px #1116)" }}
-          />
-          <span className="sr-only">Go to home</span>
-        </a>
-        <ul className="hidden md:flex ml-12 space-x-8 text-white/90 text-base font-medium tracking-wide">
+        <ul className="flex ml-0 space-x-8 text-white/90 text-base font-medium tracking-wide">
           {NAV_ITEMS.map((item) => (
             <li key={item.label}>
               <a
@@ -292,6 +280,21 @@ const HeroSection: React.FC = () => {
       </motion.div>
     </section>
   );
+};
+
+// Framer variants outside component to prevent recreation
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.18,
+      delayChildren: 0.35,
+    },
+  },
+};
+const fadeUpVariants = {
+  hidden: { opacity: 0, y: 32 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 18 } },
 };
 
 export default HeroSection;
