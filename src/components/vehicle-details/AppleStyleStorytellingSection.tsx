@@ -493,22 +493,22 @@ const StorytellingSection: React.FC<Props> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* CONTENT LAYER */}
-      <div className="relative z-10 flex min-h-[100svh] items-end justify-center px-6 pb-16">
-        <motion.div
-          key={`content-${active.id}`}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{
-            opacity: 1,
-            y: 0,
-            x: parallax.x * 0.2,
-            y: parallax.y * 0.2,
-          }}
-          exit={{ opacity: 0, y: -40 }}
-          transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
-          className="max-w-5xl mx-auto text-center"
-        >
-          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+      {/* CONTENT LAYER (bottom docked, avoids overlap) */}
+<div className={`absolute bottom-0 left-0 w-full z-10 flex justify-center px-6 ${active.contentOffset || "pb-20"}`}>
+  <motion.div
+    key={`content-${active.id}`}
+    initial={{ opacity: 0, y: 40 }}
+    animate={{
+      opacity: 1,
+      y: 0,
+      x: parallax.x * 0.2,
+      y: parallax.y * 0.2,
+    }}
+    exit={{ opacity: 0, y: -40 }}
+    transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
+    className="max-w-5xl mx-auto text-center"
+  >
+    <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
             <h2 className="text-3xl md:text-6xl font-extralight tracking-tight mb-4">
               {active.title}
             </h2>
