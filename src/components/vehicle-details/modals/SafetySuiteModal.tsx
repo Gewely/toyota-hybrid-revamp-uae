@@ -2,7 +2,8 @@
 import React from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
-  Shield, Eye, AlertTriangle, Car, Zap, Gauge, Users, Heart, Play, X
+  Shield, Eye, AlertTriangle, Car, Zap, Gauge, Users, Heart,
+  ChevronRight, Play, X
 } from "lucide-react";
 import {
   MobileOptimizedDialog,
@@ -34,9 +35,10 @@ const IMG_NIGHT =
 const YT_PRECOLLISION = "oL6mrPWtZJ4";
 
 /* -------------------------------------------------------------------------- */
-/*                             Reusable Components                             */
+/*                           Reusable Components                               */
 /* -------------------------------------------------------------------------- */
 
+/** Scenario pills with animated underline */
 const ScenarioPills: React.FC<{
   active: ScenarioKey;
   setActive: (k: ScenarioKey) => void;
@@ -65,7 +67,7 @@ const ScenarioPills: React.FC<{
           <Icon className="h-4 w-4" />
           {label}
           {active === key && (
-            <motion.span
+            <motion.div
               layoutId="active-pill"
               className="absolute inset-0 rounded-full ring-2 ring-primary/40"
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
@@ -77,6 +79,7 @@ const ScenarioPills: React.FC<{
   );
 };
 
+/** Inline YouTube with cinematic overlay */
 const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, title }) => {
   const [play, setPlay] = React.useState(false);
   const src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1${play ? "&autoplay=1" : ""}`;
@@ -85,7 +88,7 @@ const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl bg-black ring-1 ring-white/10 shadow-xl">
       <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-        {!play ? (
+        {!play && (
           <button
             onClick={() => setPlay(true)}
             aria-label="Play video"
@@ -100,7 +103,8 @@ const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, 
               Play video
             </div>
           </button>
-        ) : (
+        )}
+        {play && (
           <iframe
             className="absolute inset-0 w-full h-full"
             src={src}
@@ -115,6 +119,7 @@ const YoutubeInline: React.FC<{ videoId: string; title: string }> = ({ videoId, 
   );
 };
 
+/** Image gallery with cinematic polish */
 const ImageGallery: React.FC<{
   images: { src: string; alt: string }[];
   initial?: number;
@@ -126,9 +131,7 @@ const ImageGallery: React.FC<{
   const canNext = idx < images.length - 1;
 
   return (
-    <div
-      className="rounded-2xl ring-1 ring-white/10 bg-gradient-to-br from-black/60 to-gray-900/40 backdrop-blur-md border border-white/10 overflow-hidden shadow-xl"
-    >
+    <div className="rounded-2xl ring-1 ring-white/10 bg-gradient-to-br from-black/60 to-gray-900/40 backdrop-blur-md border border-white/10 overflow-hidden shadow-xl">
       <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
         <AnimatePresence mode="wait">
           <motion.img
@@ -144,10 +147,10 @@ const ImageGallery: React.FC<{
           />
         </AnimatePresence>
       </div>
+
       {/* Controls */}
       <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3">
         <button
-          aria-label="Previous image"
           disabled={!canPrev}
           onClick={() => canPrev && setIdx((i) => i - 1)}
           className={cn(
@@ -158,7 +161,6 @@ const ImageGallery: React.FC<{
           ‹
         </button>
         <button
-          aria-label="Next image"
           disabled={!canNext}
           onClick={() => canNext && setIdx((i) => i + 1)}
           className={cn(
@@ -169,6 +171,7 @@ const ImageGallery: React.FC<{
           ›
         </button>
       </div>
+
       {/* Caption */}
       {caption && (
         <div className="absolute bottom-2 left-2 right-2 text-sm text-white">
@@ -191,8 +194,6 @@ interface SafetySuiteModalProps {
   onBookTestDrive: () => void;
   modelName?: string;
   regionLabel?: string;
-  onCompareGrades?: () => void;
-  onSeeOffers?: () => void;
 }
 
 const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
@@ -201,13 +202,11 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
   onBookTestDrive,
   modelName = "Toyota Camry",
   regionLabel = "UAE",
-  onCompareGrades,
-  onSeeOffers,
 }) => {
   const prefersReduced = useReducedMotion();
   const [scenario, setScenario] = React.useState<ScenarioKey>("laneDrift");
 
-  const enter = prefersReduced ? {} : { opacity: 0, y: 16 };
+  const enter = prefersReduced ? {} : { opacity: 0, y: 20 };
   const entered = prefersReduced ? {} : { opacity: 1, y: 0 };
 
   const taglines: Record<ScenarioKey, string> = {
@@ -217,42 +216,37 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
     night: "Brighter nights, smarter lights.",
   };
 
-  const scenarioIndex: Record<ScenarioKey, number> = {
-    preCollision: 0,
-    laneDrift: 1,
-    cruise: 2,
-    night: 3,
-  };
-
-  const progress = ((scenarioIndex[scenario] + 1) / 4) * 100;
-
   const safetyFeatures = [
     {
       icon: Eye,
       name: "Pre-Collision System",
       chips: ["Pedestrian", "Auto Brake", "Radar"],
-      details: "Camera + radar help detect vehicles/pedestrians and can apply brakes if a collision is likely.",
+      details:
+        "Camera + radar help detect vehicles/pedestrians and can apply brakes if a collision is likely.",
       active: scenario === "preCollision",
     },
     {
       icon: AlertTriangle,
       name: "Lane Departure Alert",
       chips: ["Steering Assist", "Road Edge"],
-      details: "Monitors lane markers and can provide steering assist to help keep you centered.",
+      details:
+        "Monitors lane markers and can provide steering assist to help keep you centered.",
       active: scenario === "laneDrift",
     },
     {
       icon: Car,
       name: "Dynamic Radar Cruise",
       chips: ["Stop & Go", "Distance Set"],
-      details: "Automatically adjusts speed to maintain a preset following distance.",
+      details:
+        "Automatically adjusts speed to maintain a preset following distance.",
       active: scenario === "cruise",
     },
     {
       icon: Zap,
       name: "Automatic High Beams",
       chips: ["Auto Dip", "Camera"],
-      details: "Optimizes visibility by toggling high/low beams when traffic is detected.",
+      details:
+        "Optimizes visibility by toggling high/low beams when traffic is detected.",
       active: scenario === "night",
     },
   ] as const;
@@ -260,7 +254,6 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
   return (
     <MobileOptimizedDialog open={isOpen} onOpenChange={onClose}>
       <MobileOptimizedDialogContent className="sm:max-w-6xl max-w-[1100px] w-[96vw] rounded-3xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <MobileOptimizedDialogHeader className="px-4 py-3 sm:px-6 sm:py-5 bg-gradient-to-r from-black via-gray-900 to-black text-white rounded-t-3xl">
           <div className="flex items-center justify-between gap-2">
             <MobileOptimizedDialogTitle className="text-xl font-bold sm:text-2xl">
@@ -271,7 +264,6 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
               size="icon"
               className="sm:hidden text-white"
               onClick={onClose}
-              aria-label="Close"
             >
               <X className="h-6 w-6" />
             </Button>
@@ -279,37 +271,31 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
           <MobileOptimizedDialogDescription className="hidden sm:block text-base text-gray-300 mt-1">
             Real scenarios you can see—then book a test drive.
           </MobileOptimizedDialogDescription>
-          {/* Progress bar */}
-          <div className="mt-3 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-            <motion.div
-              className="h-full bg-primary"
-              style={{ width: `${progress}%` }}
-              initial={false}
-              transition={{ type: "spring", stiffness: 180, damping: 24 }}
-            />
-          </div>
         </MobileOptimizedDialogHeader>
 
         <MobileOptimizedDialogBody className="bg-gradient-to-b from-gray-950 via-black to-gray-900 text-white">
           <div className="space-y-8">
             {/* Scenario Section */}
-            <motion.section
+            <motion.div
               initial={enter}
               animate={entered}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.4 }}
               className="rounded-3xl p-5 lg:p-8 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent ring-1 ring-primary/20 backdrop-blur-xl"
             >
               <ScenarioPills active={scenario} setActive={setScenario} />
+
+              {/* Tagline */}
               <motion.p
                 key={scenario}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.28 }}
+                transition={{ duration: 0.3 }}
                 className="mt-3 text-lg font-semibold italic text-primary"
               >
                 {taglines[scenario]}
               </motion.p>
+
               <div className="mt-6 flex flex-col lg:flex-row gap-6">
                 {/* Timeline */}
                 <div className="lg:w-72 space-y-3">
@@ -325,7 +311,7 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
                         key={s.t}
                         initial={{ opacity: 0.4, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08 }}
+                        transition={{ delay: i * 0.1 }}
                         className="rounded-md border p-2 bg-background/60 backdrop-blur"
                       >
                         <div className="font-semibold">{s.t}</div>
@@ -334,6 +320,7 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
                     ))}
                   </div>
                 </div>
+
                 {/* Media */}
                 <div className="flex-1 min-w-0">
                   <AnimatePresence mode="wait">
@@ -345,46 +332,34 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
                     {scenario === "laneDrift" && (
                       <motion.div key="lane" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <ImageGallery
-                          images={[
-                            { src: IMG_LANE, alt: "Lane Assist visualization" },
-                            { src: IMG_CRUISE, alt: "Road view – cruise support" },
-                            { src: IMG_NIGHT, alt: "Night visibility / Auto High Beam" },
-                          ]}
-                          caption="Lane Assist keeps you centered with gentle steering support."
+                          images={[{ src: IMG_LANE, alt: "Lane Assist" }]}
+                          caption="Lane Assist keeps you centered."
                         />
                       </motion.div>
                     )}
                     {scenario === "cruise" && (
                       <motion.div key="cruise" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <ImageGallery
-                          images={[
-                            { src: IMG_CRUISE, alt: "Adaptive Cruise – maintains distance" },
-                            { src: IMG_LANE, alt: "Lane guidance context" },
-                            { src: IMG_NIGHT, alt: "Night conditions" },
-                          ]}
-                          caption="Adaptive Cruise automatically maintains a safe following distance."
+                          images={[{ src: IMG_CRUISE, alt: "Adaptive Cruise" }]}
+                          caption="Adaptive Cruise keeps a safe distance."
                         />
                       </motion.div>
                     )}
                     {scenario === "night" && (
                       <motion.div key="night" initial={enter} animate={entered} exit={{ opacity: 0 }}>
                         <ImageGallery
-                          images={[
-                            { src: IMG_NIGHT, alt: "Auto High Beam – clearer night view" },
-                            { src: IMG_CRUISE, alt: "Cruise and visibility" },
-                            { src: IMG_LANE, alt: "Lane context at night" },
-                          ]}
-                          caption="Auto High Beam toggles headlights for optimal visibility."
+                          images={[{ src: IMG_NIGHT, alt: "Auto High Beam" }]}
+                          caption="Smart beams adapt to traffic automatically."
                         />
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
               </div>
-            </motion.section>
+            </motion.div>
 
-            {/* Core Features */}
-            <section>
+            {/* Core Safety Features */}
+            <div>
               <h3 className="text-xl font-bold mb-3">Core Safety Features</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 {safetyFeatures.map((f, idx) => (
@@ -421,10 +396,10 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
                   </motion.div>
                 ))}
               </div>
-            </section>
+            </div>
 
             {/* Complete Package */}
-            <section>
+            <div>
               <h3 className="text-xl font-bold mb-3">Complete Safety Package</h3>
               <div className="space-y-3">
                 {[
@@ -460,33 +435,20 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
                   <span>Features may vary by grade/model year and region ({regionLabel}).</span>
                 </div>
               </div>
-            </section>
+            </div>
           </div>
         </MobileOptimizedDialogBody>
 
-        {/* Footer */}
         <MobileOptimizedDialogFooter className="px-4 py-4 sm:px-6 sm:py-6 bg-black/80 rounded-b-3xl border-t border-white/10">
           <div className="flex w-full flex-col sm:flex-row sm:justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="border-white/40 text-white hover:bg-white/10"
-            >
+            <Button variant="outline" onClick={onClose} className="border-white/40 text-white hover:bg-white/10">
               Close
             </Button>
             <Button onClick={onBookTestDrive} className="bg-primary text-primary-foreground">
               Book Test Drive
             </Button>
-            {onCompareGrades && (
-              <Button variant="secondary" onClick={onCompareGrades}>
-                Compare Grades
-              </Button>
-            )}
-            {onSeeOffers && (
-              <Button variant="secondary" onClick={onSeeOffers}>
-                See Offers
-              </Button>
-            )}
+            <Button variant="secondary">Compare Grades</Button>
+            <Button variant="secondary">See Offers</Button>
           </div>
         </MobileOptimizedDialogFooter>
       </MobileOptimizedDialogContent>
