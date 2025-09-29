@@ -94,7 +94,25 @@ function useWistiaPlayer(videoId?: string) {
   const pause = () => playerRef.current?.pause?.();
   const play = () => playerRef.current?.play?.();
 
-  return { mute, unmute, pause, play, hasPlayer: !!playerRef.current };
+  return { mute, unmute, pause, play };
+}
+
+/** ======================= Helper: visibility ==================== */
+function fullyCoversViewport(el: HTMLElement, tolerancePx = 4) {
+  const rect = el.getBoundingClientRect();
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  return (
+    rect.top >= -tolerancePx &&
+    rect.left >= -tolerancePx &&
+    rect.bottom <= vh + tolerancePx &&
+    rect.right <= vw + tolerancePx
+  );
+}
+
+function topAligned(el: HTMLElement, tolerancePx = 4) {
+  const rect = el.getBoundingClientRect();
+  return Math.abs(rect.top) <= tolerancePx;
 }
 
 /** ======================= Storytelling Section ================== */
@@ -121,10 +139,11 @@ const StorytellingSection: React.FC<Props> = ({
 }) => {
   const prefersReduced = useReducedMotion();
   const sectionRef = useRef<HTMLElement | null>(null);
-  const [isFullyVisible, setIsFullyVisible] = useState(false);
-  const [hasSnapped, setHasSnapped] = useState(false);
 
-  /** ---------- Your DAM images ---------- */
+  const [isFullyVisible, setIsFullyVisible] = useState(false);
+  const [hasSnappedOnce, setHasSnappedOnce] = useState(false);
+
+  /** ---------- DAM images ---------- */
   const damImages = useMemo(
     () => [
       "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
@@ -188,26 +207,44 @@ const StorytellingSection: React.FC<Props> = ({
   const isLocked = index < scenes.length - 1;
   const active = scenes[index];
 
-  // IntersectionObserver for visibility
+  /** ---------- Robust visibility check (scroll & resize) ---------- */
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const fullyVisible = entry.isIntersecting && entry.intersectionRatio === 1;
-        setIsFullyVisible(fullyVisible);
+    const el = sectionRef.current;
+    if (!el) return;
 
-        if (fullyVisible && !hasSnapped && sectionRef.current) {
-          sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-          setHasSnapped(true);
+    const update = () => {
+      const fully = fullyCoversViewport(el, 6); // tolerate a few px (URL bar, sticky header)
+      setIsFullyVisible(fully);
+
+      // Snap to top ONCE when the section first becomes mostly visible
+      if (!hasSnappedOnce && fully) {
+        // If not perfectly top aligned, snap
+        if (!topAligned(el, 6)) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => {
-      if (sectionRef.current) observer.unobserve(sectionRef.current);
+        setHasSnappedOnce(true);
+      }
     };
-  }, [hasSnapped]);
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update as any);
+      window.removeEventListener("resize", update as any);
+    };
+  }, [hasSnappedOnce]);
+
+  // Preload neighbor images
+  useEffect(() => {
+    const preload = (src?: string) => {
+      if (!src) return;
+      const img = new Image();
+      img.src = src;
+    };
+    preload(scenes[index + 1]?.backgroundImage);
+    preload(scenes[index - 1]?.backgroundImage);
+  }, [index, scenes]);
 
   // Wheel
   const onWheel = useCallback(
@@ -223,24 +260,37 @@ const StorytellingSection: React.FC<Props> = ({
     [isLocked, isFullyVisible, isTransitioning, scenes.length, prefersReduced]
   );
 
-  // Touch
+  /** ---------- Touch (use move with passive:false to allow preventDefault) ---------- */
   const touchStartY = useRef<number | null>(null);
+  const handledSwipe = useRef(false);
+
   const onTouchStart = useCallback((e: TouchEvent) => {
+    if (!isFullyVisible) return;
     touchStartY.current = e.touches[0].clientY;
-  }, []);
-  const onTouchEnd = useCallback(
+    handledSwipe.current = false;
+  }, [isFullyVisible]);
+
+  const onTouchMove = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || !isFullyVisible || touchStartY.current === null) return;
-      const dy = touchStartY.current - e.changedTouches[0].clientY;
-      touchStartY.current = null;
-      if (Math.abs(dy) < 50 || isTransitioning) return;
-      setIsTransitioning(true);
-      const dir = dy > 0 ? 1 : -1;
-      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
+      if (!isLocked || !isFullyVisible || touchStartY.current === null || isTransitioning || handledSwipe.current) return;
+      const dy = touchStartY.current - e.touches[0].clientY;
+      const threshold = 40; // px
+      if (Math.abs(dy) >= threshold) {
+        e.preventDefault(); // requires passive:false
+        handledSwipe.current = true;
+        setIsTransitioning(true);
+        const dir = dy > 0 ? 1 : -1;
+        setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
+        setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
+      }
     },
-    [isLocked, isFullyVisible, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isFullyVisible, isTransitioning, prefersReduced, scenes.length]
   );
+
+  const onTouchEnd = useCallback(() => {
+    touchStartY.current = null;
+    handledSwipe.current = false;
+  }, []);
 
   // Keyboard
   const onKeyDown = useCallback(
@@ -257,21 +307,24 @@ const StorytellingSection: React.FC<Props> = ({
     [isLocked, isFullyVisible, isTransitioning, scenes.length, prefersReduced]
   );
 
-  // Attach handlers
+  // Attach handlers when eligible
   useEffect(() => {
     if (isLocked && isFullyVisible) {
       window.addEventListener("wheel", onWheel, { passive: false });
-      window.addEventListener("touchstart", onTouchStart, { passive: true });
-      window.addEventListener("touchend", onTouchEnd, { passive: true });
+      window.addEventListener("touchstart", onTouchStart as any, { passive: true });
+      // touchmove must be passive:false to allow preventDefault (Safari)
+      window.addEventListener("touchmove", onTouchMove as any, { passive: false });
+      window.addEventListener("touchend", onTouchEnd as any, { passive: true });
       window.addEventListener("keydown", onKeyDown);
     }
     return () => {
       window.removeEventListener("wheel", onWheel as any);
       window.removeEventListener("touchstart", onTouchStart as any);
+      window.removeEventListener("touchmove", onTouchMove as any);
       window.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown as any);
     };
-  }, [isLocked, isFullyVisible, onWheel, onTouchStart, onTouchEnd, onKeyDown]);
+  }, [isLocked, isFullyVisible, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
   /** -------------------- Wistia controls -------------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(
@@ -287,6 +340,7 @@ const StorytellingSection: React.FC<Props> = ({
       mute();
       pause();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, isMuted, active.backgroundVideoWistiaId]);
 
   /** --------------------------- UI --------------------------- */
@@ -295,7 +349,8 @@ const StorytellingSection: React.FC<Props> = ({
   return (
     <section
       ref={sectionRef}
-      className="relative h-screen bg-black text-white overflow-hidden"
+      // Use svh to avoid iOS URL bar shrinking the viewport; also prevent parent scroll bleed
+      className="relative min-h-[100svh] bg-black text-white overflow-hidden"
       aria-label="Cinematic automotive storytelling"
     >
       {/* MEDIA LAYER */}
@@ -312,6 +367,11 @@ const StorytellingSection: React.FC<Props> = ({
             src={active.backgroundImage}
             alt={active.title}
             className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              const t = e.currentTarget as HTMLImageElement;
+              t.onerror = null;
+              t.src = "/placeholder.svg";
+            }}
           />
 
           {active.backgroundVideoWistiaId && (
@@ -333,7 +393,7 @@ const StorytellingSection: React.FC<Props> = ({
       </AnimatePresence>
 
       {/* CONTENT */}
-      <div className="relative z-10 flex h-full items-center justify-center px-6">
+      <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-6">
         <motion.div
           key={`content-${active.id}`}
           initial={{ opacity: 0, y: 24 }}
@@ -341,7 +401,7 @@ const StorytellingSection: React.FC<Props> = ({
           transition={{ duration: prefersReduced ? 0.2 : 0.6, ease: "easeOut" }}
           className="max-w-5xl mx-auto text-center"
         >
-          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8">
+          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
             <motion.h2 className="text-3xl md:text-6xl font-extralight tracking-tight mb-4">
               {active.title}
             </motion.h2>
@@ -424,6 +484,7 @@ const StorytellingSection: React.FC<Props> = ({
               className={`h-2 rounded-full transition-all ${
                 i === index ? "bg-white w-8" : "bg-white/40 hover:bg-white/60 w-2"
               }`}
+              style={{ minWidth: i === index ? 32 : 8 }}
             />
           ))}
         </div>
@@ -452,6 +513,11 @@ const StorytellingSection: React.FC<Props> = ({
             <ChevronDown className="w-6 h-6 mx-auto" />
           </motion.div>
         </motion.div>
+      )}
+
+      {/* Wistia JSONP for poster/metadata */}
+      {active.backgroundVideoWistiaId && (
+        <script async src={`https://fast.wistia.com/embed/medias/${active.backgroundVideoWistiaId}.jsonp`} />
       )}
     </section>
   );
