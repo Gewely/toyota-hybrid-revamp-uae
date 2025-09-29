@@ -525,28 +525,32 @@ const SafetySuiteModal: React.FC<SafetySuiteModalProps> = ({
 
         {/* ====================== FOOTER (SAFE CTAS) ====================== */}
         <MobileOptimizedDialogFooter className="px-4 py-4 sm:px-6 sm:py-6 bg-black/80 rounded-b-3xl border-t border-white/10">
-          <div className="flex w-full flex-col sm:flex-row sm:justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="border-white/40 text-white hover:bg-white/10"
-            >
-              Close
-            </Button>
-            <Button onClick={onBookTestDrive} className="bg-primary text-primary-foreground">
-              Book Test Drive
-            </Button>
-            {/* These call optional no-op handlers by default so they NEVER break upstream */}
-            <Button variant="secondary" onClick={onCompareGrades}>
-              Compare Grades
-            </Button>
-            <Button variant="secondary" onClick={onSeeOffers}>
-              See Offers
-            </Button>
-          </div>
-        </MobileOptimizedDialogFooter>
-      </MobileOptimizedDialogContent>
-    </MobileOptimizedDialog>
+  <div className="flex w-full flex-col sm:flex-row sm:justify-end gap-3">
+    <Button
+      variant="outline"
+      onClick={onClose}
+      className="border-white/40 text-white hover:bg-white/10"
+    >
+      Close
+    </Button>
+    <Button onClick={onBookTestDrive} className="bg-primary text-primary-foreground">
+      Book Test Drive
+    </Button>
+
+    {/* Render only if parent provided handlers */}
+    {onCompareGrades && (
+      <Button variant="secondary" onClick={onCompareGrades}>
+        Compare Grades
+      </Button>
+    )}
+    {onSeeOffers && (
+      <Button variant="secondary" onClick={onSeeOffers}>
+        See Offers
+      </Button>
+    )}
+  </div>
+</MobileOptimizedDialogFooter>
+
   );
 };
 
