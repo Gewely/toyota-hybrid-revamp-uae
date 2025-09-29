@@ -1,193 +1,220 @@
-import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useInView, useReducedMotion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { VehicleModel } from "@/types/vehicle";
-import { Calendar, Shield, Award, ArrowRight, Settings, Play, Pause } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { openTestDrivePopup } from "@/utils/testDriveUtils";
-import { OptimizedMotionImage } from "@/components/ui/optimized-motion-image";
-import { optimizedSprings } from "@/utils/animation-performance";
+import React, { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowDown, Menu } from "lucide-react";
 
-interface MinimalHeroSectionProps {
-  vehicle: VehicleModel;
-  galleryImages: string[];
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
-  onBookTestDrive: () => void;
-  onCarBuilder: () => void;
-}
+// --- BEGIN CONFIGURABLE DATA ---
 
-const MinimalHeroSection: React.FC<MinimalHeroSectionProps> = ({
-  vehicle,
-  galleryImages,
-  onBookTestDrive,
-  onCarBuilder,
-}) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const isMobile = useIsMobile();
+// Reuse your MinimalHeroSection images here:
+const galleryImages = [
+  // Replace with your real images:
+  "https://images.unsplash.com/photo-1511918984145-48de785d4c4e?auto=format&fit=crop&w=1500&q=80",
+  "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1500&q=80",
+  "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1500&q=80"
+];
+// Use the first image as the main hero visual
+const HERO_BG = galleryImages[0];
+
+const LOGO_URL =
+  "https://svgshare.com/i/14bT.svg"; // Placeholder logo
+
+const NAV_ITEMS = [
+  { label: "Models", href: "#models" },
+  { label: "Gallery", href: "#gallery" },
+  { label: "Specs", href: "#specs" },
+  { label: "Build", href: "#build" },
+];
+
+const HEADLINE = "2026 Toyota GR Carbon";
+const TAGLINE = "Electrified performance meets everyday usability";
+const SPECS = [
+  { label: "0–100 km/h", value: "3.2s" },
+  { label: "Range", value: "650 km" },
+  { label: "AWD", value: "Dual Motor" },
+];
+
+// --- END CONFIGURABLE DATA ---
+
+const HeroSection: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 0.3], [0, prefersReducedMotion ? 0 : -30]);
-  const heroImageRef = useRef<HTMLDivElement>(null);
-  const isHeroInView = useInView(heroImageRef, { margin: '100px' });
+  const { scrollY } = useScroll({ target: heroRef });
+  const bgScale = useTransform(scrollY, [0, 300], [1, 1.035]);
+  const bgY = useTransform(scrollY, [0, 300], [0, -40]);
+  const contentY = useTransform(scrollY, [0, 200], [0, -24]);
+  const scrollIndicatorOpacity = useTransform(scrollY, [0, 80], [1, 0]);
 
-  useEffect(() => {
-    if (!isHeroInView || !isAutoPlaying) return;
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-    }, 5200);
-    return () => clearInterval(interval);
-  }, [isHeroInView, galleryImages.length, isAutoPlaying]);
-
-  const handleTestDrive = () => {
-    openTestDrivePopup(vehicle);
+  // Framer staggered reveal variants
+  const containerVariants = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.18,
+        delayChildren: 0.35,
+      },
+    },
   };
-
-  const isBestSeller =
-    vehicle.name === "Toyota Camry" ||
-    vehicle.name === "Toyota Corolla Hybrid" ||
-    vehicle.name === "Toyota Land Cruiser" ||
-    vehicle.name === "Toyota RAV4 Hybrid";
+  const fadeUpVariants = {
+    hidden: { opacity: 0, y: 32 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 18 } },
+  };
 
   return (
     <section
       ref={heroRef}
-      className="relative min-h-[80vh] md:min-h-[92vh] xl:min-h-[98vh] bg-neutral-950 flex items-end overflow-hidden"
+      className="relative w-full min-h-screen flex flex-col bg-[#181A1B] overflow-hidden"
+      aria-label="Premium Automotive Hero section"
     >
-      {/* Background Image */}
-      <motion.div
-        ref={heroImageRef}
-        style={{ y }}
-        className="absolute inset-0 w-full h-full"
-      >
-        <AnimatePresence mode="wait">
-          <OptimizedMotionImage
-            key={`hero-image-${currentImageIndex}`}
-            src={galleryImages[currentImageIndex] || ''}
-            alt={`${vehicle.name} - View ${currentImageIndex + 1}`}
-            className="absolute inset-0 w-full h-full object-cover"
-            priority={currentImageIndex === 0}
-            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.99 }}
-            transition={prefersReducedMotion ? { duration: 0.1 } : optimizedSprings.fast}
-            enableGPU={!prefersReducedMotion}
+      {/* Sticky Navigation */}
+      <nav className="sticky top-0 left-0 w-full z-30 bg-gradient-to-b from-[#141415ed] via-[#181A1Bcc] to-[#181A1B00] backdrop-blur-md flex items-center px-4 sm:px-12 py-4 lg:py-6">
+        <a href="/" aria-label="Home" className="flex items-center gap-3">
+          <img
+            src={LOGO_URL}
+            alt="Brand Logo"
+            className="h-8 w-auto md:h-10 rounded"
+            style={{ filter: "drop-shadow(0 2px 4px #1116)" }}
           />
-        </AnimatePresence>
-        {/* Vignette gradient for readability */}
-        <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
-      </motion.div>
-
-      {/* Pause Button */}
-      <motion.div
-        className="absolute top-8 right-8 z-30"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.6 }}
-      >
-        <button
-          onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-          className="p-3 rounded-full bg-black/30 backdrop-blur-lg border border-white/20 hover:bg-white/20 transition-all duration-200 shadow-xl"
-          aria-label={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
-        >
-          {isAutoPlaying ? (
-            <Pause className="h-4 w-4 text-white" />
-          ) : (
-            <Play className="h-4 w-4 text-white" />
-          )}
+          <span className="sr-only">Go to home</span>
+        </a>
+        <ul className="hidden md:flex ml-12 space-x-8 text-white/90 text-base font-medium tracking-wide">
+          {NAV_ITEMS.map((item) => (
+            <li key={item.label}>
+              <a
+                href={item.href}
+                className="transition-colors duration-200 hover:text-[#EB0A1E] focus:outline-none focus:text-[#EB0A1E]"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <button className="ml-auto md:hidden text-white/80" aria-label="Open Menu">
+          <Menu className="h-7 w-7" />
         </button>
+      </nav>
+
+      {/* Background Image w/ Ken Burns */}
+      <motion.div
+        style={{
+          scale: bgScale,
+          y: bgY,
+        }}
+        className="absolute inset-0 w-full h-full z-0"
+        aria-hidden="true"
+      >
+        <img
+          src={HERO_BG}
+          alt="Cinematic hero background"
+          className="w-full h-full object-cover object-center"
+          draggable={false}
+          style={{ filter: "brightness(0.82) saturate(1.2)" }}
+        />
+        {/* Carbon-matte + neon accent overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-[#181A1Bcc] to-[#181A1B00]" />
+        {/* Neon accent glow */}
+        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[60vw] h-[10vw] pointer-events-none z-10"
+          style={{
+            background: "radial-gradient(ellipse at center, #EB0A1E66 0%, transparent 90%)",
+            filter: "blur(36px)",
+            opacity: 0.45,
+          }}
+        />
       </motion.div>
 
-      {/* Glassy Floating Content Card */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 w-full px-4 sm:px-8 pb-8 flex justify-center">
+      {/* Hero Content */}
+      <motion.main
+        id="main-content"
+        tabIndex={-1}
+        className="relative flex flex-1 items-end justify-center z-20"
+        style={{ outline: "none" }}
+      >
         <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.7, ...optimizedSprings.smooth }}
-          className="
-            bg-white/80 backdrop-blur-2xl border border-[#ececec] shadow-2xl rounded-2xl
-            max-w-2xl w-full
-            px-5 py-6 sm:px-10 sm:py-10
-            flex flex-col items-center
-          "
-          style={{
-            boxShadow: "0 12px 64px 0 rgba(30,30,30,0.24), 0 2px 8px 0 rgba(30,30,30,0.07)"
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="w-full max-w-3xl mx-auto px-4 sm:px-8 pb-16 pt-10 sm:pb-28 flex flex-col items-center"
+          style={{ y: contentY }}
+        >
+          {/* Headline */}
+          <motion.h1
+            variants={fadeUpVariants}
+            className="text-white font-black text-[2.7rem] sm:text-5xl lg:text-6xl leading-tight text-center tracking-tight drop-shadow-[0_4px_32px_#181A1B]"
+          >
+            {HEADLINE}
+          </motion.h1>
+          {/* Tagline */}
+          <motion.h2
+            variants={fadeUpVariants}
+            className="mt-3 text-white/85 text-lg sm:text-2xl font-light tracking-wide text-center"
+          >
+            {TAGLINE}
+          </motion.h2>
+
+          {/* CTAs */}
+          <motion.div
+            variants={fadeUpVariants}
+            className="mt-8 flex flex-col sm:flex-row gap-4 w-full justify-center"
+          >
+            <motion.a
+              href="#build"
+              whileHover={{ y: -4, boxShadow: "0 6px 32px #EB0A1E66", scale: 1.025 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg shadow-lg bg-[#EB0A1E] text-white transition-all duration-200 outline-none border-2 border-[#EB0A1E] hover:bg-[#c10e18] focus:ring-2 focus:ring-[#EB0A1E] focus:ring-offset-2"
+              aria-label="Configure and Order"
+            >
+              Configure & Order
+            </motion.a>
+            <motion.a
+              href="#testdrive"
+              whileHover={{ y: -4, boxShadow: "0 4px 28px #181A1B33", scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 sm:flex-none text-center px-8 py-4 rounded-full font-bold text-lg border-2 border-white/70 text-white/80 bg-transparent transition-all duration-200 outline-none hover:bg-white/10 hover:text-white focus:ring-2 focus:ring-white focus:ring-offset-2"
+              aria-label="Book a Test Drive"
+            >
+              Book a Test Drive
+            </motion.a>
+          </motion.div>
+
+          {/* Teaser Spec Row */}
+          <motion.div
+            variants={fadeUpVariants}
+            className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 text-white/80 text-base sm:text-lg font-medium"
+            aria-label="Key vehicle specs"
+          >
+            {SPECS.map((spec, i) => (
+              <span key={spec.label} className="flex items-center gap-2">
+                {spec.label}{" "}
+                <span className="font-bold text-white/95">{spec.value}</span>
+                {i < SPECS.length - 1 && (
+                  <span className="text-[#EB0A1E] font-black px-2">•</span>
+                )}
+              </span>
+            ))}
+          </motion.div>
+        </motion.div>
+      </motion.main>
+
+      {/* Animated scroll indicator */}
+      <motion.div
+        className="absolute left-1/2 bottom-5 sm:bottom-7 z-30 -translate-x-1/2 flex flex-col items-center"
+        style={{ opacity: scrollIndicatorOpacity }}
+        aria-hidden="true"
+      >
+        <motion.div
+          animate={{
+            y: [0, 10, 0],
+          }}
+          transition={{
+            duration: 1.6,
+            repeat: Infinity,
+            repeatType: "loop",
+            ease: "easeInOut",
           }}
         >
-          {/* Badges */}
-          <div className="flex gap-2 mb-4 flex-wrap">
-            {isBestSeller && (
-              <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 text-xs shadow-md rounded">
-                <Award className="h-3 w-3 mr-1" />
-                Best Seller
-              </Badge>
-            )}
-            <Badge className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1 text-xs shadow-md rounded">
-              <Shield className="h-3 w-3 mr-1" />
-              5-Star Safety
-            </Badge>
-          </div>
-
-          {/* Vehicle Title */}
-          <h1 className="text-[2.5rem] sm:text-5xl font-black text-[#111] mb-2 leading-tight tracking-tight text-center">
-            {vehicle.name}
-          </h1>
-          <p className="text-lg sm:text-xl text-[#111] font-light mb-4 text-center">
-            Starting from AED{" "}
-            <span className="font-bold text-2xl sm:text-3xl text-[#EB0A1E]">{vehicle.price.toLocaleString()}</span>
-          </p>
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
-            <Button
-              onClick={handleTestDrive}
-              size="lg"
-              className="bg-[#EB0A1E] hover:bg-[#c10e18] text-white text-base font-bold px-8 py-3 rounded-full shadow-lg w-full sm:w-auto"
-            >
-              <Calendar className="h-5 w-5 mr-2" />
-              Book Test Drive
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-            <Button
-              onClick={onCarBuilder}
-              variant="outline"
-              size="lg"
-              className="border-2 border-[#EB0A1E] text-[#EB0A1E] hover:bg-[#EB0A1E] hover:text-white text-base font-bold px-8 py-3 rounded-full w-full sm:w-auto"
-            >
-              <Settings className="h-5 w-5 mr-2" />
-              Configure
-            </Button>
-          </div>
+          <ArrowDown className="h-8 w-8 text-[#EB0A1E] drop-shadow-[0_2px_8px_#EB0A1E77]" />
         </motion.div>
-      </div>
-
-      {/* Minimal Image Indicators */}
-      <motion.div
-        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.6 }}
-      >
-        <div className="flex space-x-2">
-          {galleryImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentImageIndex(index)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                index === currentImageIndex
-                  ? 'bg-[#EB0A1E] w-6'
-                  : 'bg-[#EB0A1E]/40 w-2 hover:bg-[#EB0A1E]/60'
-              }`}
-              aria-label={`Go to image ${index + 1}`}
-            />
-          ))}
-        </div>
+        <span className="sr-only">Scroll Down</span>
       </motion.div>
     </section>
   );
 };
 
-export default MinimalHeroSection;
+export default HeroSection;
