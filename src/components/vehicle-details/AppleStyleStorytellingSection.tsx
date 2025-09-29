@@ -19,7 +19,7 @@ type CTA = { label: string; action: () => void; variant?: "primary" | "secondary
 
 type Stat = {
   value: number;
-  suffix?: string; // e.g. " km", "s", "★"
+  suffix?: string;
   label: string;
   icon?: React.ReactNode;
 };
@@ -28,8 +28,8 @@ type Scene = {
   id: string;
   title: string;
   subtitle: string;
-  backgroundImage: string; // DAM fallback + default
-  backgroundVideoWistiaId?: string; // If present → Wistia hero bg
+  backgroundImage: string;
+  backgroundVideoWistiaId?: string;
   cta?: CTA;
   secondaryCta?: CTA;
   stats?: Stat[];
@@ -66,7 +66,6 @@ const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: stri
 function useWistiaPlayer(videoId?: string) {
   const playerRef = useRef<any>(null);
 
-  // Load script once
   useEffect(() => {
     if (!videoId) return;
     (window as any)._wq = (window as any)._wq || [];
@@ -107,7 +106,7 @@ interface Props {
   onConnectivityExplore: () => void;
   onHybridTechExplore: () => void;
   onSafetyExplore: () => void;
-  heroWistiaVideoId: string; // YOUR_WISTIA_VIDEO_ID
+  heroWistiaVideoId: string;
 }
 
 const StorytellingSection: React.FC<Props> = ({
@@ -116,13 +115,16 @@ const StorytellingSection: React.FC<Props> = ({
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore, // reserved if you add a hybrid scene later
-  onSafetyExplore, // reserved if you add a safety scene later
+  onHybridTechExplore,
+  onSafetyExplore,
   heroWistiaVideoId,
 }) => {
   const prefersReduced = useReducedMotion();
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [isFullyVisible, setIsFullyVisible] = useState(false);
+  const [hasSnapped, setHasSnapped] = useState(false);
 
-  /** ---------- Your DAM images (exact URLs you gave) ---------- */
+  /** ---------- Your DAM images ---------- */
   const damImages = useMemo(
     () => [
       "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
@@ -133,7 +135,7 @@ const StorytellingSection: React.FC<Props> = ({
     []
   );
 
-  /** ----------------- Scenes (Hero uses Wistia) ----------------- */
+  /** ----------------- Scenes ----------------- */
   const scenes: Scene[] = useMemo(
     () => [
       {
@@ -186,21 +188,31 @@ const StorytellingSection: React.FC<Props> = ({
   const isLocked = index < scenes.length - 1;
   const active = scenes[index];
 
-  // Preload neighbor images (avoid black gaps)
+  // IntersectionObserver for visibility
   useEffect(() => {
-    const preload = (src?: string) => {
-      if (!src) return;
-      const img = new Image();
-      img.src = src;
-    };
-    preload(scenes[index + 1]?.backgroundImage);
-    preload(scenes[index - 1]?.backgroundImage);
-  }, [index, scenes]);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const fullyVisible = entry.isIntersecting && entry.intersectionRatio === 1;
+        setIsFullyVisible(fullyVisible);
 
-  // Wheel (debounced)
+        if (fullyVisible && !hasSnapped && sectionRef.current) {
+          sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          setHasSnapped(true);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => {
+      if (sectionRef.current) observer.unobserve(sectionRef.current);
+    };
+  }, [hasSnapped]);
+
+  // Wheel
   const onWheel = useCallback(
     (e: WheelEvent) => {
-      if (!isLocked) return; // release wheel at last scene
+      if (!isLocked || !isFullyVisible) return;
       e.preventDefault();
       if (isTransitioning) return;
       setIsTransitioning(true);
@@ -208,17 +220,17 @@ const StorytellingSection: React.FC<Props> = ({
       setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
       setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isFullyVisible, isTransitioning, scenes.length, prefersReduced]
   );
 
-  // Touch (debounced)
+  // Touch
   const touchStartY = useRef<number | null>(null);
   const onTouchStart = useCallback((e: TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   }, []);
   const onTouchEnd = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || touchStartY.current === null) return;
+      if (!isLocked || !isFullyVisible || touchStartY.current === null) return;
       const dy = touchStartY.current - e.changedTouches[0].clientY;
       touchStartY.current = null;
       if (Math.abs(dy) < 50 || isTransitioning) return;
@@ -227,13 +239,13 @@ const StorytellingSection: React.FC<Props> = ({
       setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
       setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isFullyVisible, isTransitioning, scenes.length, prefersReduced]
   );
 
   // Keyboard
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!isLocked) return;
+      if (!isLocked || !isFullyVisible) return;
       if (!["ArrowDown", "ArrowRight", "PageDown", " ", "ArrowUp", "ArrowLeft", "PageUp"].includes(e.key)) return;
       e.preventDefault();
       if (isTransitioning) return;
@@ -242,12 +254,12 @@ const StorytellingSection: React.FC<Props> = ({
       setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
       setTimeout(() => setIsTransitioning(false), prefersReduced ? 250 : 750);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isFullyVisible, isTransitioning, scenes.length, prefersReduced]
   );
 
-  // Attach handlers while locked (unlock at last scene)
+  // Attach handlers
   useEffect(() => {
-    if (isLocked) {
+    if (isLocked && isFullyVisible) {
       window.addEventListener("wheel", onWheel, { passive: false });
       window.addEventListener("touchstart", onTouchStart, { passive: true });
       window.addEventListener("touchend", onTouchEnd, { passive: true });
@@ -259,45 +271,33 @@ const StorytellingSection: React.FC<Props> = ({
       window.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown as any);
     };
-  }, [isLocked, onWheel, onTouchStart, onTouchEnd, onKeyDown]);
+  }, [isLocked, isFullyVisible, onWheel, onTouchStart, onTouchEnd, onKeyDown]);
 
   /** -------------------- Wistia controls -------------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(
     active.backgroundVideoWistiaId ? active.backgroundVideoWistiaId : undefined
   );
 
-  // Keep mute state synced
   useEffect(() => {
     if (active.backgroundVideoWistiaId) {
       if (isMuted) mute();
       else unmute();
       play();
     } else {
-      // leaving hero scene: ensure no sound leak
       mute();
       pause();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, isMuted, active.backgroundVideoWistiaId]);
 
-  /** ------------------- Progress + Parallax ------------------ */
+  /** --------------------------- UI --------------------------- */
   const progressPct = ((index + 1) / scenes.length) * 100;
 
-  // Parallax: tiny based on mouse (works with scroll-jack)
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const cx = (e.clientX / window.innerWidth - 0.5) * 16; // -8..8
-      const cy = (e.clientY / window.innerHeight - 0.5) * 16; // -8..8
-      setParallax({ x: cx, y: cy });
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
-  /** --------------------------- UI --------------------------- */
   return (
-    <section className="relative h-screen bg-black text-white overflow-hidden" aria-label="Cinematic automotive storytelling">
+    <section
+      ref={sectionRef}
+      className="relative h-screen bg-black text-white overflow-hidden"
+      aria-label="Cinematic automotive storytelling"
+    >
       {/* MEDIA LAYER */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -308,22 +308,14 @@ const StorytellingSection: React.FC<Props> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: prefersReduced ? 0.2 : 0.6, ease: "easeOut" }}
         >
-          {/* DAM fallback always rendered behind Wistia to avoid black frames */}
           <img
             src={active.backgroundImage}
             alt={active.title}
             className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              const t = e.currentTarget as HTMLImageElement;
-              t.onerror = null;
-              t.src = "/placeholder.svg";
-            }}
           />
 
-          {/* Wistia video (hero) */}
           {active.backgroundVideoWistiaId && (
             <div className="absolute inset-0">
-              {/* Wistia responsive embed */}
               <div className="w-full h-full relative">
                 <div className="absolute inset-0">
                   <div
@@ -335,39 +327,28 @@ const StorytellingSection: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Soft vignettes only (don’t hide imagery) */}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         </motion.div>
       </AnimatePresence>
 
-      {/* CONTENT LAYER (parallaxed glass panel) */}
+      {/* CONTENT */}
       <div className="relative z-10 flex h-full items-center justify-center px-6">
         <motion.div
           key={`content-${active.id}`}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: prefersReduced ? 0.2 : 0.6, ease: "easeOut" }}
-          style={{
-            transform: `translate3d(${parallax.x * 0.2}px, ${parallax.y * 0.2}px, 0)`,
-          }}
           className="max-w-5xl mx-auto text-center"
         >
-          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-            <motion.h2
-              className="text-3xl md:text-6xl font-extralight tracking-tight mb-4"
-              style={{ transform: `translate3d(${parallax.x * 0.1}px, ${parallax.y * 0.1}px, 0)` }}
-            >
+          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8">
+            <motion.h2 className="text-3xl md:text-6xl font-extralight tracking-tight mb-4">
               {active.title}
             </motion.h2>
-            <motion.p
-              className="text-base md:text-2xl text-white/90 mb-6 md:mb-8"
-              style={{ transform: `translate3d(${parallax.x * 0.15}px, ${parallax.y * 0.15}px, 0)` }}
-            >
+            <motion.p className="text-base md:text-2xl text-white/90 mb-6 md:mb-8">
               {active.subtitle}
             </motion.p>
 
-            {/* Stats (animated counters) */}
             {active.stats && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-8 mb-6 md:mb-8">
                 {active.stats.map((s, i) => (
@@ -382,18 +363,16 @@ const StorytellingSection: React.FC<Props> = ({
               </div>
             )}
 
-            {/* Feature badges */}
             {active.features && (
               <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
                 {active.features.map((f, i) => (
-                  <Badge key={i} className="bg-white/10 text-white border-white/20 backdrop-blur-sm">
+                  <Badge key={i} className="bg-white/10 text-white border-white/20">
                     {f}
                   </Badge>
                 ))}
               </div>
             )}
 
-            {/* CTAs */}
             <div className="flex items-center justify-center gap-3">
               {active.cta && (
                 <Button
@@ -423,7 +402,7 @@ const StorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* SOUND TOGGLE (only when hero video scene is active) */}
+      {/* SOUND TOGGLE */}
       {active.backgroundVideoWistiaId && (
         <button
           onClick={() => setIsMuted((m) => !m)}
@@ -434,7 +413,7 @@ const StorytellingSection: React.FC<Props> = ({
         </button>
       )}
 
-      {/* PROGRESS DOTS + COUNTER */}
+      {/* PROGRESS DOTS */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
         <div className="flex space-x-3">
           {scenes.map((s, i) => (
@@ -460,7 +439,7 @@ const StorytellingSection: React.FC<Props> = ({
         transition={{ duration: prefersReduced ? 0.2 : 0.45 }}
       />
 
-      {/* SCROLL HINT (first scene only) */}
+      {/* SCROLL HINT */}
       {index === 0 && (
         <motion.div
           className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 text-center text-white/80 text-sm"
@@ -473,11 +452,6 @@ const StorytellingSection: React.FC<Props> = ({
             <ChevronDown className="w-6 h-6 mx-auto" />
           </motion.div>
         </motion.div>
-      )}
-
-      {/* Wistia JSONP (improves poster/metadata load) */}
-      {active.backgroundVideoWistiaId && (
-        <script async src={`https://fast.wistia.com/embed/medias/${active.backgroundVideoWistiaId}.jsonp`} />
       )}
     </section>
   );
