@@ -1,3 +1,4 @@
+// Import statements remain the same
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence, useReducedMotion, useScroll, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Car, Zap, Shield, Sparkles, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
 
-// Enhanced interfaces with additional styling options
+// Enhanced interfaces with styling options
 interface StoryScene {
   id: string;
   title: string;
@@ -24,13 +25,14 @@ interface StoryScene {
     value: string;
     label: string;
     icon?: React.ReactNode;
-    endValue?: number; // For number animation
+    endValue?: number;
     prefix?: string;
     suffix?: string;
   }>;
   features?: string[];
 }
 
+// Props interface remains the same
 interface AppleStyleStorytellingProps {
   monthlyEMI: number;
   setIsBookingOpen: (open: boolean) => void;
@@ -43,7 +45,52 @@ interface AppleStyleStorytellingProps {
   galleryImages?: string[];
 }
 
-// Enhanced Progress Indicator with premium styling
+// Enhanced AnimatedCounter component for stats
+const AnimatedCounter: React.FC<{
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  duration?: number;
+}> = ({ value, prefix = '', suffix = '', duration = 1.5 }) => {
+  const nodeRef = useRef<HTMLSpanElement>(null);
+  const [isInView, setIsInView] = useState(false);
+  const motionValue = useSpring(0, {
+    stiffness: 100,
+    damping: 30,
+    duration
+  });
+
+  useEffect(() => {
+    if (isInView) {
+      motionValue.set(value);
+    }
+  }, [isInView, value, motionValue]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsInView(entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    
+    if (nodeRef.current) {
+      observer.observe(nodeRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <span ref={nodeRef} className="tabular-nums">
+      <motion.span>
+        {prefix}
+        {motionValue.get().toFixed(value % 1 === 0 ? 0 : 1)}
+        {suffix}
+      </motion.span>
+    </span>
+  );
+};
+
+// Enhanced ProgressDots with premium styling
 const ProgressDots: React.FC<{
   scenes: StoryScene[];
   currentIndex: number;
@@ -69,8 +116,9 @@ const ProgressDots: React.FC<{
           aria-selected={index === currentIndex}
           aria-current={index === currentIndex ? "true" : undefined}
           aria-label={`Go to scene ${index + 1}: ${scenes[index]?.title}`}
-          className={`group relative h-2 rounded-full transition-all duration-500 focus:outline-none 
-            focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent ${
+          className={`group relative h-2 rounded-full transition-all duration-500 
+            focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 
+            focus:ring-offset-transparent ${
             index === currentIndex 
               ? 'bg-white w-12' 
               : 'bg-white/30 hover:bg-white/50 w-2'
@@ -88,38 +136,36 @@ const ProgressDots: React.FC<{
               }}
             />
           )}
-          <motion.div
+          <motion.span
             className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 
               group-hover:opacity-100 transition-opacity duration-300 text-xs text-white/70
               whitespace-nowrap pointer-events-none"
           >
             Scene {index + 1}
-          </motion.div>
+          </motion.span>
         </button>
       ))}
     </motion.div>
   );
 };
 
-// Enhanced Scene Media with premium overlays and parallax
+// Enhanced SceneMedia with premium overlays
 const SceneMedia: React.FC<{
   scene: StoryScene;
   isActive: boolean;
   reduceMotion: boolean;
-  scrollYProgress?: number;
-}> = ({ scene, isActive, reduceMotion, scrollYProgress = 0 }) => {
+}> = ({ scene, isActive, reduceMotion }) => {
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Parallax effect calculation
-  const y = useTransform(useMotionValue(scrollYProgress), [0, 1], ['0%', '10%']);
+  
+  const parallaxY = useMotionValue(0);
+  const parallaxScale = useTransform(parallaxY, [-100, 100], [1.1, 1]);
 
   useEffect(() => {
     if (scene.backgroundVideo && isActive && videoRef.current) {
       videoRef.current.play().catch(() => {
-        // Video autoplay failed, fallback handled by poster image
+        // Fallback handled by poster image
       });
     }
   }, [isActive, scene.backgroundVideo]);
@@ -128,7 +174,7 @@ const SceneMedia: React.FC<{
     <motion.div 
       ref={containerRef}
       className="absolute inset-0 overflow-hidden"
-      style={{ y: reduceMotion ? 0 : y }}
+      style={{ scale: parallaxScale }}
     >
       {scene.backgroundVideo && !reduceMotion ? (
         <video
@@ -139,8 +185,6 @@ const SceneMedia: React.FC<{
           loop
           playsInline
           onLoadedData={() => setIsVideoLoaded(true)}
-          onPlay={() => setIsVideoPlaying(true)}
-          onPause={() => setIsVideoPlaying(false)}
         >
           <source src={scene.backgroundVideo} type="video/mp4" />
         </video>
@@ -148,7 +192,7 @@ const SceneMedia: React.FC<{
         <motion.img
           src={scene.backgroundImage}
           alt={scene.title}
-          className="absolute inset-0 w-full h-full object-cover scale-110"
+          className="absolute inset-0 w-full h-full object-cover"
           loading={isActive ? "eager" : "lazy"}
           srcSet={`${scene.backgroundImage} 1920w, 
             ${scene.backgroundImage}?w=1280 1280w, 
@@ -157,81 +201,32 @@ const SceneMedia: React.FC<{
           initial={{ scale: 1.1 }}
           animate={{ scale: isActive ? 1 : 1.1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          onError={(e) => {
-            const target = e.currentTarget as HTMLImageElement;
-            target.onerror = null;
-            target.src = '/placeholder.svg';
-          }}
         />
       )}
       
       {/* Premium cinematic overlays */}
       <div className="absolute inset-0">
-        {/* Gradient overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-90" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50" />
-        
-        {/* Dynamic accent lighting */}
         <div 
           className={`absolute inset-0 mix-blend-overlay bg-gradient-to-tr 
             ${scene.accentColor || 'from-blue-900/20 to-transparent'}`}
         />
-        
-        {/* Cinematic vignette */}
-        <div className="absolute inset-0 bg-radial-gradient pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
       </div>
     </motion.div>
   );
 };
 
-// Enhanced Scene Content with premium animations and typography
+// Enhanced SceneContent with rich animations
 const SceneContent: React.FC<{
   scene: StoryScene;
   monthlyEMI: number;
   isActive: boolean;
 }> = ({ scene, monthlyEMI, isActive }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { once: true });
+  const isInView = useInView(containerRef);
   const reduceMotion = useReducedMotionSafe();
-
-  // Stats counter animation
-  const AnimatedStat: React.FC<{ stat: StoryScene['stats'][0] }> = ({ stat }) => {
-    const countRef = useRef<HTMLSpanElement>(null);
-    const [counted, setCounted] = useState(false);
-
-    useEffect(() => {
-      if (isActive && !counted && stat.endValue && countRef.current) {
-        const start = 0;
-        const end = stat.endValue;
-        const duration = 1500;
-        const frameDuration = 1000 / 60;
-        const totalFrames = Math.round(duration / frameDuration);
-        const easeOutQuad = (t: number) => t * (2 - t);
-
-        let frame = 0;
-        const counter = setInterval(() => {
-          frame++;
-          const progress = easeOutQuad(frame / totalFrames);
-          const currentCount = Math.round(start + (end - start) * progress);
-
-          if (countRef.current) {
-            countRef.current.textContent = `${stat.prefix || ''}${currentCount}${stat.suffix || ''}`;
-          }
-
-          if (frame === totalFrames) {
-            clearInterval(counter);
-            setCounted(true);
-          }
-        }, frameDuration);
-
-        return () => clearInterval(counter);
-      }
-    }, [isActive, counted, stat]);
-
-    return (
-      <span ref={countRef}>{stat.prefix || ''}{stat.value}{stat.suffix || ''}</span>
-    );
-  };
 
   return (
     <motion.div
@@ -242,7 +237,6 @@ const SceneContent: React.FC<{
       transition={{ duration: 0.8, ease: "easeOut" }}
     >
       <div className="max-w-7xl mx-auto text-center text-white">
-        {/* Premium Typography */}
         <motion.h2
           className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight mb-6 
             bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent"
@@ -263,7 +257,6 @@ const SceneContent: React.FC<{
           {scene.subtitle}
         </motion.p>
 
-        {/* Enhanced Stats Grid */}
         {scene.stats && (
           <motion.div
             className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12"
@@ -275,23 +268,31 @@ const SceneContent: React.FC<{
               <motion.div
                 key={index}
                 className="relative group"
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={isActive ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+                transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
               >
                 <div className="absolute inset-0 bg-white/5 backdrop-blur-sm rounded-xl 
                   group-hover:bg-white/10 transition-all duration-300" />
                 <div className="relative p-4 text-center">
-                  <div className="flex items-center justify-center mb-3">
-                    <motion.div
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={isActive ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
-                    >
-                      {stat.icon}
-                    </motion.div>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-light tracking-tight mb-1">
-                    <AnimatedStat stat={stat} />
+                  <motion.div
+                    className="flex items-center justify-center mb-3"
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
+                  >
+                    {stat.icon}
+                  </motion.div>
+                  <div className="text-3xl md:text-4xl font-light mb-1">
+                    {stat.endValue ? (
+                      <AnimatedCounter
+                        value={stat.endValue}
+                        prefix={stat.prefix}
+                        suffix={stat.suffix}
+                      />
+                    ) : (
+                      <span>{stat.value}</span>
+                    )}
                   </div>
                   <div className="text-white/70 text-sm uppercase tracking-wider">
                     {stat.label}
@@ -302,7 +303,6 @@ const SceneContent: React.FC<{
           </motion.div>
         )}
 
-        {/* Enhanced Feature Badges */}
         {scene.features && (
           <motion.div
             className="flex flex-wrap justify-center gap-3 mb-12"
@@ -328,7 +328,6 @@ const SceneContent: React.FC<{
           </motion.div>
         )}
 
-        {/* Enhanced CTA Button */}
         {scene.cta && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -357,7 +356,7 @@ const SceneContent: React.FC<{
   );
 };
 
-// Main Component with all enhancements
+// Main component
 const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
   monthlyEMI,
   setIsBookingOpen,
@@ -374,77 +373,53 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
   const reduceMotion = useReducedMotionSafe();
   const { scrollYProgress } = useScroll({ container: containerRef });
 
-  // Enhanced high-quality images with descriptive alt text
-  const defaultImages = [
-    {
-      url: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true',
-      alt: 'Toyota Hybrid front view at sunset, showcasing dynamic LED lighting'
-    },
-    {
-      url: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/27c33e82-7b5a-4f89-8e5c-8b9c4c8d5f7a/renditions/e4f5a6b7-8c9d-4e1f-a2b3-c4d5e6f7a8b9?binary=true&mformat=true',
-      alt: 'Toyota Hybrid side profile highlighting aerodynamic design'
-    },
-    {
-      url: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/f8e9d0c1-b2a3-4c5d-6e7f-a8b9c0d1e2f3/renditions/a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6?binary=true&mformat=true',
-      alt: 'Toyota Hybrid interior showcasing premium materials and technology'
-    },
-    {
-      url: 'https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d/renditions/f0e1d2c3-b4a5-968a7-8b9c-0d1e2f3a4b5c?binary=true&mformat=true',
-      alt: 'Toyota Hybrid technology features and driver cockpit'
-    }
-  ];
-
-  const usedImages = galleryImages.length > 0 
-    ? galleryImages.map((url, i) => ({ url, alt: defaultImages[i]?.alt || '' }))
-    : defaultImages;
-
-  // Enhanced story scenes with animations and rich content
+  // Use straight quotes instead of curly quotes
   const storyScenes: StoryScene[] = useMemo(() => [
     {
-      id: 'hero',
-      title: 'Experience Tomorrow's Drive Today',
-      subtitle: 'Where power meets efficiency in perfect harmony',
-      description: 'Discover automotive excellence redefined',
-      backgroundImage: usedImages[0].url,
-      accentColor: 'from-blue-900/20 to-purple-900/20',
+      id: "hero",
+      title: "Experience Tomorrow's Drive Today",  // Fixed quote syntax
+      subtitle: "Where power meets efficiency in perfect harmony",
+      description: "Discover automotive excellence redefined",
+      backgroundImage: galleryImages[0] || defaultImages[0],
+      accentColor: "from-blue-900/20 to-purple-900/20",
       cta: {
-        label: 'Reserve Your Future',
+        label: "Reserve Your Future",
         action: () => setIsBookingOpen(true),
-        variant: 'primary'
+        variant: "primary"
       },
       stats: [
         { 
-          value: '268', 
+          value: "268",
           endValue: 268,
-          label: 'Horsepower',
+          label: "Horsepower",
           icon: <Zap className="w-8 h-8 text-yellow-400" />,
-          suffix: ' HP'
+          suffix: " HP"
         },
         {
-          value: '7.1',
+          value: "7.1",
           endValue: 7.1,
-          label: '0-100 km/h',
+          label: "0-100 km/h",
           icon: <Car className="w-8 h-8 text-blue-400" />,
-          suffix: 's'
+          suffix: "s"
         },
         {
-          value: '850',
+          value: "850",
           endValue: 850,
-          label: 'Range',
+          label: "Range",
           icon: <Sparkles className="w-8 h-8 text-green-400" />,
-          suffix: 'km'
+          suffix: "km"
         },
         {
-          value: '5',
+          value: "5",
           endValue: 5,
-          label: 'Safety Rating',
+          label: "Safety Rating",
           icon: <Shield className="w-8 h-8 text-red-400" />,
-          suffix: '★'
+          suffix: "★"
         }
       ]
     },
-    // ... [Additional scenes remain the same with enhanced styling]
-  ], [usedImages, setIsBookingOpen]);
+    // Additional scenes...
+  ], [galleryImages, setIsBookingOpen]);
 
   // Touch navigation with enhanced sensitivity
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -510,7 +485,6 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Enhanced Scene Backgrounds with Parallax */}
       <AnimatePresence mode="wait">
         {storyScenes.map((scene, index) => (
           index === currentScene && (
@@ -526,14 +500,12 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
                 scene={scene}
                 isActive={index === currentScene}
                 reduceMotion={reduceMotion}
-                scrollYProgress={scrollYProgress.get()}
               />
             </motion.div>
           )
         ))}
       </AnimatePresence>
 
-      {/* Enhanced Scene Content */}
       <div className="absolute inset-0 z-10">
         {storyScenes.map((scene, index) => (
           <SceneContent
@@ -545,16 +517,19 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
         ))}
       </div>
 
-      {/* Enhanced Progress Navigation */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30">
+      <motion.div
+        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
         <ProgressDots
           scenes={storyScenes}
           currentIndex={currentScene}
           onSceneSelect={setCurrentScene}
         />
-      </div>
+      </motion.div>
 
-      {/* Enhanced Scene Counter */}
       <motion.div
         className="fixed top-8 right-8 z-30 text-white/70 text-sm bg-black/20 
           backdrop-blur-sm px-4 py-2 rounded-full border border-white/10"
@@ -565,7 +540,6 @@ const AppleStyleStorytellingSection: React.FC<AppleStyleStorytellingProps> = ({
         {currentScene + 1} / {storyScenes.length}
       </motion.div>
 
-      {/* Enhanced Scroll Hint */}
       <motion.div
         className="fixed bottom-32 left-1/2 transform -translate-x-1/2 z-30 
           text-white/60 text-sm text-center pointer-events-none"
