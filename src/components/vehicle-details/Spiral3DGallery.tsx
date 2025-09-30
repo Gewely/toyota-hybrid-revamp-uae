@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { X, ZoomIn, Download, Share2, ChevronLeft, ChevronRight } from "lucide-react";
-import { useOptimizedIntersection } from "@/hooks/use-optimized-intersection";
-import { useReducedMotionSafe, motionSafeVariants } from "@/hooks/useReducedMotionSafe";
-import { cn } from "@/lib/utils";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { X, ChevronLeft, ChevronRight, Download, Share, Eye } from 'lucide-react';
+import { useReducedMotionSafe, motionSafeVariants } from '@/hooks/useReducedMotionSafe';
+import { cn } from '@/lib/utils';
 
 interface GalleryImage {
   id: string;
@@ -21,119 +20,110 @@ interface Spiral3DGalleryProps {
   className?: string;
 }
 
-const Spiral3DGallery: React.FC<Spiral3DGalleryProps> = ({ images, className }) => {
+export default function Spiral3DGallery({ images, className }: Spiral3DGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [scrollY, setScrollY] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver>();
+  const lastScrollTime = useRef(0);
   const prefersReducedMotion = useReducedMotionSafe();
 
-  // Throttled scroll handler for performance
+  // Throttled scroll handler with RAF
   const handleScroll = useCallback(() => {
-    if (!containerRef.current) return;
+    const now = performance.now();
+    if (now - lastScrollTime.current < 16) return; // ~60fps throttling
     
     requestAnimationFrame(() => {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const scrollProgress = Math.max(0, Math.min(1, (window.innerHeight - rect.top) / (window.innerHeight + rect.height)));
-        setScrollY(scrollProgress);
-      }
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const scrollProgress = Math.max(0, -rect.top / (rect.height - window.innerHeight));
+      setScrollY(scrollProgress);
+      lastScrollTime.current = now;
     });
   }, []);
 
-  // Passive scroll listener for better performance
+  // Performance-optimized scroll listener
   useEffect(() => {
-    const throttledScroll = () => {
-      if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(handleScroll);
-      } else {
-        handleScroll();
-      }
-    };
+    setIsLoaded(true);
+    if (prefersReducedMotion) return;
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial calculation
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll, prefersReducedMotion]);
 
-    window.addEventListener('scroll', throttledScroll, { passive: true });
-    return () => window.removeEventListener('scroll', throttledScroll);
-  }, [handleScroll]);
-
-  // Intersection observer for lazy loading
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsLoaded(true);
-          }
-        });
-      },
-      { rootMargin: '50px' }
-    );
-
-    if (containerRef.current) {
-      observerRef.current.observe(containerRef.current);
-    }
-
-    return () => observerRef.current?.disconnect();
-  }, []);
-
-  const getImageTransform = (index: number, total: number) => {
+  // Calculate 3D transform for each image based on scroll
+  const getImageTransform = useCallback((index: number, totalImages: number) => {
     if (prefersReducedMotion) {
       return {
-        transform: 'translateY(0) rotateY(0) scale(1)',
-        opacity: 1
+        transform: 'none',
+        opacity: 1,
+        zIndex: totalImages - index
       };
     }
 
-    const progress = scrollY;
-    const angleStep = (Math.PI * 2) / total;
-    const radius = 150;
-    const baseAngle = index * angleStep;
-    const spiralOffset = progress * Math.PI * 4;
+    const normalizedIndex = index / (totalImages - 1);
+    const spiralProgress = scrollY * 2; // Control spiral speed
     
-    const angle = baseAngle + spiralOffset;
-    const x = Math.cos(angle) * radius * (1 - progress * 0.3);
-    const z = Math.sin(angle) * radius * (1 - progress * 0.5);
-    const y = progress * index * 20;
+    // Spiral calculations
+    const radius = 300 + (normalizedIndex * 200);
+    const angle = (normalizedIndex * Math.PI * 4) + (spiralProgress * Math.PI * 2);
+    const verticalOffset = normalizedIndex * 100 - (spiralProgress * 800);
     
-    const rotateY = (angle * 180) / Math.PI;
-    const scale = 1 - progress * 0.2 + Math.sin(progress * Math.PI) * 0.1;
-    const opacity = 1 - progress * 0.3;
-
+    // 3D positioning
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const y = verticalOffset;
+    
+    // Dynamic scaling and rotation
+    const scale = Math.max(0.3, 1 - (Math.abs(z) / 800));
+    const rotateY = (angle * 180 / Math.PI) + (spiralProgress * 90);
+    const rotateX = Math.sin(spiralProgress * Math.PI + normalizedIndex * Math.PI) * 15;
+    
+    // Opacity based on distance
+    const opacity = Math.max(0.2, scale);
+    
     return {
-      transform: `translate3d(${x}px, ${y}px, ${z}px) rotateY(${rotateY}deg) scale(${scale})`,
-      opacity: Math.max(0.3, opacity)
+      transform: `
+        translate3d(${x}px, ${y}px, ${z}px) 
+        rotateY(${rotateY}deg) 
+        rotateX(${rotateX}deg) 
+        scale(${scale})
+      `,
+      opacity,
+      zIndex: Math.round(scale * 100)
     };
-  };
+  }, [scrollY, prefersReducedMotion]);
 
-  const handleImageClick = (image: GalleryImage) => {
+  // Image interaction handlers
+  const handleImageClick = useCallback((image: GalleryImage) => {
     setSelectedImage(image);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setSelectedImage(null);
-  };
+  }, []);
 
-  const navigateImage = (direction: 'prev' | 'next') => {
+  const navigateImage = useCallback((direction: 'prev' | 'next') => {
     if (!selectedImage) return;
     
     const currentIndex = images.findIndex(img => img.id === selectedImage.id);
-    let newIndex;
+    if (currentIndex === -1) return;
     
-    if (direction === 'prev') {
-      newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
-    } else {
-      newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
-    }
+    const nextIndex = direction === 'next' 
+      ? (currentIndex + 1) % images.length
+      : (currentIndex - 1 + images.length) % images.length;
     
-    setSelectedImage(images[newIndex]);
-  };
+    setSelectedImage(images[nextIndex]);
+  }, [selectedImage, images]);
 
   if (!isLoaded) {
     return (
-      <div ref={containerRef} className={cn("min-h-[400px] flex items-center justify-center", className)}>
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading gallery...</p>
+      <div className={cn("min-h-screen flex items-center justify-center", className)}>
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-64 bg-muted rounded mb-4 mx-auto" />
+          <div className="h-4 w-48 bg-muted/60 rounded mx-auto" />
         </div>
       </div>
     );
@@ -141,159 +131,180 @@ const Spiral3DGallery: React.FC<Spiral3DGalleryProps> = ({ images, className }) 
 
   return (
     <>
-      <section ref={containerRef} className={cn("relative py-20 overflow-hidden", className)}>
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <motion.h2 
-              className="text-3xl lg:text-4xl font-bold mb-4"
-              initial={motionSafeVariants.initial(prefersReducedMotion)}
-              animate={motionSafeVariants.animate(prefersReducedMotion)}
-              transition={motionSafeVariants.transition(prefersReducedMotion)}
-            >
-              3D Gallery Experience
-            </motion.h2>
-            <motion.p 
-              className="text-muted-foreground max-w-2xl mx-auto"
-              initial={motionSafeVariants.initial(prefersReducedMotion)}
-              animate={motionSafeVariants.animate(prefersReducedMotion)}
-              transition={motionSafeVariants.transition(prefersReducedMotion)}
-            >
-              Scroll to explore our vehicle in an immersive 3D gallery. Click any image to view in detail.
-            </motion.p>
-          </div>
+      <section 
+        ref={containerRef}
+        className={cn(
+          "relative min-h-[200vh] overflow-hidden bg-gradient-to-b from-background via-muted/10 to-background",
+          className
+        )}
+        style={{ 
+          perspective: '1200px',
+          perspectiveOrigin: '50% 50%'
+        }}
+      >
+        {/* Header */}
+        <motion.div 
+          className="sticky top-24 z-10 text-center py-12"
+          initial={motionSafeVariants.initial(prefersReducedMotion)}
+          animate={motionSafeVariants.animate(prefersReducedMotion)}
+          transition={motionSafeVariants.transition(prefersReducedMotion)}
+        >
+          <h2 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+            Immersive Gallery
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Scroll to explore our vehicle in stunning 3D detail
+          </p>
+        </motion.div>
 
-          <div 
-            className="relative h-[600px] lg:h-[800px] perspective-1000"
-            style={{ 
-              perspective: prefersReducedMotion ? 'none' : '1000px',
-              transformStyle: prefersReducedMotion ? 'flat' : 'preserve-3d'
-            }}
-          >
-            {images.map((image, index) => {
-              const transform = getImageTransform(index, images.length);
-              
-              return (
-                <motion.div
-                  key={image.id}
-                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                  style={transform}
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                  whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                  onClick={() => handleImageClick(image)}
-                >
-                  <div className="relative group">
-                    <div className="w-64 h-48 lg:w-80 lg:h-60 rounded-2xl overflow-hidden shadow-2xl border border-border">
-                      <img
-                        src={image.src}
-                        alt={image.alt}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        loading="lazy"
-                        sizes="(max-width: 768px) 256px, 320px"
-                        srcSet={`${image.src}?w=256 256w, ${image.src}?w=320 320w, ${image.src}?w=640 640w`}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        <Badge variant="secondary" className="mb-2 bg-background/90 backdrop-blur-sm">
-                          {image.category}
-                        </Badge>
-                        {image.title && (
-                          <h3 className="text-white font-semibold text-sm lg:text-base opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            {image.title}
-                          </h3>
-                        )}
-                      </div>
-                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <ZoomIn className="h-5 w-5 text-white" />
-                      </div>
+        {/* 3D Gallery Container */}
+        <div 
+          className="relative h-screen"
+          style={{
+            transformStyle: 'preserve-3d',
+            transform: prefersReducedMotion ? 'none' : 'translateZ(0)'
+          }}
+        >
+          {images.map((image, index) => {
+            const transforms = getImageTransform(index, images.length);
+            
+            return (
+              <motion.div
+                key={image.id}
+                className="absolute inset-0 flex items-center justify-center cursor-pointer group"
+                style={{
+                  ...transforms,
+                  transformStyle: 'preserve-3d'
+                }}
+                whileHover={prefersReducedMotion ? {} : { 
+                  scale: 1.05,
+                  rotateY: transforms.transform.includes('rotateY') ? undefined : '5deg'
+                }}
+                onClick={() => handleImageClick(image)}
+              >
+                <div className="relative w-80 h-60 md:w-96 md:h-72 rounded-2xl overflow-hidden shadow-2xl bg-card border border-border/50">
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <Badge variant="secondary" className="mb-2">
+                        {image.category}
+                      </Badge>
+                      {image.title && (
+                        <h3 className="text-white font-semibold text-lg">
+                          {image.title}
+                        </h3>
+                      )}
+                    </div>
+                    
+                    <div className="absolute top-4 right-4">
+                      <Button size="sm" variant="secondary" className="opacity-90">
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
                     </div>
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
 
-          <div className="text-center mt-12">
-            <p className="text-sm text-muted-foreground">
-              Scroll progress: {Math.round(scrollY * 100)}%
-            </p>
+        {/* Scroll Progress Indicator */}
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-32 h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300 ease-out"
+                  style={{ width: `${Math.min(100, scrollY * 100)}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground min-w-[3ch]">
+                {Math.round(Math.min(100, scrollY * 100))}%
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Image Modal */}
-      <Dialog open={!!selectedImage} onOpenChange={closeModal}>
-        <DialogContent className="max-w-6xl w-full h-full max-h-[90vh] p-0 overflow-hidden">
-          <AnimatePresence mode="wait">
-            {selectedImage && (
+      <AnimatePresence>
+        {selectedImage && (
+          <Dialog open={!!selectedImage} onOpenChange={closeModal}>
+            <DialogContent className="max-w-6xl w-full h-[90vh] p-0 overflow-hidden bg-background/95 backdrop-blur-sm">
               <motion.div
-                key={selectedImage.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="relative h-full flex flex-col"
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="relative w-full h-full flex flex-col"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline">{selectedImage.category}</Badge>
-                    <h3 className="font-semibold text-lg">{selectedImage.title || selectedImage.alt}</h3>
+                <DialogHeader className="flex-row items-center justify-between p-6 border-b border-border/50">
+                  <div>
+                    <DialogTitle className="text-2xl font-bold">
+                      {selectedImage.title || 'Gallery Image'}
+                    </DialogTitle>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline">{selectedImage.category}</Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {images.findIndex(img => img.id === selectedImage.id) + 1} of {images.length}
+                      </span>
+                    </div>
                   </div>
+                  
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm">
                       <Download className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm">
-                      <Share2 className="h-4 w-4" />
+                      <Share className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={closeModal}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
+                </DialogHeader>
 
-                {/* Image */}
-                <div className="flex-1 relative bg-muted/20">
+                {/* Image Container */}
+                <div className="flex-1 relative overflow-hidden">
                   <img
                     src={selectedImage.src}
                     alt={selectedImage.alt}
                     className="w-full h-full object-contain"
-                    sizes="(max-width: 768px) 100vw, 90vw"
-                    srcSet={`${selectedImage.src}?w=800 800w, ${selectedImage.src}?w=1200 1200w, ${selectedImage.src}?w=1600 1600w`}
                   />
                   
-                  {/* Navigation Buttons */}
+                  {/* Navigation */}
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    size="lg"
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90"
                     onClick={() => navigateImage('prev')}
                   >
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeft className="h-6 w-6" />
                   </Button>
+                  
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    size="lg"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background/90"
                     onClick={() => navigateImage('next')}
                   >
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-6 w-6" />
                   </Button>
                 </div>
-
-                {/* Footer with image counter */}
-                <div className="p-4 border-t bg-background/95 backdrop-blur-sm text-center">
-                  <p className="text-sm text-muted-foreground">
-                    {images.findIndex(img => img.id === selectedImage.id) + 1} of {images.length}
-                  </p>
-                </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
+      </AnimatePresence>
     </>
   );
-};
-
-export default Spiral3DGallery;
+}
