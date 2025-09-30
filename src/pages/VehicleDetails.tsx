@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonModal';
+import EngineSelector from '@/components/vehicle-details/EngineSelector';
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
@@ -46,8 +47,12 @@ const VehicleFeatures = createLazyComponent(
   () => import("@/components/vehicle-details/VehicleFeatures")
 );
 
-const RelatedVehicles = createLazyComponent(
-  () => import("@/components/vehicle-details/RelatedVehicles")
+const CinematicRelatedVehicles = createLazyComponent(
+  () => import("@/components/vehicle-details/CinematicRelatedVehicles")
+);
+
+const Spiral3DGallery = createLazyComponent(
+  () => import("@/components/vehicle-details/Spiral3DGallery")
 );
 
 const TechnologyShowcase = createLazyComponent(
@@ -86,9 +91,7 @@ const VehicleConfiguration = createLazyComponent(
   () => import("@/components/vehicle-details/VehicleConfiguration")
 );
 
-const PremiumGallery = createLazyComponent(
-  () => import("@/components/vehicle-details/PremiumGallery")
-);
+// Remove PremiumGallery as it's replaced by Spiral3DGallery
 
 // Preload components on fast networks
 preloadOnFastNetwork(() => import("@/components/vehicle-details/VehicleGallery"));
@@ -104,12 +107,14 @@ const VehicleDetails = () => {
     isSafetyModalOpen: false,
     isConnectivityModalOpen: false,
     isHybridTechModalOpen: false,
-    isInteriorModalOpen: false
+    isInteriorModalOpen: false,
+    isGradeComparisonOpen: false
   });
   
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
   const [carBuilderInitialGrade, setCarBuilderInitialGrade] = useState<string>();
   const [selectedGrade, setSelectedGrade] = useState<string>();
+  const [selectedEngine, setSelectedEngine] = useState<string>("3.5L");
 
   // Hooks with performance optimizations
   const { personaData } = usePersona();
@@ -124,6 +129,98 @@ const VehicleDetails = () => {
   const { currentImageIndex, nextImage, previousImage, setCurrentImageIndex } = useImageCarousel({
     images: galleryImages
   });
+
+  // Current engine data for grades
+  const currentEngineData = useMemo(() => {
+    const engineData = {
+      "3.5L": {
+        name: "3.5L V6 Engine",
+        grades: [
+          {
+            name: "SE",
+            fullPrice: 119900,
+            monthlyEMI: 1899,
+            highlight: "Value Choice",
+            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+            specs: {
+              engine: "3.5L V6 Dynamic Force",
+              power: "295 HP",
+              torque: "263 lb-ft",
+              transmission: "8-Speed Automatic",
+              acceleration: "7.2 seconds",
+              fuelEconomy: "9.2L/100km"
+            }
+          },
+          {
+            name: "XLE",
+            fullPrice: 139900,
+            monthlyEMI: 2199,
+            highlight: "Most Popular",
+            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+            specs: {
+              engine: "3.5L V6 Dynamic Force",
+              power: "295 HP",
+              torque: "263 lb-ft",
+              transmission: "8-Speed Automatic",
+              acceleration: "7.2 seconds",
+              fuelEconomy: "9.2L/100km"
+            }
+          },
+          {
+            name: "Limited",
+            fullPrice: 159900,
+            monthlyEMI: 2499,
+            highlight: "Premium",
+            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+            specs: {
+              engine: "3.5L V6 Dynamic Force",
+              power: "295 HP",
+              torque: "263 lb-ft",
+              transmission: "8-Speed Automatic",
+              acceleration: "7.2 seconds",
+              fuelEconomy: "9.2L/100km"
+            }
+          }
+        ]
+      },
+      "4.0L": {
+        name: "4.0L V6 Engine",
+        grades: [
+          {
+            name: "TRD Off-Road",
+            fullPrice: 149900,
+            monthlyEMI: 2299,
+            highlight: "Off-Road Pro",
+            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+            specs: {
+              engine: "4.0L V6 1GR-FE",
+              power: "270 HP",
+              torque: "278 lb-ft",
+              transmission: "5-Speed Automatic",
+              acceleration: "8.1 seconds",
+              fuelEconomy: "11.8L/100km"
+            }
+          },
+          {
+            name: "TRD Pro",
+            fullPrice: 179900,
+            monthlyEMI: 2799,
+            highlight: "Ultimate Off-Road",
+            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
+            specs: {
+              engine: "4.0L V6 1GR-FE",
+              power: "270 HP",
+              torque: "278 lb-ft",
+              transmission: "5-Speed Automatic",
+              acceleration: "8.1 seconds",
+              fuelEconomy: "11.8L/100km"
+            }
+          }
+        ]
+      }
+    };
+    return engineData[selectedEngine as keyof typeof engineData];
+  }, [selectedEngine]);
 
   // Memoized modal handlers to prevent re-renders
   const modalHandlers = useMemo(() => ({
@@ -145,8 +242,11 @@ const VehicleDetails = () => {
     handleGradeSelect: (grade: string) => {
       setSelectedGrade(grade);
       console.log('Grade selected:', grade);
+    },
+    handleGradeComparison: () => {
+      setModals(prev => ({ ...prev, isGradeComparisonOpen: true }));
     }
-  }), []);
+  }), [selectedEngine]);
 
   // Performance monitoring with Core Web Vitals
   React.useEffect(() => {
@@ -366,26 +466,42 @@ const VehicleDetails = () => {
           
           <section id="gallery">
             <Suspense fallback={<ComponentLoading />}>
-              <PremiumGallery vehicle={vehicle} />
+              <Spiral3DGallery 
+                images={galleryImages.map((src, index) => ({
+                  id: `gallery-${index}`,
+                  src,
+                  alt: `${vehicle.name} view ${index + 1}`,
+                  category: index < 3 ? 'Exterior' : index < 6 ? 'Interior' : 'Details',
+                  title: `${vehicle.name} - ${index < 3 ? 'Exterior' : index < 6 ? 'Interior' : 'Details'} View`
+                }))}
+              />
             </Suspense>
           </section>
 
           <section id="configuration">
             <Suspense fallback={<ComponentLoading />}>
-              <VehicleConfiguration 
-                vehicle={vehicle}
-                onCarBuilder={modalHandlers.handleConfigureWithGrade}
-                onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
-                onGradeSelect={modalHandlers.handleGradeSelect}
-              />
+              <div className="space-y-8">
+                <EngineSelector
+                  selectedEngine={selectedEngine}
+                  onEngineSelect={setSelectedEngine}
+                  className="container mx-auto px-4"
+                />
+                <VehicleConfiguration 
+                  vehicle={vehicle}
+                  onCarBuilder={modalHandlers.handleConfigureWithGrade}
+                  onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
+                  onGradeSelect={modalHandlers.handleGradeSelect}
+                  onGradeComparison={() => modalHandlers.handleGradeComparison()}
+                />
+              </div>
             </Suspense>
           </section>
 
           {shouldRenderHeavyContent && (
             <Suspense fallback={<ComponentLoading />}>
-              <section id="related" className="py-8 lg:py-16 bg-muted/30" aria-labelledby="related-vehicles-heading">
+              <section id="related" aria-labelledby="related-vehicles-heading">
                 <h2 id="related-vehicles-heading" className="sr-only">Related Vehicles</h2>
-                <RelatedVehicles currentVehicle={vehicle} />
+                <CinematicRelatedVehicles currentVehicle={vehicle} />
               </section>
 
               <section id="preowned-similar">

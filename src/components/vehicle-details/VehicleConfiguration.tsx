@@ -13,13 +13,15 @@ interface VehicleConfigurationProps {
   onCarBuilder: (gradeName?: string) => void;
   onTestDrive: () => void;
   onGradeSelect: (gradeName: string) => void;
+  onGradeComparison?: () => void;
 }
 
 const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
   vehicle,
   onCarBuilder,
   onTestDrive,
-  onGradeSelect
+  onGradeSelect,
+  onGradeComparison
 }) => {
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const isMobile = useIsMobile();
