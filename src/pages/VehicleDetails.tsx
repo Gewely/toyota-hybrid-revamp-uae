@@ -7,7 +7,6 @@ import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonMo
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
-import VehicleConfiguration from "@/components/vehicle-details/VehicleConfiguration";
 import VehicleModals from "@/components/vehicle-details/VehicleModals";
 // import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation"; // Removed
 import { PageLoading, ComponentLoading } from "@/components/ui/enhanced-loading";
@@ -31,7 +30,6 @@ import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-m
 import { OptimizedModalProvider } from '@/components/ui/optimized-modal-manager';
 import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
-import VehicleModals from "@/components/vehicle-details/VehicleModals";
 
 // Lazy load heavy components with intelligent preloading
 const VehicleSpecs = createLazyComponent(
@@ -82,6 +80,14 @@ const VirtualShowroom = createLazyComponent(
 
 const PremiumMediaShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/PremiumMediaShowcase")
+);
+
+const VehicleConfiguration = createLazyComponent(
+  () => import("@/components/vehicle-details/VehicleConfiguration")
+);
+
+const PremiumGallery = createLazyComponent(
+  () => import("@/components/vehicle-details/PremiumGallery")
 );
 
 // Preload components on fast networks
@@ -358,16 +364,22 @@ const VehicleDetails = () => {
             </>
           )}
           
-          {/* VehicleConfiguration temporarily disabled
-          <section id="configuration">
-            <VehicleConfiguration 
-              vehicle={vehicle}
-              onCarBuilder={modalHandlers.handleConfigureWithGrade}
-              onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
-              onGradeSelect={modalHandlers.handleGradeSelect}
-            />
+          <section id="gallery">
+            <Suspense fallback={<ComponentLoading />}>
+              <PremiumGallery vehicle={vehicle} />
+            </Suspense>
           </section>
-          */}
+
+          <section id="configuration">
+            <Suspense fallback={<ComponentLoading />}>
+              <VehicleConfiguration 
+                vehicle={vehicle}
+                onCarBuilder={modalHandlers.handleConfigureWithGrade}
+                onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
+                onGradeSelect={modalHandlers.handleGradeSelect}
+              />
+            </Suspense>
+          </section>
 
           {shouldRenderHeavyContent && (
             <Suspense fallback={<ComponentLoading />}>

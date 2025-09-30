@@ -132,6 +132,7 @@ function mostlyVisible(el: HTMLElement, threshold = 0.8) {
    Props
 ============================================================ */
 interface Props {
+  monthlyEMI: number;
   setIsBookingOpen: (open: boolean) => void;
   setIsFinanceOpen: (open: boolean) => void;
   navigate: (path: string) => void;
@@ -139,13 +140,14 @@ interface Props {
   onConnectivityExplore: () => void;
   onHybridTechExplore: () => void;
   onSafetyExplore: () => void;
-  heroWistiaVideoId: string;
+  galleryImages: string[];
 }
 
 /* ============================================================
    Storytelling Section
 ============================================================ */
 const StorytellingSection: React.FC<Props> = ({
+  monthlyEMI,
   setIsBookingOpen,
   setIsFinanceOpen,
   navigate,
@@ -153,7 +155,7 @@ const StorytellingSection: React.FC<Props> = ({
   onConnectivityExplore,
   onHybridTechExplore,
   onSafetyExplore,
-  heroWistiaVideoId,
+  galleryImages,
 }) => {
   const prefersReduced = useReducedMotion();
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -169,7 +171,7 @@ const StorytellingSection: React.FC<Props> = ({
         subtitle: "Power, efficiency, and innovation in perfect harmony.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
-        backgroundVideoWistiaId: heroWistiaVideoId,
+        backgroundVideoWistiaId: undefined,
         cta: {
           label: "Reserve Now",
           action: () => setIsBookingOpen(true),
@@ -264,12 +266,13 @@ const StorytellingSection: React.FC<Props> = ({
       },
     ],
     [
-      heroWistiaVideoId,
+      monthlyEMI,
       setIsBookingOpen,
       setIsFinanceOpen,
       navigate,
       onInteriorExplore,
       onConnectivityExplore,
+      galleryImages,
     ]
   );
 
@@ -494,15 +497,13 @@ const StorytellingSection: React.FC<Props> = ({
       </AnimatePresence>
 
       {/* CONTENT LAYER (bottom docked, avoids overlap) */}
-<div className={`absolute bottom-0 left-0 w-full z-10 flex justify-start px-10 ${active.contentOffset || "pb-20"}`}>
+<div className="absolute bottom-0 left-0 w-full z-10 flex justify-start px-10 pb-20">
   <motion.div
     key={`content-${active.id}`}
     initial={{ opacity: 0, y: 40 }}
     animate={{
       opacity: 1,
       y: 0,
-      x: parallax.x * 0.2,
-      y: parallax.y * 0.2,
     }}
     exit={{ opacity: 0, y: -40 }}
     transition={{ duration: prefersReduced ? 0.2 : 0.6 }}

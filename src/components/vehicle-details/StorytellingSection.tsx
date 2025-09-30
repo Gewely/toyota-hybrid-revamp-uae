@@ -4,7 +4,7 @@ import AppleStyleStorytellingSection from "./AppleStyleStorytellingSection";
 
 interface StorytellingProps {
   galleryImages: string[];
-  monthlyEMI: number;
+  monthlyEMI?: number;
   setIsBookingOpen: (open: boolean) => void;
   navigate: (path: string) => void;
   setIsFinanceOpen: (open: boolean) => void;
@@ -27,7 +27,7 @@ const StorytellingSection: React.FC<StorytellingProps> = ({
 }) => {
   return (
     <AppleStyleStorytellingSection
-      monthlyEMI={monthlyEMI}
+      monthlyEMI={monthlyEMI || 0}
       setIsBookingOpen={setIsBookingOpen}
       navigate={navigate}
       setIsFinanceOpen={setIsFinanceOpen}

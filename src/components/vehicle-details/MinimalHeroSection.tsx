@@ -17,7 +17,23 @@ const SPECS = [
   { label: "AWD", value: "Dual Motor" }
 ];
 
-const HeroSection: React.FC = () => {
+interface MinimalHeroSectionProps {
+  vehicle: any;
+  galleryImages: string[];
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  onBookTestDrive: () => void;
+  onCarBuilder: () => void;
+}
+
+const HeroSection: React.FC<MinimalHeroSectionProps> = ({
+  vehicle,
+  galleryImages,
+  isFavorite,
+  onToggleFavorite,
+  onBookTestDrive,
+  onCarBuilder
+}) => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ target: heroRef });
   const bgScale = useTransform(scrollY, [0, 450], [1, 1.05]);
@@ -262,4 +278,5 @@ const HeroSection: React.FC = () => {
   );
 };
 
-export default HeroSection;
+const MinimalHeroSection = HeroSection;
+export default MinimalHeroSection;
