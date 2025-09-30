@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonModal';
-import InteractiveSpecsTech from '@/components/vehicle-details/InteractiveSpecsTech';
+// import UnifiedVehicleConfigurator from '@/components/vehicle-details/UnifiedVehicleConfigurator';
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
@@ -87,8 +87,8 @@ const PremiumMediaShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/PremiumMediaShowcase")
 );
 
-const VehicleConfiguration = createLazyComponent(
-  () => import("@/components/vehicle-details/VehicleConfiguration")
+const UnifiedVehicleConfigurator = createLazyComponent(
+  () => import("@/components/vehicle-details/UnifiedVehicleConfigurator")
 );
 
 // Remove PremiumGallery as it's replaced by Spiral3DGallery
@@ -406,10 +406,12 @@ const VehicleDetails = () => {
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
                   
-                  <section id="interactive-specs-tech">
-                    <InteractiveSpecsTech 
+                  <section id="unified-configurator">
+                    <UnifiedVehicleConfigurator 
                       vehicle={vehicle} 
                       onCarBuilder={modalHandlers.handleConfigureWithGrade}
+                      onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
+                      onGradeSelect={modalHandlers.handleGradeSelect}
                     />
                   </section>
                   
@@ -488,12 +490,11 @@ const VehicleDetails = () => {
           <section id="configuration">
             <Suspense fallback={<ComponentLoading />}>
               <div className="space-y-8">
-                <VehicleConfiguration
+                <UnifiedVehicleConfigurator
                   vehicle={vehicle}
                   onCarBuilder={modalHandlers.handleConfigureWithGrade}
                   onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
                   onGradeSelect={modalHandlers.handleGradeSelect}
-                  onGradeComparison={() => modalHandlers.handleGradeComparison()}
                 />
               </div>
             </Suspense>
