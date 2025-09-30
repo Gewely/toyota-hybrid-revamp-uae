@@ -5,28 +5,45 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
-import { Star, ArrowRight, Wrench, Car } from "lucide-react";
+import { Star, ArrowRight, Wrench, Car, Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface VehicleConfigurationProps {
+interface EngineGradeSelectionProps {
   vehicle: VehicleModel;
-  selectedEngine?: string;
   onCarBuilder: (gradeName?: string) => void;
   onTestDrive: () => void;
   onGradeSelect: (gradeName: string) => void;
   onGradeComparison?: () => void;
 }
 
-const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
+const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   vehicle,
-  selectedEngine = "3.5L",
   onCarBuilder,
   onTestDrive,
   onGradeSelect,
   onGradeComparison
 }) => {
+  const [selectedEngine, setSelectedEngine] = useState("3.5L");
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  // Engine options
+  const engines = [
+    { 
+      name: "3.5L", 
+      power: "295 HP", 
+      torque: "263 lb-ft",
+      type: "V6 Dynamic Force",
+      efficiency: "9.2L/100km"
+    },
+    { 
+      name: "4.0L", 
+      power: "270 HP", 
+      torque: "278 lb-ft",
+      type: "V6 1GR-FE",
+      efficiency: "11.8L/100km"
+    }
+  ];
 
   // Dynamic grade data based on selected engine
   const getGradesForEngine = (engine: string) => {
@@ -132,6 +149,10 @@ const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
 
   const grades = getGradesForEngine(selectedEngine);
 
+  const handleEngineChange = (engine: string) => {
+    setSelectedEngine(engine);
+  };
+
   const handleGradeSelect = (gradeName: string) => {
     onGradeSelect(gradeName);
   };
@@ -158,15 +179,54 @@ const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
             Choose Your {vehicle.name}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Configure your perfect vehicle with {selectedEngine} engine options
+            Select your engine and grade to build the perfect vehicle
           </p>
+        </motion.div>
+
+        {/* Engine Selection */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-12"
+        >
+          <h3 className="text-xl font-bold mb-6 text-center">Select Engine</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+            {engines.map((engine) => (
+              <motion.div
+                key={engine.name}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`p-6 rounded-xl cursor-pointer transition-all duration-200 border-2 ${
+                  selectedEngine === engine.name 
+                    ? 'bg-primary/10 border-primary shadow-lg' 
+                    : 'bg-card border-border hover:border-primary/50'
+                }`}
+                onClick={() => handleEngineChange(engine.name)}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h4 className="text-lg font-bold">{engine.name} {engine.type}</h4>
+                    <p className="text-primary text-sm font-medium">{engine.power} • {engine.torque}</p>
+                  </div>
+                  {selectedEngine === engine.name && (
+                    <Check className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Fuel Economy: {engine.efficiency}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
         {/* Grades Grid */}
         <div className={`grid gap-6 mb-12 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
           {grades.map((grade, index) => (
             <motion.div
-              key={grade.name}
+              key={`${selectedEngine}-${grade.name}`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -276,7 +336,7 @@ const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
         <VehicleGradeComparison
           isOpen={isComparisonOpen}
           onClose={() => setIsComparisonOpen(false)}
-          engineName={vehicle.name}
+          engineName={`${vehicle.name} ${selectedEngine}`}
           grades={grades}
           onGradeSelect={handleGradeSelect}
           onCarBuilder={handleCarBuilder}
@@ -287,4 +347,4 @@ const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
   );
 };
 
-export default VehicleConfiguration;
+export default EngineGradeSelection;

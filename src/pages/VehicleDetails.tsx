@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonModal';
-import InteractiveSpecsTech from '@/components/vehicle-details/InteractiveSpecsTech';
+
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
@@ -87,8 +87,8 @@ const PremiumMediaShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/PremiumMediaShowcase")
 );
 
-const VehicleConfiguration = createLazyComponent(
-  () => import("@/components/vehicle-details/VehicleConfiguration")
+const EngineGradeSelection = createLazyComponent(
+  () => import("@/components/vehicle-details/EngineGradeSelection")
 );
 
 // Remove PremiumGallery as it's replaced by Spiral3DGallery
@@ -114,7 +114,6 @@ const VehicleDetails = () => {
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
   const [carBuilderInitialGrade, setCarBuilderInitialGrade] = useState<string>();
   const [selectedGrade, setSelectedGrade] = useState<string>();
-  const [selectedEngine, setSelectedEngine] = useState<string>("3.5L");
 
   // Hooks with performance optimizations
   const { personaData } = usePersona();
@@ -130,97 +129,7 @@ const VehicleDetails = () => {
     images: galleryImages
   });
 
-  // Current engine data for grades
-  const currentEngineData = useMemo(() => {
-    const engineData = {
-      "3.5L": {
-        name: "3.5L V6 Engine",
-        grades: [
-          {
-            name: "SE",
-            fullPrice: 119900,
-            monthlyEMI: 1899,
-            highlight: "Value Choice",
-            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
-            specs: {
-              engine: "3.5L V6 Dynamic Force",
-              power: "295 HP",
-              torque: "263 lb-ft",
-              transmission: "8-Speed Automatic",
-              acceleration: "7.2 seconds",
-              fuelEconomy: "9.2L/100km"
-            }
-          },
-          {
-            name: "XLE",
-            fullPrice: 139900,
-            monthlyEMI: 2199,
-            highlight: "Most Popular",
-            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
-            specs: {
-              engine: "3.5L V6 Dynamic Force",
-              power: "295 HP",
-              torque: "263 lb-ft",
-              transmission: "8-Speed Automatic",
-              acceleration: "7.2 seconds",
-              fuelEconomy: "9.2L/100km"
-            }
-          },
-          {
-            name: "Limited",
-            fullPrice: 159900,
-            monthlyEMI: 2499,
-            highlight: "Premium",
-            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
-            specs: {
-              engine: "3.5L V6 Dynamic Force",
-              power: "295 HP",
-              torque: "263 lb-ft",
-              transmission: "8-Speed Automatic",
-              acceleration: "7.2 seconds",
-              fuelEconomy: "9.2L/100km"
-            }
-          }
-        ]
-      },
-      "4.0L": {
-        name: "4.0L V6 Engine",
-        grades: [
-          {
-            name: "TRD Off-Road",
-            fullPrice: 149900,
-            monthlyEMI: 2299,
-            highlight: "Off-Road Pro",
-            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
-            specs: {
-              engine: "4.0L V6 1GR-FE",
-              power: "270 HP",
-              torque: "278 lb-ft",
-              transmission: "5-Speed Automatic",
-              acceleration: "8.1 seconds",
-              fuelEconomy: "11.8L/100km"
-            }
-          },
-          {
-            name: "TRD Pro",
-            fullPrice: 179900,
-            monthlyEMI: 2799,
-            highlight: "Ultimate Off-Road",
-            image: "https://dam.alfuttaim.com/dx/api/dam/v1/collections/dc9b6eaa-cc71-4e6b-b9a8-2ede7939749f/items/19d9b6ba-2cee-4d91-b3b3-621f72452918/renditions/9c9119d9-d77c-4c13-a2aa-b0f9e55219cb?binary=true&mformat=true",
-            specs: {
-              engine: "4.0L V6 1GR-FE",
-              power: "270 HP",
-              torque: "278 lb-ft",
-              transmission: "5-Speed Automatic",
-              acceleration: "8.1 seconds",
-              fuelEconomy: "11.8L/100km"
-            }
-          }
-        ]
-      }
-    };
-    return engineData[selectedEngine as keyof typeof engineData];
-  }, [selectedEngine]);
+  // Vehicle configuration is now handled by EngineGradeSelection component
 
   // Memoized modal handlers to prevent re-renders
   const modalHandlers = useMemo(() => ({
@@ -246,7 +155,7 @@ const VehicleDetails = () => {
     handleGradeComparison: () => {
       setModals(prev => ({ ...prev, isGradeComparisonOpen: true }));
     }
-  }), [selectedEngine]);
+  }), []);
 
   // Performance monitoring with Core Web Vitals
   React.useEffect(() => {
@@ -406,14 +315,6 @@ const VehicleDetails = () => {
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
                   
-                   <section id="interactive-specs-tech">
-                     <InteractiveSpecsTech 
-                       vehicle={vehicle} 
-                       selectedEngine={selectedEngine}
-                       onEngineChange={setSelectedEngine}
-                       onCarBuilder={modalHandlers.handleConfigureWithGrade}
-                     />
-                   </section>
                   
                   <section id="tech-experience">
                     <RefinedTechExperience vehicle={vehicle} />
@@ -489,16 +390,13 @@ const VehicleDetails = () => {
 
           <section id="configuration">
             <Suspense fallback={<ComponentLoading />}>
-              <div className="space-y-8">
-                <VehicleConfiguration
-                  vehicle={vehicle}
-                  selectedEngine={selectedEngine}
-                  onCarBuilder={modalHandlers.handleConfigureWithGrade}
-                  onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
-                  onGradeSelect={modalHandlers.handleGradeSelect}
-                  onGradeComparison={() => modalHandlers.handleGradeComparison()}
-                />
-              </div>
+              <EngineGradeSelection
+                vehicle={vehicle}
+                onCarBuilder={modalHandlers.handleConfigureWithGrade}
+                onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
+                onGradeSelect={modalHandlers.handleGradeSelect}
+                onGradeComparison={() => modalHandlers.handleGradeComparison()}
+              />
             </Suspense>
           </section>
 
