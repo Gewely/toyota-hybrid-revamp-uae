@@ -7,14 +7,14 @@ import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonMo
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
-// import VehicleConfiguration from "@/components/vehicle-details/VehicleConfiguration"; // Removed
-// import VehicleModals from "@/components/vehicle-details/VehicleModals";
+import VehicleConfiguration from "@/components/vehicle-details/VehicleConfiguration";
+import VehicleModals from "@/components/vehicle-details/VehicleModals";
 // import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation"; // Removed
 import { PageLoading, ComponentLoading } from "@/components/ui/enhanced-loading";
 import { PerformanceErrorBoundary } from "@/components/ui/performance-error-boundary";
 import { HeroSkeleton } from "@/components/ui/performance-skeleton";
 import OffersSection from "@/components/home/OffersSection";
-
+import VehicleGradeComparison from '@/components/vehicle-details/VehicleGradeComparison';
 import { usePersona } from "@/contexts/PersonaContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVehicleData } from "@/hooks/use-vehicle-data";
