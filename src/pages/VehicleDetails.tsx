@@ -406,6 +406,13 @@ const VehicleDetails = () => {
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
                   
+                  <section id="interactive-specs-tech">
+                    <InteractiveSpecsTech 
+                      vehicle={vehicle} 
+                      onCarBuilder={modalHandlers.handleConfigureWithGrade}
+                    />
+                  </section>
+                  
                   <section id="tech-experience">
                     <RefinedTechExperience vehicle={vehicle} />
                   </section>

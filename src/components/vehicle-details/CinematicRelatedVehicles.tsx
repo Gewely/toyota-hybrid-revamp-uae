@@ -35,18 +35,10 @@ export default function CinematicRelatedVehicles({
   const enhancedVehicles = relatedVehicles.map((vehicle, index) => ({
     ...vehicle,
     image: vehicle.image || '/placeholder.svg',
-    highlight: index === 0 ? {
+    highlight: {
       icon: <Star className="h-4 w-4" />,
-      label: "Editor's Choice",
-      color: "from-amber-500 to-orange-400"
-    } : index === 1 ? {
-      icon: <Heart className="h-4 w-4" />,
-      label: "Most Loved",
-      color: "from-rose-500 to-pink-400"
-    } : {
-      icon: <Zap className="h-4 w-4" />,
-      label: "Trending",
-      color: "from-blue-500 to-cyan-400"
+      label: "Featured",
+      color: "from-primary to-primary/80"
     },
     quickFeatures: [
       vehicle.features?.[0] || "Premium Interior",
@@ -60,6 +52,22 @@ export default function CinematicRelatedVehicles({
     if (!scrollableRef.current) return;
     const scrollAmount = dir === "left" ? -400 : 400;
     scrollableRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
+  // Click handlers for UX and CX
+  const handleQuickView = (vehicle: VehicleModel) => {
+    console.log('Quick view for:', vehicle.name);
+    // TODO: Open quick view modal
+  };
+
+  const handleAddToFavorites = (vehicle: VehicleModel) => {
+    console.log('Add to favorites:', vehicle.name);
+    // TODO: Add to favorites logic
+  };
+
+  const handleConfigureVehicle = (vehicle: VehicleModel) => {
+    console.log('Configure vehicle:', vehicle.name);
+    // TODO: Open vehicle configurator
   };
 
   const swipeHandlers = useSwipeable({
@@ -234,6 +242,7 @@ export default function CinematicRelatedVehicles({
                               size="sm"
                               variant="secondary"
                               className="flex-1 bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm"
+                              onClick={() => handleQuickView(vehicle)}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Quick View
@@ -242,6 +251,7 @@ export default function CinematicRelatedVehicles({
                               size="sm"
                               variant="secondary"
                               className="bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm h-9 w-9 p-0"
+                              onClick={() => handleAddToFavorites(vehicle)}
                             >
                               <Heart className="h-4 w-4" />
                             </Button>
@@ -315,6 +325,7 @@ export default function CinematicRelatedVehicles({
                           variant="outline"
                           size="lg"
                           className="px-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300"
+                          onClick={() => handleConfigureVehicle(vehicle)}
                         >
                           <Shield className="h-4 w-4" />
                         </Button>
