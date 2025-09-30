@@ -8,6 +8,7 @@ import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonMo
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
+import EngineGradeSelection from "@/components/vehicle-details/EngineGradeSelection";
 import VehicleModals from "@/components/vehicle-details/VehicleModals";
 // import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation"; // Removed
 import { PageLoading, ComponentLoading } from "@/components/ui/enhanced-loading";
@@ -87,9 +88,6 @@ const PremiumMediaShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/PremiumMediaShowcase")
 );
 
-const EngineGradeSelection = createLazyComponent(
-  () => import("@/components/vehicle-details/EngineGradeSelection")
-);
 
 // Remove PremiumGallery as it's replaced by Spiral3DGallery
 
@@ -389,15 +387,13 @@ const VehicleDetails = () => {
           </section>
 
           <section id="configuration">
-            <Suspense fallback={<ComponentLoading />}>
-              <EngineGradeSelection
-                vehicle={vehicle}
-                onCarBuilder={modalHandlers.handleConfigureWithGrade}
-                onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
-                onGradeSelect={modalHandlers.handleGradeSelect}
-                onGradeComparison={() => modalHandlers.handleGradeComparison()}
-              />
-            </Suspense>
+            <EngineGradeSelection
+              vehicle={vehicle}
+              onCarBuilder={modalHandlers.handleConfigureWithGrade}
+              onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
+              onGradeSelect={modalHandlers.handleGradeSelect}
+              onGradeComparison={() => modalHandlers.handleGradeComparison()}
+            />
           </section>
 
           {shouldRenderHeavyContent && (
