@@ -552,4 +552,4 @@ const VehicleDetails = () => {
   );
 };
 
-export default React.memo(VehicleDetails);
+export default React.memo(VehicleDetails); // Cache cleared
