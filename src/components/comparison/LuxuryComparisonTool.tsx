@@ -68,7 +68,7 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const [selectedGrades, setSelectedGrades] = useState<string[]>(
-    grades.slice(0, isMobile ? 2 : 4).map(g => g.id)
+    grades.slice(0, isMobile ? 2 : 3).map(g => g.id)
   );
   const [pinnedBaseline, setPinnedBaseline] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('highlights');
@@ -76,7 +76,7 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
   const [currentOffset, setCurrentOffset] = useState(0);
   
   const maxSelection = 10;
-  const visibleCount = isMobile ? 2 : 4;
+  const visibleCount = isMobile ? 2 : 3;
   
   const filteredGrades = useMemo(() => {
     return grades.filter(grade => 
@@ -350,7 +350,7 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
                 </>
               )}
               
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                 <AnimatePresence mode="wait">
                   {visibleGrades.map((grade, index) => (
                     <motion.div
@@ -431,7 +431,7 @@ const LuxuryComparisonTool: React.FC<LuxuryComparisonToolProps> = ({
                       {section.items.map((item, itemIndex) => (
                         <div 
                           key={item.label}
-                          className="grid grid-cols-3 lg:grid-cols-5 gap-4 py-3 border-b border-white/5"
+                          className="grid grid-cols-3 lg:grid-cols-4 gap-4 py-3 border-b border-white/5"
                         >
                           <div className="col-span-1 text-sm text-white/60">
                             {item.label}

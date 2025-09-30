@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 interface VehicleConfigurationProps {
   vehicle: VehicleModel;
+  selectedEngine?: string;
   onCarBuilder: (gradeName?: string) => void;
   onTestDrive: () => void;
   onGradeSelect: (gradeName: string) => void;
@@ -18,6 +19,7 @@ interface VehicleConfigurationProps {
 
 const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
   vehicle,
+  selectedEngine = "3.5L",
   onCarBuilder,
   onTestDrive,
   onGradeSelect,
@@ -26,63 +28,109 @@ const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  // Mock grade data based on vehicle
-  const grades = [
-    {
-      name: "Base",
-      description: "Essential features for everyday driving",
-      price: vehicle.price,
-      monthlyFrom: Math.round(vehicle.price * 0.8 * 0.035 / 12),
-      badge: "Value",
-      badgeColor: "bg-blue-100 text-blue-700",
-      image: vehicle.image,
-      features: ["LED Headlights", "Smart Key", "7-inch Display", "Toyota Safety Sense"],
-      specs: {
-        engine: "2.0L 4-Cylinder",
-        power: "169 hp",
-        torque: "151 lb-ft",
-        transmission: "CVT",
-        acceleration: "8.7s",
-        fuelEconomy: "6.5L/100km"
-      }
-    },
-    {
-      name: "Mid",
-      description: "Enhanced comfort and technology features",
-      price: vehicle.price + 15000,
-      monthlyFrom: Math.round((vehicle.price + 15000) * 0.8 * 0.035 / 12),
-      badge: "Most Popular",
-      badgeColor: "bg-orange-100 text-orange-700",
-      image: vehicle.image,
-      features: ["Sunroof", "Premium Audio", "Heated Seats", "Wireless Charging", "360° Camera"],
-      specs: {
-        engine: "2.5L 4-Cylinder Hybrid",
-        power: "194 hp",
-        torque: "162 lb-ft",
-        transmission: "eCVT",
-        acceleration: "7.5s",
-        fuelEconomy: "4.5L/100km"
-      }
-    },
-    {
-      name: "Premium",
-      description: "Luxury features with advanced technology",
-      price: vehicle.price + 30000,
-      monthlyFrom: Math.round((vehicle.price + 30000) * 0.8 * 0.035 / 12),
-      badge: "Luxury",
-      badgeColor: "bg-purple-100 text-purple-700",
-      image: vehicle.image,
-      features: ["Leather Interior", "JBL Audio", "Head-up Display", "Adaptive Cruise", "Premium Paint"],
-      specs: {
-        engine: "3.5L V6 Hybrid",
-        power: "354 hp",
-        torque: "257 lb-ft",
-        transmission: "10-Speed Auto",
-        acceleration: "5.8s",
-        fuelEconomy: "7.8L/100km"
-      }
+  // Dynamic grade data based on selected engine
+  const getGradesForEngine = (engine: string) => {
+    if (engine === "4.0L") {
+      return [
+        {
+          name: "TRD Off-Road",
+          description: "Built for adventure with enhanced off-road capability",
+          price: vehicle.price + 20000,
+          monthlyFrom: Math.round((vehicle.price + 20000) * 0.8 * 0.035 / 12),
+          badge: "Value",
+          badgeColor: "bg-blue-100 text-blue-700",
+          image: vehicle.image,
+          features: ["TRD Off-Road Package", "Crawl Control", "Multi-Terrain Select", "Skid Plates"],
+          specs: {
+            engine: "4.0L V6 1GR-FE",
+            power: "270 HP",
+            torque: "278 lb-ft",
+            transmission: "5-Speed Automatic",
+            acceleration: "8.1s",
+            fuelEconomy: "11.8L/100km"
+          }
+        },
+        {
+          name: "TRD Pro",
+          description: "Ultimate off-road performance with premium features",
+          price: vehicle.price + 50000,
+          monthlyFrom: Math.round((vehicle.price + 50000) * 0.8 * 0.035 / 12),
+          badge: "Most Popular",
+          badgeColor: "bg-orange-100 text-orange-700",
+          image: vehicle.image,
+          features: ["TRD Pro Package", "Fox Racing Shocks", "TRD Pro Wheels", "Premium Interior"],
+          specs: {
+            engine: "4.0L V6 1GR-FE",
+            power: "270 HP",
+            torque: "278 lb-ft",
+            transmission: "5-Speed Automatic",
+            acceleration: "8.1s",
+            fuelEconomy: "11.8L/100km"
+          }
+        }
+      ];
     }
-  ];
+    
+    // Default 3.5L grades
+    return [
+      {
+        name: "SE",
+        description: "Essential features for everyday driving",
+        price: vehicle.price,
+        monthlyFrom: Math.round(vehicle.price * 0.8 * 0.035 / 12),
+        badge: "Value",
+        badgeColor: "bg-blue-100 text-blue-700",
+        image: vehicle.image,
+        features: ["LED Headlights", "Smart Key", "8-inch Display", "Toyota Safety Sense"],
+        specs: {
+          engine: "3.5L V6 Dynamic Force",
+          power: "295 HP",
+          torque: "263 lb-ft",
+          transmission: "8-Speed Automatic",
+          acceleration: "7.2s",
+          fuelEconomy: "9.2L/100km"
+        }
+      },
+      {
+        name: "XLE",
+        description: "Enhanced comfort and technology features",
+        price: vehicle.price + 20000,
+        monthlyFrom: Math.round((vehicle.price + 20000) * 0.8 * 0.035 / 12),
+        badge: "Most Popular",
+        badgeColor: "bg-orange-100 text-orange-700",
+        image: vehicle.image,
+        features: ["Sunroof", "Premium Audio", "Heated Seats", "Wireless Charging", "360° Camera"],
+        specs: {
+          engine: "3.5L V6 Dynamic Force",
+          power: "295 HP",
+          torque: "263 lb-ft",
+          transmission: "8-Speed Automatic",
+          acceleration: "7.2s",
+          fuelEconomy: "9.2L/100km"
+        }
+      },
+      {
+        name: "Limited",
+        description: "Luxury features with advanced technology",
+        price: vehicle.price + 40000,
+        monthlyFrom: Math.round((vehicle.price + 40000) * 0.8 * 0.035 / 12),
+        badge: "Luxury",
+        badgeColor: "bg-purple-100 text-purple-700",
+        image: vehicle.image,
+        features: ["Leather Interior", "JBL Audio", "Head-up Display", "Adaptive Cruise", "Premium Paint"],
+        specs: {
+          engine: "3.5L V6 Dynamic Force",
+          power: "295 HP",
+          torque: "263 lb-ft",
+          transmission: "8-Speed Automatic",
+          acceleration: "7.2s",
+          fuelEconomy: "9.2L/100km"
+        }
+      }
+    ];
+  };
+
+  const grades = getGradesForEngine(selectedEngine);
 
   const handleGradeSelect = (gradeName: string) => {
     onGradeSelect(gradeName);
@@ -110,7 +158,7 @@ const VehicleConfiguration: React.FC<VehicleConfigurationProps> = ({
             Choose Your {vehicle.name}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Configure your perfect vehicle with our available grades and options
+            Configure your perfect vehicle with {selectedEngine} engine options
           </p>
         </motion.div>
 

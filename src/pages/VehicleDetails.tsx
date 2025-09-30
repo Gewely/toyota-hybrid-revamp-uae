@@ -406,12 +406,14 @@ const VehicleDetails = () => {
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
                   
-                  <section id="interactive-specs-tech">
-                    <InteractiveSpecsTech 
-                      vehicle={vehicle} 
-                      onCarBuilder={modalHandlers.handleConfigureWithGrade}
-                    />
-                  </section>
+                   <section id="interactive-specs-tech">
+                     <InteractiveSpecsTech 
+                       vehicle={vehicle} 
+                       selectedEngine={selectedEngine}
+                       onEngineChange={setSelectedEngine}
+                       onCarBuilder={modalHandlers.handleConfigureWithGrade}
+                     />
+                   </section>
                   
                   <section id="tech-experience">
                     <RefinedTechExperience vehicle={vehicle} />
@@ -490,6 +492,7 @@ const VehicleDetails = () => {
               <div className="space-y-8">
                 <VehicleConfiguration
                   vehicle={vehicle}
+                  selectedEngine={selectedEngine}
                   onCarBuilder={modalHandlers.handleConfigureWithGrade}
                   onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
                   onGradeSelect={modalHandlers.handleGradeSelect}

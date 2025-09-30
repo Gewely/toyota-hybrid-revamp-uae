@@ -64,7 +64,7 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
   const isMobile = useIsMobile();
   const { deviceCategory } = useDeviceInfo();
   
-  // Mobile: 2 grades, Desktop: 3 grades
+  // Mobile: 2 grades, Desktop: 3 grades (standardized)
   const maxGrades = isMobile ? 2 : 3;
   
   const [selectedGrades, setSelectedGrades] = useState<number[]>(

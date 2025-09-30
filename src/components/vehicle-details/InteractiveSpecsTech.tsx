@@ -12,6 +12,8 @@ import {
 
 interface InteractiveSpecsTechProps {
   vehicle: VehicleModel;
+  selectedEngine?: string;
+  onEngineChange?: (engine: string) => void;
   onCarBuilder?: (grade?: string) => void;
 }
 
@@ -30,9 +32,21 @@ interface Grade {
   popular?: boolean;
 }
 
-const InteractiveSpecsTech: React.FC<InteractiveSpecsTechProps> = ({ vehicle, onCarBuilder }) => {
+const InteractiveSpecsTech: React.FC<InteractiveSpecsTechProps> = ({ 
+  vehicle, 
+  selectedEngine: propSelectedEngine,
+  onEngineChange,
+  onCarBuilder 
+}) => {
   const [activeTab, setActiveTab] = useState<"specs" | "tech" | "configure">("specs");
-  const [selectedEngine, setSelectedEngine] = useState("3.5L");
+  const [selectedEngine, setSelectedEngine] = useState(propSelectedEngine || "3.5L");
+  
+  // Sync with prop changes
+  React.useEffect(() => {
+    if (propSelectedEngine && propSelectedEngine !== selectedEngine) {
+      setSelectedEngine(propSelectedEngine);
+    }
+  }, [propSelectedEngine, selectedEngine]);
   const [selectedGrade, setSelectedGrade] = useState("Base");
 
   const handleTabChange = useCallback((value: "specs" | "tech" | "configure") => {
@@ -151,11 +165,12 @@ const InteractiveSpecsTech: React.FC<InteractiveSpecsTechProps> = ({ vehicle, on
   // Handle engine change and reset grade if needed
   const handleEngineChange = useCallback((engine: string) => {
     setSelectedEngine(engine);
+    onEngineChange?.(engine);
     const newGrades = getGradesForEngine(engine);
     if (!newGrades.find(g => g.name === selectedGrade)) {
       setSelectedGrade(newGrades[0].name);
     }
-  }, [selectedGrade, getGradesForEngine]);
+  }, [selectedGrade, getGradesForEngine, onEngineChange]);
 
   const handleConfigureWithSelections = useCallback(() => {
     if (onCarBuilder) {
