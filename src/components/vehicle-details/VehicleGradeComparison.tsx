@@ -67,10 +67,19 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
   // Mobile: 2 grades, Desktop: 3 grades (standardized)
   const maxGrades = isMobile ? 2 : 3;
   
-  const [selectedGrades, setSelectedGrades] = useState<number[]>(
-    grades.slice(0, maxGrades).map((_, index) => index)
-  );
+  const [selectedGrades, setSelectedGrades] = useState<number[]>(() => {
+    const availableGrades = Math.min(grades.length, maxGrades);
+    return Array.from({ length: availableGrades }, (_, index) => index);
+  });
   const [showOnlyDifferences, setShowOnlyDifferences] = useState(false);
+
+  // Update selected grades when grades prop changes
+  React.useEffect(() => {
+    if (grades.length > 0) {
+      const availableGrades = Math.min(grades.length, maxGrades);
+      setSelectedGrades(Array.from({ length: availableGrades }, (_, index) => index));
+    }
+  }, [grades.length, maxGrades]);
 
   const toggleGradeSelection = (gradeIndex: number) => {
     if (selectedGrades.includes(gradeIndex)) {
@@ -136,7 +145,7 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
     }
   ];
 
-  const selectedGradeObjects = selectedGrades.map(index => grades[index]);
+  const selectedGradeObjects = selectedGrades.map(index => grades[index]).filter(grade => grade !== undefined);
 
   // Mobile-optimized dialog sizing
   const getDialogSize = () => {
@@ -202,7 +211,7 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
 
           {/* Grade Images and Info - Side by Side on Mobile */}
           <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : `grid grid-cols-${selectedGrades.length} gap-4`}`}>
-            {selectedGradeObjects.map((grade, idx) => (
+            {selectedGradeObjects.filter(grade => grade).map((grade, idx) => (
               <Card key={grade.name} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className={`${isMobile ? 'aspect-[4/3]' : 'aspect-video'} overflow-hidden`}>
