@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useSwipeable } from "react-swipeable";
+import { useSwipeable } from "@/hooks/use-swipeable";
 
 /**
  * CONFIG — Replace with Toyota DAM assets
@@ -43,7 +43,20 @@ type SceneType = "hero" | "highlights" | "mood" | "interior" | "ambient" | "life
 
 const SCENES: SceneType[] = ["hero", "highlights", "mood", "interior", "ambient", "lifestyle"];
 
-const ModelImmersiveGallery: React.FC = () => {
+interface SeamlessCinematicShowroomProps {
+  vehicleName: string;
+  galleryImages: { url: string; alt: string; category: string; }[];
+  onReserve: () => void;
+  onTestDrive: () => void;
+  onConfigure: () => void;
+}
+
+const ModelImmersiveGallery: React.FC<SeamlessCinematicShowroomProps> = ({
+  vehicleName,
+  onReserve,
+  onTestDrive,
+  onConfigure
+}) => {
   const [currentScene, setCurrentScene] = useState<SceneType>("hero");
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
   const [activeInterior, setActiveInterior] = useState<string | null>(null);
@@ -74,16 +87,14 @@ const ModelImmersiveGallery: React.FC = () => {
 
   // Swipe support (mobile)
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
+    onSwipeLeft: () => {
       const idx = SCENES.indexOf(currentScene);
       setCurrentScene(SCENES[(idx + 1) % SCENES.length]);
     },
-    onSwipedRight: () => {
+    onSwipeRight: () => {
       const idx = SCENES.indexOf(currentScene);
       setCurrentScene(SCENES[(idx - 1 + SCENES.length) % SCENES.length]);
     },
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: false,
   });
 
   // Parallax
@@ -126,7 +137,7 @@ const ModelImmersiveGallery: React.FC = () => {
               transition={{ delay: 0.5 }}
               className="mt-8 text-5xl md:text-7xl font-serif tracking-wide"
             >
-              {galleryConfig.vehicleName}
+              {vehicleName}
             </motion.h1>
           </motion.div>
         )}
@@ -319,7 +330,7 @@ const ModelImmersiveGallery: React.FC = () => {
             </div>
             <motion.img
               src={galleryConfig.heroImage}
-              alt={galleryConfig.vehicleName}
+              alt={vehicleName}
               className="w-[80%] max-w-5xl object-contain drop-shadow-2xl z-20"
               style={{ x: parallaxX, y: parallaxY }}
             />
@@ -350,9 +361,9 @@ const ModelImmersiveGallery: React.FC = () => {
         transition={{ delay: 2, duration: 0.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 px-6 py-4 rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg z-[100]"
       >
-        <Button variant="default" size="lg" className="bg-white/20 text-white hover:bg-white/30">Reserve</Button>
-        <Button variant="outline" size="lg" className="text-white border-white/40 hover:bg-white/20">Test Drive</Button>
-        <Button variant="outline" size="lg" className="text-white border-white/40 hover:bg-white/20">Configure</Button>
+        <Button onClick={onReserve} variant="default" size="lg" className="bg-white/20 text-white hover:bg-white/30">Reserve</Button>
+        <Button onClick={onTestDrive} variant="outline" size="lg" className="text-white border-white/40 hover:bg-white/20">Test Drive</Button>
+        <Button onClick={onConfigure} variant="outline" size="lg" className="text-white border-white/40 hover:bg-white/20">Configure</Button>
       </motion.div>
     </section>
   );
