@@ -50,7 +50,6 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
   const swipeHandlers = useSwipeable({
     onSwipeLeft: nextScene,
     onSwipeRight: prevScene,
-    trackMouse: false,
   });
 
   const openModal = (scene: SceneType) => {
