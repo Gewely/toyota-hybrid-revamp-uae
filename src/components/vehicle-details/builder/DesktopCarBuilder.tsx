@@ -290,17 +290,17 @@ const DesktopCarBuilder: React.FC<DesktopCarBuilderProps> = ({
   }, [config.grade]);
 
   return (
-    <motion.div className="relative h-screen w-full bg-background flex" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="relative h-screen w-full bg-[hsl(var(--neutral-50))] flex" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {/* Visual theater */}
-      <div className={`${panel.left} h-full relative overflow-hidden bg-muted`}>
+      <div className={`${panel.left} h-full relative overflow-hidden bg-gradient-to-br from-[hsl(var(--neutral-100))] to-[hsl(var(--neutral-50))]`}>
         {/* Mode Toggle + Exterior sub-toggle */}
-        <div className="absolute top-6 left-6 z-20 border border-border/40 rounded-2xl bg-background/95 backdrop-blur-sm px-2 py-1.5 flex items-center gap-1 shadow-sm">
+        <div className="absolute top-6 left-6 z-20 border border-[hsl(var(--toyota-platinum))]/40 rounded-2xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] px-2 py-1.5 flex items-center gap-1">
           {(["exterior", "interior"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setHeroMode(m)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${heroMode === m ? "bg-primary text-primary-foreground shadow-sm border border-primary/20" : "border border-transparent hover:bg-muted/50"}`}
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${heroMode === m ? "bg-[hsl(var(--toyota-graphite))] text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)]" : "border border-transparent hover:bg-[hsl(var(--neutral-100))] text-[hsl(var(--toyota-graphite))]"}`}
               role="tab"
               aria-selected={heroMode === m}
             >
@@ -310,13 +310,13 @@ const DesktopCarBuilder: React.FC<DesktopCarBuilderProps> = ({
 
           {/* Only render the Photo/360 toggle when Exterior is active */}
           {heroMode === "exterior" && (
-            <div className="ml-2 flex items-center gap-1 pl-2 border-l border-border/30">
+            <div className="ml-2 flex items-center gap-1 pl-2 border-l border-[hsl(var(--toyota-platinum))]/30">
               {(["photo", "spin"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => setExteriorView(v)}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${exteriorView === v ? "bg-muted/80 border border-border/50" : "hover:bg-muted/50"}`}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${exteriorView === v ? "bg-[hsl(var(--neutral-200))] border border-[hsl(var(--toyota-platinum))]/50 text-[hsl(var(--toyota-graphite))]" : "hover:bg-[hsl(var(--neutral-100))] text-[hsl(var(--toyota-stone))]"}`}
                   aria-pressed={exteriorView === v}
                 >
                   {v === "photo" ? "Photo" : "360"}

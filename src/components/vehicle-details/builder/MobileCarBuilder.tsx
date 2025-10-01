@@ -297,9 +297,9 @@ const MobileCarBuilder: React.FC<MobileCarBuilderProps> = ({
   }, [config.grade]);
 
   return (
-    <motion.div className="relative w-full min-h-screen flex flex-col bg-background" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="relative w-full min-h-screen flex flex-col bg-[hsl(var(--neutral-50))]" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {/* Header - Compact */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/20 sticky top-0 z-30 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[hsl(var(--toyota-platinum))]/20 sticky top-0 z-30 bg-white shadow-[0_4px_16px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-2">
           <button ref={step > 1 ? backRef : closeRef} onClick={() => (step > 1 ? goBack() : onClose())} className="rounded-xl border border-border/60 p-2.5 hover:bg-muted/50 active:scale-95 transition-all min-h-[40px] min-w-[40px] touch-manipulation" aria-label={step > 1 ? "Back" : "Close"} type="button">
             {step > 1 ? <ArrowLeft className="h-4 w-4" /> : <X className="h-4 w-4" />}
@@ -319,17 +319,17 @@ const MobileCarBuilder: React.FC<MobileCarBuilderProps> = ({
 
       {/* Mode Toggle + Photo/360 sub-toggle */}
       <div className="px-3 pt-2">
-        <div className="inline-flex border border-border/40 rounded-2xl bg-background/95 backdrop-blur-sm p-1 shadow-sm">
+        <div className="inline-flex border border-[hsl(var(--toyota-platinum))]/40 rounded-2xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] p-1">
           {(["exterior","interior"] as const).map(m => (
-            <button key={m} type="button" onClick={() => setHeroMode(m)} className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all min-h-[36px] touch-manipulation ${heroMode === m ? "bg-primary text-primary-foreground shadow-sm border border-primary/20" : "border border-transparent hover:bg-muted/30 active:scale-95"}`} aria-pressed={heroMode === m}>
+            <button key={m} type="button" onClick={() => setHeroMode(m)} className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all min-h-[36px] touch-manipulation ${heroMode === m ? "bg-[hsl(var(--toyota-graphite))] text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]" : "border border-transparent hover:bg-[hsl(var(--neutral-100))] active:scale-95 text-[hsl(var(--toyota-graphite))]"}`} aria-pressed={heroMode === m}>
               {m === "exterior" ? "Exterior" : "Interior"}
             </button>
           ))}
 
           {heroMode === "exterior" && (
-            <div className="ml-1 flex items-center gap-1 pl-2 border-l border-border/30">
+            <div className="ml-1 flex items-center gap-1 pl-2 border-l border-[hsl(var(--toyota-platinum))]/30">
               {(["photo", "spin"] as const).map((v) => (
-                <button key={v} type="button" onClick={() => setExteriorView(v)} className={`px-2.5 py-2 rounded-xl text-[11px] font-medium transition-all min-h-[36px] ${exteriorView === v ? "bg-muted/80 border border-border/50" : "hover:bg-muted/40"}`} aria-pressed={exteriorView === v}>
+                <button key={v} type="button" onClick={() => setExteriorView(v)} className={`px-2.5 py-2 rounded-xl text-[11px] font-semibold transition-all min-h-[36px] ${exteriorView === v ? "bg-[hsl(var(--neutral-200))] border border-[hsl(var(--toyota-platinum))]/50 text-[hsl(var(--toyota-graphite))]" : "hover:bg-[hsl(var(--neutral-100))] text-[hsl(var(--toyota-stone))]"}`} aria-pressed={exteriorView === v}>
                   {v === "photo" ? "Photo" : "360"}
                 </button>
               ))}

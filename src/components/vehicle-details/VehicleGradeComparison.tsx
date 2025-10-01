@@ -173,11 +173,14 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${getDialogSize()} overflow-y-auto bg-card text-card-foreground`}>
-        <DialogHeader className="border-b pb-4">
+      <DialogContent className={`${getDialogSize()} overflow-y-auto bg-gradient-to-br from-white to-[hsl(var(--neutral-50))] border-[hsl(var(--toyota-platinum))]/30 shadow-2xl`}>
+        <DialogHeader className="border-b border-[hsl(var(--toyota-platinum))]/20 pb-6">
           <DialogTitle className="flex items-center justify-between">
-            <span className="text-lg lg:text-xl">Compare {engineName} Grades</span>
-            <Button variant="ghost" size="sm" onClick={onClose} className="min-h-[44px] min-w-[44px]">
+            <div>
+              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-[hsl(var(--toyota-graphite))] to-[hsl(var(--toyota-charcoal))] bg-clip-text text-transparent">Compare {engineName} Grades</h2>
+              <p className="text-sm text-[hsl(var(--toyota-stone))] mt-1">Find the perfect configuration</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose} className="min-h-[44px] min-w-[44px] hover:bg-[hsl(var(--neutral-100))]">
               <X className="h-4 w-4" />
             </Button>
           </DialogTitle>
@@ -202,27 +205,27 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
             </div>
             
             <div className={`overflow-x-auto pb-2 ${isMobile ? '-mx-4 px-4' : ''}`}>
-              <div className={`flex gap-2 ${isMobile ? 'min-w-max' : 'flex-wrap'}`}>
+              <div className={`flex gap-3 ${isMobile ? 'min-w-max' : 'flex-wrap'}`}>
                 {grades.map((grade, index) => (
                   <Button
                     key={grade.name}
                     variant={selectedGrades.includes(index) ? "default" : "outline"}
                     size="sm"
                     onClick={() => toggleGradeSelection(index)}
-                    className={`h-auto p-3 flex flex-col items-start min-h-[48px] ${isMobile ? 'min-w-[140px]' : ''}`}
+                    className={`h-auto p-4 flex flex-col items-start min-h-[52px] ${isMobile ? 'min-w-[150px]' : ''} ${selectedGrades.includes(index) ? 'bg-[hsl(var(--toyota-graphite))] text-white border-[hsl(var(--toyota-graphite))] shadow-[0_4px_16px_rgba(0,0,0,0.15)]' : 'bg-white border-[hsl(var(--toyota-platinum))]/40 hover:border-[hsl(var(--toyota-graphite))]/30 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]'}`}
                     disabled={selectedGrades.length >= maxSelectableGrades && !selectedGrades.includes(index)}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       {selectedGrades.includes(index) && <Check className="h-3 w-3" />}
-                      <span className="font-semibold text-sm">{grade.name}</span>
+                      <span className="font-bold text-sm">{grade.name}</span>
                       {grade.badge === "Most Popular" && (
-                        <Badge className="bg-orange-100 text-orange-700 text-xs px-1 py-0">
-                          <Star className="h-2 w-2 mr-1" />
+                        <Badge className="bg-[hsl(var(--luxury-gold))]/20 text-[hsl(var(--luxury-gold))] border-[hsl(var(--luxury-gold))]/30 text-xs px-1.5 py-0.5">
+                          <Star className="h-2 w-2 mr-1 fill-current" />
                           Popular
                         </Badge>
                       )}
                     </div>
-                    <span className="text-xs opacity-80">AED {grade.price.toLocaleString()}</span>
+                    <span className="text-xs font-semibold opacity-70">AED {grade.price.toLocaleString()}</span>
                   </Button>
                 ))}
               </div>
@@ -256,28 +259,29 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
             </div>
           )}
           
-          <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : `grid grid-cols-${visibleGrades.length} gap-4`}`}>
+          <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : `grid grid-cols-${visibleGrades.length} gap-6`}`}>
             {visibleGradeObjects.filter(grade => grade).map((grade, idx) => (
-              <Card key={grade.name} className="overflow-hidden">
+              <Card key={grade.name} className="overflow-hidden border-[hsl(var(--toyota-platinum))]/30 shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-all">
                 <CardContent className="p-0">
-                  <div className={`${isMobile ? 'aspect-[4/3]' : 'aspect-video'} overflow-hidden`}>
+                  <div className={`${isMobile ? 'aspect-[4/3]' : 'aspect-video'} overflow-hidden relative group`}>
                     <img
                       src={grade.image}
                       alt={grade.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div className={`${isMobile ? 'p-3' : 'p-3 lg:p-4'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className={`font-semibold ${isMobile ? 'text-sm' : 'text-sm lg:text-base'}`}>{grade.name}</h4>
-                      <Badge variant="secondary" className="text-xs">
+                  <div className={`${isMobile ? 'p-4' : 'p-5 lg:p-6'} bg-gradient-to-br from-white to-[hsl(var(--neutral-50))]`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className={`font-bold ${isMobile ? 'text-base' : 'text-base lg:text-lg'} text-[hsl(var(--toyota-graphite))]`}>{grade.name}</h4>
+                      <Badge variant="secondary" className="text-xs bg-[hsl(var(--luxury-champagne))] text-[hsl(var(--toyota-graphite))] border-[hsl(var(--luxury-gold))]/30 font-semibold">
                         {grade.badge}
                       </Badge>
                     </div>
-                    <p className={`text-xs ${isMobile ? 'mb-2' : 'lg:text-sm text-muted-foreground mb-3'}`}>{grade.description}</p>
-                    <div className={`${isMobile ? 'mb-3' : 'mb-3 lg:mb-4'}`}>
-                      <div className={`font-bold ${isMobile ? 'text-sm' : 'text-base lg:text-lg'}`}>AED {grade.price.toLocaleString()}</div>
-                      <div className={`text-xs ${isMobile ? '' : 'lg:text-sm'} text-muted-foreground`}>From AED {grade.monthlyFrom}/month</div>
+                    <p className={`text-xs ${isMobile ? 'mb-3' : 'lg:text-sm text-[hsl(var(--toyota-stone))] mb-4'}`}>{grade.description}</p>
+                    <div className={`${isMobile ? 'mb-4' : 'mb-4 lg:mb-5'}`}>
+                      <div className={`font-bold ${isMobile ? 'text-lg' : 'text-xl lg:text-2xl'} text-[hsl(var(--toyota-graphite))]`}>AED {grade.price.toLocaleString()}</div>
+                      <div className={`text-xs ${isMobile ? '' : 'lg:text-sm'} text-[hsl(var(--toyota-stone))]`}>From AED {grade.monthlyFrom}/month</div>
                     </div>
                     <div className={`${isMobile ? 'space-y-2' : 'grid grid-cols-3 gap-2'}`}>
                       <Button
