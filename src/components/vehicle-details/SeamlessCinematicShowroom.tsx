@@ -1,99 +1,108 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useSwipeable } from "@/hooks/use-swipeable";
 
 // ---------------- CONFIG ----------------
 const galleryConfig = {
   vehicleName: "Toyota Land Cruiser 300",
   images: [
-    "https://media.cdntoyota.co.za/toyotacms23/attachments/clpslz0vh04i6zbak5vbxi2gx-lc-300-design-hero-1920x1080.desktop.jpg",
-    "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg",
-    "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg",
-    "https://media.cdntoyota.co.za/toyotacms23/attachments/clp5594z201l0okak4xj2z22v-lc-300-power-hero-1920x1080.desktop.jpg",
-    "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg",
-    "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgsz9zr06due4akk95h6lhl-lc-300-tech-side-by-side-02-682x460.desktop.jpg",
-    "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgtbm92002gg6aktgguhnjg-lc-300-tech-side-by-side-01-682x460.desktop.jpg"
+    "https://media.cdntoyota.co.za/toyotacms23/attachments/clpslz0vh04i6zbak5vbxi2gx-lc-300-design-hero-1920x1080.desktop.jpg", // design
+    "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg", // hero
+    "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg", // power
+    "https://media.cdntoyota.co.za/toyotacms23/attachments/clp5594z201l0okak4xj2z22v-lc-300-power-hero-1920x1080.desktop.jpg", // interior
+    "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg", // safety
+    "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgsz9zr06due4akk95h6lhl-lc-300-tech-side-by-side-02-682x460.desktop.jpg", // tech 1
+    "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgtbm92002gg6aktgguhnjg-lc-300-tech-side-by-side-01-682x460.desktop.jpg"  // tech 2
   ],
   hotspots: [
-    { id: "grille", x: "48%", y: "42%", label: "Dynamic Grille", detail: "Aggressive fascia with chrome & LED accents" },
-    { id: "wheels", x: "30%", y: "72%", label: "Alloy Wheels", detail: "Premium 20-inch machined alloys" },
-    { id: "lights", x: "70%", y: "38%", label: "LED Headlamps", detail: "Adaptive bi-beam LED technology" }
+    { id: "grille", x: "50%", y: "40%", label: "Dynamic Grille", detail: "Aggressive fascia with LED accents" },
+    { id: "wheels", x: "30%", y: "70%", label: "Alloy Wheels", detail: "Premium 19-inch machined alloys" },
+    { id: "lights", x: "70%", y: "35%", label: "LED Headlamps", detail: "Adaptive bi-beam LED technology" }
   ],
   interiorFeatures: [
-    { id: "steering", x: "42%", y: "62%", label: "Steering", detail: "Leather-wrapped multifunction controls" },
-    { id: "screen", x: "60%", y: "40%", label: "Infotainment", detail: "12.3-inch HD display with CarPlay" },
-    { id: "seats", x: "50%", y: "78%", label: "Seats", detail: "Premium ventilated leather seats" }
+    { id: "steering", x: "40%", y: "60%", label: "Steering", detail: "Leather-wrapped with multifunction controls" },
+    { id: "screen", x: "60%", y: "40%", label: "Infotainment", detail: "12.3-inch HD touch display with wireless CarPlay" },
+    { id: "seats", x: "50%", y: "75%", label: "Seats", detail: "Premium ventilated leather seats" }
   ],
   moods: [
     { id: "sport", label: "Sport Mode", gradient: "from-red-900/70 via-black to-black" },
     { id: "urban", label: "Urban Drive", gradient: "from-slate-900/70 via-black to-black" },
-    { id: "eco", label: "Eco Mode", gradient: "from-green-900/70 via-black to-black" }
+    { id: "eco", label: "Eco Mode", gradient: "from-green-900/60 via-black to-black" }
   ],
   lifestyleScenes: [
-    { id: "city", label: "City Drive", backdrop: "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg" },
-    { id: "desert", label: "Desert Escape", backdrop: "https://media.cdntoyota.co.za/toyotacms23/attachments/clp5594z201l0okak4xj2z22v-lc-300-power-hero-1920x1080.desktop.jpg" },
-    { id: "mountain", label: "Mountain Adventure", backdrop: "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg" }
+    { id: "city", label: "City Drive", backdrop: "https://media.cdntoyota.co.za/toyotacms23/attachments/clpslz0vh04i6zbak5vbxi2gx-lc-300-design-hero-1920x1080.desktop.jpg" },
+    { id: "desert", label: "Desert Escape", backdrop: "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg" },
+    { id: "mountain", label: "Mountain Adventure", backdrop: "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg" }
   ]
 };
 
-type SceneType = "hero" | "highlights" | "mood" | "interior" | "tech" | "lifestyle";
-const SCENES: SceneType[] = ["hero", "highlights", "mood", "interior", "tech", "lifestyle"];
+// Scenes
+type SceneType = "hero" | "power" | "safety" | "interior" | "tech" | "lifestyle";
+const SCENES: SceneType[] = ["hero", "power", "safety", "interior", "tech", "lifestyle"];
 
-interface SeamlessCinematicShowroomProps {
-  vehicleName: string;
-  galleryImages: { url: string; alt: string; category: string }[];
-  onReserve: () => void;
-  onTestDrive: () => void;
-  onConfigure: () => void;
+// ---------------- CUSTOM SWIPE HOOK ----------------
+function useSwipe(onSwipeLeft: () => void, onSwipeRight: () => void) {
+  const touchStart = React.useRef<number | null>(null);
+  return {
+    onTouchStart: (e: React.TouchEvent) => {
+      touchStart.current = e.changedTouches[0].clientX;
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      if (touchStart.current === null) return;
+      const diff = e.changedTouches[0].clientX - touchStart.current;
+      if (diff > 50) onSwipeRight();
+      if (diff < -50) onSwipeLeft();
+      touchStart.current = null;
+    }
+  };
 }
 
 // ---------------- COMPONENT ----------------
-const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
-  vehicleName,
-  galleryImages,
-  onReserve,
-  onTestDrive,
-  onConfigure
-}) => {
+const SeamlessCinematicShowroom: React.FC<{
+  onReserve?: () => void;
+  onTestDrive?: () => void;
+  onConfigure?: () => void;
+}> = ({ onReserve, onTestDrive, onConfigure }) => {
   const [currentScene, setCurrentScene] = useState<SceneType>("hero");
+  const [progress, setProgress] = useState(0);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
   const [activeInterior, setActiveInterior] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState("sport");
   const [selectedLifestyle, setSelectedLifestyle] = useState(0);
 
+  // Autoplay timeline
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentScene((prev) => {
+        const idx = SCENES.indexOf(prev);
+        return SCENES[(idx + 1) % SCENES.length];
+      });
+    }, 9000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Progress bar
-  const [progress, setProgress] = useState(0);
   useEffect(() => {
     setProgress(0);
     const interval = setInterval(() => {
       setProgress((p) => (p >= 100 ? 100 : p + 2));
-    }, 160);
+    }, 180);
     return () => clearInterval(interval);
   }, [currentScene]);
 
-  // Autoplay
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const idx = SCENES.indexOf(currentScene);
-      setCurrentScene(SCENES[(idx + 1) % SCENES.length]);
-    }, 8000);
-    return () => clearInterval(timer);
-  }, [currentScene]);
-
-  // Swipe support
-  const swipeRef = useSwipeable({
-    onSwipeLeft: () => {
+  // Swipe
+  const swipeHandlers = useSwipe(
+    () => {
       const idx = SCENES.indexOf(currentScene);
       setCurrentScene(SCENES[(idx + 1) % SCENES.length]);
     },
-    onSwipeRight: () => {
+    () => {
       const idx = SCENES.indexOf(currentScene);
       setCurrentScene(SCENES[(idx - 1 + SCENES.length) % SCENES.length]);
-    },
-    threshold: 50
-  });
+    }
+  );
 
   // Parallax
   const mouseX = useMotionValue(0.5);
@@ -111,21 +120,21 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
   }, [mouseX, mouseY]);
 
   return (
-    <section ref={swipeRef} className="relative w-full h-screen overflow-hidden bg-black text-white">
+    <section {...swipeHandlers} className="relative w-full h-screen overflow-hidden bg-black text-white">
       <AnimatePresence mode="wait">
-        {/* Scene 1: HERO */}
+        {/* HERO Scene */}
         {currentScene === "hero" && (
           <motion.div
             key="hero"
             className="absolute inset-0 flex flex-col items-center justify-center"
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
+            transition={{ duration: 1 }}
           >
             <motion.img
-              src={galleryConfig.images[0]}
-              alt={vehicleName}
+              src={galleryConfig.images[1]}
+              alt="Hero"
               className="w-[90%] max-w-6xl object-contain drop-shadow-2xl"
               style={{ x: parallaxX, y: parallaxY }}
             />
@@ -135,15 +144,74 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
               transition={{ delay: 0.5 }}
               className="mt-8 text-5xl md:text-7xl font-serif tracking-wide"
             >
-              {vehicleName}
+              {galleryConfig.vehicleName}
             </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1 }}
+              className="text-lg text-white/70 mt-4"
+            >
+              Where Luxury Meets Power
+            </motion.p>
+          </motion.div>
+        )}
+        {/* POWER Scene */}
+        {currentScene === "power" && (
+          <motion.div
+            key="power"
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <motion.img
+              src={galleryConfig.images[2]}
+              alt="Power"
+              className="w-[85%] max-w-5xl object-contain drop-shadow-2xl"
+              style={{ x: parallaxX, y: parallaxY }}
+            />
+            {/* Cinematic Overlay */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="absolute top-24 text-center"
+            >
+              <h2 className="text-4xl md:text-6xl font-bold text-white drop-shadow-xl">
+                Raw Power, Refined
+              </h2>
+              <p className="text-lg md:text-2xl text-white/70 mt-2">
+                Twin-turbo V6 delivering unstoppable performance
+              </p>
+            </motion.div>
+            {/* Spec Cards */}
+            <div className="absolute bottom-16 flex gap-6">
+              {[
+                { label: "Horsepower", value: "409 hp" },
+                { label: "Torque", value: "650 Nm" },
+                { label: "Efficiency", value: "10.3 L/100km" }
+              ].map((spec, idx) => (
+                <motion.div
+                  key={spec.label}
+                  initial={{ opacity: 0, y: 60 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 + idx * 0.2, type: "spring", stiffness: 100 }}
+                  className="px-6 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl"
+                >
+                  <p className="text-sm uppercase text-white/70">{spec.label}</p>
+                  <p className="text-xl font-bold text-white">{spec.value}</p>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
 
-        {/* Scene 2: HIGHLIGHTS */}
-        {currentScene === "highlights" && (
+        {/* SAFETY Scene (Hotspots) */}
+        {currentScene === "safety" && (
           <motion.div
-            key="highlights"
+            key="safety"
             className="absolute inset-0 flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -152,8 +220,8 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
           >
             <div className="relative w-[85%] max-w-6xl">
               <motion.img
-                src={galleryConfig.images[1]}
-                alt="Highlights"
+                src={galleryConfig.images[4]}
+                alt="Safety"
                 className="w-full h-auto object-contain"
                 style={{ x: parallaxX, y: parallaxY }}
               />
@@ -187,45 +255,7 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
           </motion.div>
         )}
 
-        {/* Scene 3: MOOD */}
-        {currentScene === "mood" && (
-          <motion.div
-            key="mood"
-            className="absolute inset-0 flex flex-col items-center justify-center gap-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-          >
-            <motion.div
-              className={`absolute inset-0 bg-gradient-to-br ${
-                galleryConfig.moods.find((m) => m.id === selectedMood)?.gradient
-              }`}
-              animate={{ opacity: [0.6, 0.9, 0.6] }}
-              transition={{ duration: 6, repeat: Infinity }}
-            />
-            <motion.img
-              src={galleryConfig.images[2]}
-              alt="Mood Scene"
-              className="w-[80%] max-w-5xl object-contain drop-shadow-2xl"
-              style={{ x: parallaxX, y: parallaxY }}
-            />
-            <div className="flex gap-4 z-20">
-              {galleryConfig.moods.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setSelectedMood(m.id)}
-                  className={`px-6 py-3 rounded-2xl backdrop-blur-xl border ${
-                    selectedMood === m.id ? "bg-white/20 border-white" : "bg-white/5 border-white/30"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-        {/* Scene 4: INTERIOR */}
+        {/* INTERIOR Scene */}
         {currentScene === "interior" && (
           <motion.div
             key="interior"
@@ -272,7 +302,7 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
           </motion.div>
         )}
 
-        {/* Scene 5: TECH */}
+        {/* TECH Scene */}
         {currentScene === "tech" && (
           <motion.div
             key="tech"
@@ -284,23 +314,39 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
           >
             <motion.img
               src={galleryConfig.images[5]}
-              alt="Tech Showcase"
+              alt="Tech 1"
               className="w-[70%] max-w-4xl rounded-xl shadow-2xl object-cover"
               style={{ x: parallaxX, y: parallaxY }}
             />
             <motion.img
               src={galleryConfig.images[6]}
-              alt="Tech Feature"
+              alt="Tech 2"
               className="w-[70%] max-w-4xl rounded-xl shadow-2xl object-cover"
               style={{ x: parallaxX, y: parallaxY }}
             />
-            <p className="text-sm md:text-lg text-center max-w-xl opacity-80">
-              Cutting-edge Toyota technology with advanced safety and connected features.
-            </p>
+            {/* Floating Glass Spec Cards */}
+            <div className="absolute bottom-12 flex gap-6">
+              {[
+                { label: "Infotainment", value: "12.3-inch HD Touch" },
+                { label: "Safety Suite", value: "Toyota Safety Sense" },
+                { label: "Connectivity", value: "Wireless CarPlay" }
+              ].map((spec, idx) => (
+                <motion.div
+                  key={spec.label}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + idx * 0.2 }}
+                  className="px-6 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg"
+                >
+                  <p className="text-sm text-white/70">{spec.label}</p>
+                  <p className="text-lg font-bold text-white">{spec.value}</p>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
 
-        {/* Scene 6: LIFESTYLE */}
+        {/* LIFESTYLE Scene */}
         {currentScene === "lifestyle" && (
           <motion.div
             key="lifestyle"
@@ -319,8 +365,8 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
               />
             </div>
             <motion.img
-              src={galleryConfig.images[4]}
-              alt={vehicleName}
+              src={galleryConfig.images[1]}
+              alt={galleryConfig.vehicleName}
               className="w-[80%] max-w-5xl object-contain drop-shadow-2xl z-20"
               style={{ x: parallaxX, y: parallaxY }}
             />
