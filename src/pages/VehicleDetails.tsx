@@ -34,20 +34,6 @@ import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
 
 // Lazy load heavy components with intelligent preloading
-const VehicleSpecs = createLazyComponent(
-  () => import("@/components/vehicle-details/VehicleSpecs"),
-  () => window.innerWidth > 768 // Preload on desktop
-);
-
-// VehicleGallery - Hidden as requested
-// const VehicleGallery = createLazyComponent(
-//   () => import("@/components/vehicle-details/VehicleGallery")
-// );
-
-const VehicleFeatures = createLazyComponent(
-  () => import("@/components/vehicle-details/VehicleFeatures")
-);
-
 const CinematicRelatedVehicles = createLazyComponent(
   () => import("@/components/vehicle-details/CinematicRelatedVehicles")
 );
@@ -60,28 +46,12 @@ const TechnologyShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/TechnologyShowcase")
 );
 
-// const VehicleMediaShowcase = createLazyComponent(
-//   () => import("@/components/vehicle-details/VehicleMediaShowcase") // Removed
-// );
-
-const RefinedTechExperience = createLazyComponent(
-  () => import("@/components/vehicle-details/RefinedTechExperience")
-);
-
 const StorytellingSection = createLazyComponent(
   () => import("@/components/vehicle-details/StorytellingSection")
 );
 
-const PreOwnedSimilar = createLazyComponent(
-  () => import("@/components/vehicle-details/PreOwnedSimilar")
-);
-
 const VehicleFAQ = createLazyComponent(
   () => import("@/components/vehicle-details/VehicleFAQ")
-);
-
-const VirtualShowroom = createLazyComponent(
-  () => import("@/components/vehicle-details/VirtualShowroom")
 );
 
 const PremiumMediaShowcase = createLazyComponent(
@@ -289,12 +259,8 @@ const VehicleDetails = () => {
             shouldUseSuspense ? (
               <PerformanceErrorBoundary>
                 <Suspense fallback={<ComponentLoading height="400px" />}>
-                  <section id="virtual-showroom">
-                    <VirtualShowroom vehicle={vehicle} />
-                  </section>
-                  
                   <section id="media-showcase">
-        <PremiumMediaShowcase vehicle={vehicle} />
+                    <PremiumMediaShowcase vehicle={vehicle} />
                   </section>
 
                   <StorytellingSection
@@ -312,27 +278,11 @@ const VehicleDetails = () => {
                   <section id="offers">
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
-                  
-                  
-                  <section id="tech-experience">
-                    <RefinedTechExperience vehicle={vehicle} />
-                  </section>
                 </Suspense>
               </PerformanceErrorBoundary>
             ) : (
               <PerformanceErrorBoundary>
-                <section id="virtual-showroom">
-                  <VirtualShowroom vehicle={vehicle} />
-                </section>
-                
-                <section id="media-showcase">
-                   {/* VehicleMediaShowcase temporarily disabled */}
-                   <div className="py-16 text-center">
-                     <p className="text-muted-foreground">Media showcase coming soon</p>
-                   </div>
-                </section>
-
-                 <Suspense fallback={<ComponentLoading />}>
+                <Suspense fallback={<ComponentLoading />}>
                   <StorytellingSection
                     galleryImages={galleryImages}
                     monthlyEMI={monthlyEMI}
@@ -348,12 +298,6 @@ const VehicleDetails = () => {
 
                 <section id="offers">
                   <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
-                </section>
-                
-                <section id="tech-experience">
-                   <Suspense fallback={<ComponentLoading />}>
-                    <RefinedTechExperience vehicle={vehicle} />
-                  </Suspense>
                 </section>
               </PerformanceErrorBoundary>
             )
@@ -401,10 +345,6 @@ const VehicleDetails = () => {
               <section id="related" aria-labelledby="related-vehicles-heading">
                 <h2 id="related-vehicles-heading" className="sr-only">Related Vehicles</h2>
                 <CinematicRelatedVehicles currentVehicle={vehicle} />
-              </section>
-
-              <section id="preowned-similar">
-                <PreOwnedSimilar currentVehicle={vehicle} />
               </section>
               
               <section id="faq">

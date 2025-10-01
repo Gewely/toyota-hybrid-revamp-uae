@@ -7,6 +7,13 @@ import { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
 import { Star, ArrowRight, Wrench, Car, Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface EngineGradeSelectionProps {
   vehicle: VehicleModel;
@@ -183,7 +190,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           </p>
         </motion.div>
 
-        {/* Engine Selection */}
+        {/* Engine Selection - Side by Side on Mobile */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -192,13 +199,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           className="mb-12"
         >
           <h3 className="text-xl font-bold mb-6 text-center">Select Engine</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          <div className={`gap-4 max-w-4xl mx-auto ${isMobile ? 'grid grid-cols-2' : 'grid grid-cols-1 md:grid-cols-2'}`}>
             {engines.map((engine) => (
               <motion.div
                 key={engine.name}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: isMobile ? 1 : 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className={`p-6 rounded-xl cursor-pointer transition-all duration-200 border-2 ${
+                className={`${isMobile ? 'p-4' : 'p-6'} rounded-xl cursor-pointer transition-all duration-200 border-2 ${
                   selectedEngine === engine.name 
                     ? 'bg-primary/10 border-primary shadow-lg' 
                     : 'bg-card border-border hover:border-primary/50'
@@ -207,112 +214,196 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="text-lg font-bold">{engine.name} {engine.type}</h4>
-                    <p className="text-primary text-sm font-medium">{engine.power} • {engine.torque}</p>
+                    <h4 className={`font-bold ${isMobile ? 'text-sm' : 'text-lg'}`}>
+                      {engine.name} {isMobile ? '' : engine.type}
+                    </h4>
+                    <p className={`text-primary font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                      {engine.power} • {engine.torque}
+                    </p>
                   </div>
                   {selectedEngine === engine.name && (
-                    <Check className="h-5 w-5 text-primary" />
+                    <Check className={`text-primary ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Fuel Economy: {engine.efficiency}
+                <div className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                  {isMobile ? engine.efficiency : `Fuel Economy: ${engine.efficiency}`}
                 </div>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
-        {/* Grades Grid */}
-        <div className={`grid gap-6 mb-12 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
-          {grades.map((grade, index) => (
-            <motion.div
-              key={`${selectedEngine}-${grade.name}`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-            >
-              <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                <CardContent className="p-0">
-                  {/* Grade Image */}
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                      src={grade.image}
-                      alt={`${vehicle.name} ${grade.name} Grade`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-4 right-4">
-                      <Badge className={grade.badgeColor}>
-                        {grade.badge === "Most Popular" && <Star className="w-3 h-3 mr-1" />}
-                        {grade.badge}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Grade Content */}
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <h3 className="text-xl font-bold mb-2">{grade.name} Grade</h3>
-                      <p className="text-sm text-muted-foreground">{grade.description}</p>
-                    </div>
-
-                    {/* Pricing */}
-                    <div className="mb-6">
-                      <div className="text-2xl font-bold">AED {grade.price.toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">
-                        From AED {grade.monthlyFrom}/month
+        {/* Grades - Carousel on Mobile, Grid on Desktop */}
+        {isMobile ? (
+          <Carousel className="w-full mb-12">
+            <CarouselContent>
+              {grades.map((grade, index) => (
+                <CarouselItem key={`${selectedEngine}-${grade.name}`}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <Card className="overflow-hidden">
+                      <CardContent className="p-0">
+                        <div className="relative aspect-[4/3] overflow-hidden">
+                          <img
+                            src={grade.image}
+                            alt={`${vehicle.name} ${grade.name} Grade`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-4 right-4">
+                            <Badge className={grade.badgeColor}>
+                              {grade.badge === "Most Popular" && <Star className="w-3 h-3 mr-1" />}
+                              {grade.badge}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <div className="mb-4">
+                            <h3 className="text-xl font-bold mb-2">{grade.name} Grade</h3>
+                            <p className="text-sm text-muted-foreground">{grade.description}</p>
+                          </div>
+                          <div className="mb-6">
+                            <div className="text-2xl font-bold">AED {grade.price.toLocaleString()}</div>
+                            <div className="text-sm text-muted-foreground">
+                              From AED {grade.monthlyFrom}/month
+                            </div>
+                          </div>
+                          <div className="mb-6">
+                            <h4 className="font-semibold mb-2">Key Features:</h4>
+                            <ul className="text-sm text-muted-foreground space-y-1">
+                              {grade.features.slice(0, 3).map((feature, idx) => (
+                                <li key={idx} className="flex items-center">
+                                  <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2" />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="space-y-3">
+                            <Button
+                              className="w-full"
+                              onClick={() => handleGradeSelect(grade.name)}
+                            >
+                              Select {grade.name}
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleCarBuilder(grade.name)}
+                              >
+                                <Wrench className="w-4 h-4 mr-1" />
+                                Build
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleTestDrive(grade.name)}
+                              >
+                                <Car className="w-4 h-4 mr-1" />
+                                Drive
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2" />
+          </Carousel>
+        ) : (
+          <div className="grid gap-6 mb-12 grid-cols-3">
+            {grades.map((grade, index) => (
+              <motion.div
+                key={`${selectedEngine}-${grade.name}`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <CardContent className="p-0">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img
+                        src={grade.image}
+                        alt={`${vehicle.name} ${grade.name} Grade`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-4 right-4">
+                        <Badge className={grade.badgeColor}>
+                          {grade.badge === "Most Popular" && <Star className="w-3 h-3 mr-1" />}
+                          {grade.badge}
+                        </Badge>
                       </div>
                     </div>
-
-                    {/* Key Features */}
-                    <div className="mb-6">
-                      <h4 className="font-semibold mb-2">Key Features:</h4>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {grade.features.slice(0, 3).map((feature, idx) => (
-                          <li key={idx} className="flex items-center">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="space-y-3">
-                      <Button
-                        className="w-full"
-                        onClick={() => handleGradeSelect(grade.name)}
-                      >
-                        Select {grade.name}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                      <div className="flex gap-2">
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <h3 className="text-xl font-bold mb-2">{grade.name} Grade</h3>
+                        <p className="text-sm text-muted-foreground">{grade.description}</p>
+                      </div>
+                      <div className="mb-6">
+                        <div className="text-2xl font-bold">AED {grade.price.toLocaleString()}</div>
+                        <div className="text-sm text-muted-foreground">
+                          From AED {grade.monthlyFrom}/month
+                        </div>
+                      </div>
+                      <div className="mb-6">
+                        <h4 className="font-semibold mb-2">Key Features:</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          {grade.features.slice(0, 3).map((feature, idx) => (
+                            <li key={idx} className="flex items-center">
+                              <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleCarBuilder(grade.name)}
+                          className="w-full"
+                          onClick={() => handleGradeSelect(grade.name)}
                         >
-                          <Wrench className="w-4 h-4 mr-1" />
-                          Build
+                          Select {grade.name}
+                          <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleTestDrive(grade.name)}
-                        >
-                          <Car className="w-4 h-4 mr-1" />
-                          Drive
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleCarBuilder(grade.name)}
+                          >
+                            <Wrench className="w-4 h-4 mr-1" />
+                            Build
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleTestDrive(grade.name)}
+                          >
+                            <Car className="w-4 h-4 mr-1" />
+                            Drive
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Compare Button */}
         <motion.div

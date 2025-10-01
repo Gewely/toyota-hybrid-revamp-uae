@@ -64,31 +64,46 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
   const isMobile = useIsMobile();
   const { deviceCategory } = useDeviceInfo();
   
-  // Mobile: 2 grades, Desktop: 3 grades (standardized)
-  const maxGrades = isMobile ? 2 : 3;
+  // Support up to 12 grades: Mobile shows 2 in comparison view, desktop shows 3
+  const maxGradesInView = isMobile ? 2 : 3;
+  const maxSelectableGrades = 12;
   
   const [selectedGrades, setSelectedGrades] = useState<number[]>(() => {
-    const availableGrades = Math.min(grades.length, maxGrades);
-    return Array.from({ length: availableGrades }, (_, index) => index);
+    const initialCount = Math.min(grades.length, maxGradesInView);
+    return Array.from({ length: initialCount }, (_, index) => index);
   });
   const [showOnlyDifferences, setShowOnlyDifferences] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   // Update selected grades when grades prop changes
   React.useEffect(() => {
     if (grades.length > 0) {
-      const availableGrades = Math.min(grades.length, maxGrades);
-      setSelectedGrades(Array.from({ length: availableGrades }, (_, index) => index));
+      const initialCount = Math.min(grades.length, maxGradesInView);
+      setSelectedGrades(Array.from({ length: initialCount }, (_, index) => index));
     }
-  }, [grades.length, maxGrades]);
+  }, [grades.length, maxGradesInView]);
 
   const toggleGradeSelection = (gradeIndex: number) => {
     if (selectedGrades.includes(gradeIndex)) {
       if (selectedGrades.length > 1) {
         setSelectedGrades(prev => prev.filter(i => i !== gradeIndex));
       }
-    } else if (selectedGrades.length < maxGrades) {
+    } else if (selectedGrades.length < maxSelectableGrades) {
       setSelectedGrades(prev => [...prev, gradeIndex].sort());
     }
+  };
+
+  // Pagination for comparison view
+  const visibleGrades = selectedGrades.slice(scrollOffset, scrollOffset + maxGradesInView);
+  const canScrollNext = scrollOffset + maxGradesInView < selectedGrades.length;
+  const canScrollPrev = scrollOffset > 0;
+
+  const scrollNext = () => {
+    if (canScrollNext) setScrollOffset(prev => prev + 1);
+  };
+
+  const scrollPrev = () => {
+    if (canScrollPrev) setScrollOffset(prev => prev - 1);
   };
 
   const comparisonSpecs = [
@@ -146,6 +161,7 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
   ];
 
   const selectedGradeObjects = selectedGrades.map(index => grades[index]).filter(grade => grade !== undefined);
+  const visibleGradeObjects = visibleGrades.map(index => grades[index]).filter(grade => grade !== undefined);
 
   // Mobile-optimized dialog sizing
   const getDialogSize = () => {
@@ -168,10 +184,12 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
         </DialogHeader>
 
         <div className="mt-4 lg:mt-6 space-y-4 lg:space-y-6">
-          {/* Grade Selection - Mobile Optimized */}
+          {/* Grade Selection - Scrollable */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base lg:text-lg font-semibold">Select Grades to Compare (Max {maxGrades})</h3>
+              <h3 className="text-base lg:text-lg font-semibold">
+                Select Grades ({selectedGrades.length}/{maxSelectableGrades})
+              </h3>
               <Button
                 variant="outline"
                 size="sm"
@@ -183,35 +201,63 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
               </Button>
             </div>
             
-            <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : `grid grid-cols-3 gap-3`}`}>
-              {grades.map((grade, index) => (
-                <Button
-                  key={grade.name}
-                  variant={selectedGrades.includes(index) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleGradeSelection(index)}
-                  className="h-auto p-3 flex flex-col items-start min-h-[48px]"
-                  disabled={selectedGrades.length >= maxGrades && !selectedGrades.includes(index)}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    {selectedGrades.includes(index) && <Check className="h-3 w-3" />}
-                    <span className="font-semibold text-sm">{grade.name}</span>
-                    {grade.badge === "Most Popular" && (
-                      <Badge className="bg-orange-100 text-orange-700 text-xs px-1 py-0">
-                        <Star className="h-2 w-2 mr-1" />
-                        Popular
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="text-xs opacity-80">AED {grade.price.toLocaleString()}</span>
-                </Button>
-              ))}
+            <div className={`overflow-x-auto pb-2 ${isMobile ? '-mx-4 px-4' : ''}`}>
+              <div className={`flex gap-2 ${isMobile ? 'min-w-max' : 'flex-wrap'}`}>
+                {grades.map((grade, index) => (
+                  <Button
+                    key={grade.name}
+                    variant={selectedGrades.includes(index) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleGradeSelection(index)}
+                    className={`h-auto p-3 flex flex-col items-start min-h-[48px] ${isMobile ? 'min-w-[140px]' : ''}`}
+                    disabled={selectedGrades.length >= maxSelectableGrades && !selectedGrades.includes(index)}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      {selectedGrades.includes(index) && <Check className="h-3 w-3" />}
+                      <span className="font-semibold text-sm">{grade.name}</span>
+                      {grade.badge === "Most Popular" && (
+                        <Badge className="bg-orange-100 text-orange-700 text-xs px-1 py-0">
+                          <Star className="h-2 w-2 mr-1" />
+                          Popular
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs opacity-80">AED {grade.price.toLocaleString()}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Grade Images and Info - Side by Side on Mobile */}
-          <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : `grid grid-cols-${selectedGrades.length} gap-4`}`}>
-            {selectedGradeObjects.filter(grade => grade).map((grade, idx) => (
+          {/* Grade Images and Info - Paginated View */}
+          {selectedGrades.length > maxGradesInView && (
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={scrollPrev}
+                disabled={!canScrollPrev}
+                className="min-h-[40px]"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Viewing {scrollOffset + 1}-{Math.min(scrollOffset + maxGradesInView, selectedGrades.length)} of {selectedGrades.length}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={scrollNext}
+                disabled={!canScrollNext}
+                className="min-h-[40px]"
+              >
+                Next
+              </Button>
+            </div>
+          )}
+          
+          <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : `grid grid-cols-${visibleGrades.length} gap-4`}`}>
+            {visibleGradeObjects.filter(grade => grade).map((grade, idx) => (
               <Card key={grade.name} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className={`${isMobile ? 'aspect-[4/3]' : 'aspect-video'} overflow-hidden`}>
@@ -275,16 +321,16 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
             ))}
           </div>
 
-          {/* Collapsible Comparison Sections */}
+          {/* Collapsible Comparison Sections - Using visible grades */}
           <div className="space-y-2">
             {comparisonSpecs.map((section, index) => (
               <CollapsibleComparisonSection
                 key={section.title}
                 title={section.title}
                 items={section.items}
-                grades={selectedGradeObjects}
+                grades={visibleGradeObjects}
                 showOnlyDifferences={showOnlyDifferences}
-                defaultOpen={!isMobile && index === 0} // Open first section by default on desktop
+                defaultOpen={!isMobile && index === 0}
               />
             ))}
           </div>

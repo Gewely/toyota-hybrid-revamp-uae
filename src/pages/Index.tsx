@@ -21,7 +21,6 @@ import VehicleRecommendations from "@/components/home/VehicleRecommendations";
 import LuxuryShowcase from "@/components/LuxuryShowcase";
 import CarBuilder from "@/components/builder/CarBuilder";
 import LuxuryComparisonTool from "@/components/comparison/LuxuryComparisonTool";
-import RefinedTechExperience from "@/components/tech/RefinedTechExperience";
 import CustomerJourneyCTAs from "@/components/cta/CustomerJourneyCTAs";
 import { vehicles, preOwnedVehicles, heroSlides } from "@/data/vehicles";
 import { VehicleModel } from "@/types/vehicle";
@@ -457,9 +456,6 @@ const Index = () => {
           onCarouselAction={(id) => console.log('Carousel action:', id)}
         />
       )}
-
-      {/* Refined Tech Experience */}
-      <RefinedTechExperience />
 
       {/* Customer Journey CTAs */}
       <CustomerJourneyCTAs />
