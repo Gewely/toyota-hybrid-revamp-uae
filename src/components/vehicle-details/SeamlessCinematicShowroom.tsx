@@ -389,7 +389,7 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
           {currentScene === 'interior' && (
             <div className="relative w-full h-full">
               <img
-                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&auto=format&fit=crop"
+                src="https://media.cdntoyota.co.za/toyotacms23/attachments/clp5597ar01l8okakhr2brhc7-lc-300-tech-hero-1920x1080.desktop.jpg"
                 alt="Interior"
                 className="w-full h-full object-cover"
               />
@@ -439,7 +439,7 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
           {currentScene === 'safety' && (
             <div className="relative w-full h-full">
               <img
-                src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920&auto=format&fit=crop"
+                src="https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg"
                 alt="Safety"
                 className="w-full h-full object-cover"
               />
@@ -504,10 +504,10 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
                   key={lifestyleMode}
                   src={
                     lifestyleMode === 'city' 
-                      ? "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920&auto=format&fit=crop"
+                      ? "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg"
                       : lifestyleMode === 'highway'
-                      ? "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1920&auto=format&fit=crop"
-                      : "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=1920&auto=format&fit=crop"
+                      ? "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg"
+                      : "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-2160.jpg"
                   }
                   alt="Lifestyle"
                   className="w-full h-full object-cover"
@@ -712,7 +712,7 @@ const HeroModal = ({ is360Playing, setIs360Playing, rotation360 }: { is360Playin
     <div className="relative">
       <div className="relative w-full h-96 bg-[hsl(var(--neutral-900))] rounded-3xl overflow-hidden border border-[hsl(var(--toyota-platinum))]/20">
         <motion.img
-          src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=1200&auto=format&fit=crop"
+          src="https://www.virtualshowroom.toyota.ae/configurator/land-cruiser/en"
           alt="Vehicle 360"
           className="w-full h-full object-cover"
           style={{ transform: `rotateY(${rotation360}deg)` }}
@@ -918,7 +918,7 @@ const InteriorModal = ({ activeHotspot, setActiveHotspot }: { activeHotspot: num
     <div className="grid md:grid-cols-2 gap-6">
       <div className="relative h-96 rounded-3xl overflow-hidden border border-[hsl(var(--toyota-platinum))]/20">
         <img
-          src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop"
+          src="https://media.cdntoyota.co.za/toyotacms23/attachments/clps69a9y03fo7bakk274gy8j-lc-300-design-ip-04.desktop.jpg"
           alt="Interior"
           className="w-full h-full object-cover"
         />
@@ -1019,10 +1019,10 @@ const LifestyleModal = ({ lifestyleMode, setLifestyleMode }: { lifestyleMode: Li
         <img
           src={
             lifestyleMode === 'city'
-              ? "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1200&auto=format&fit=crop"
+              ? "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-004-1440w.jpg"
               : lifestyleMode === 'highway'
-              ? "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200&auto=format&fit=crop"
-              : "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=1200&auto=format&fit=crop"
+              ? "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg"
+              : "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg"
           }
           alt={lifestyleMode}
           className="w-full h-full object-cover"
