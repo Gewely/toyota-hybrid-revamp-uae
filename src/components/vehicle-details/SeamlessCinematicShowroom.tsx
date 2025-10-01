@@ -1,50 +1,88 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useSwipeable } from "react-swipeable";
+import { useSwipeable } from "@/hooks/use-swipeable";
 
 /**
- * CONFIG with Land Cruiser images
+ * CONFIG — Toyota Land Cruiser 300 Scenes
  */
 const galleryConfig = {
   vehicleName: "Toyota Land Cruiser 300",
   scenes: {
     hero: {
-      image: "https://media.cdntoyota.co.za/toyotacms23/attachments/clpslz0vh04i6zbak5vbxi2gx-lc-300-design-hero-1920x1080.desktop.jpg",
+      title: "Design",
+      subtitle: "Sculpted strength with elegance",
+      image:
+        "https://media.cdntoyota.co.za/toyotacms23/attachments/clpslz0vh04i6zbak5vbxi2gx-lc-300-design-hero-1920x1080.desktop.jpg",
     },
     highlights: {
-      image: "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg",
+      title: "Highlights",
+      subtitle: "Every detail crafted for presence",
+      image:
+        "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg",
     },
     exterior: {
-      image: "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg",
+      title: "Exterior",
+      subtitle: "Commanding stance, unmistakable Toyota DNA",
+      image:
+        "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg",
     },
     power: {
-      image: "https://media.cdntoyota.co.za/toyotacms23/attachments/clp5594z201l0okak4xj2z22v-lc-300-power-hero-1920x1080.desktop.jpg",
+      title: "Performance",
+      subtitle: "Unstoppable power, refined control",
+      image:
+        "https://media.cdntoyota.co.za/toyotacms23/attachments/clp5594z201l0okak4xj2z22v-lc-300-power-hero-1920x1080.desktop.jpg",
     },
     safety: {
-      image: "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg",
+      title: "Safety",
+      subtitle: "Advanced protection for every journey",
+      image:
+        "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg",
     },
     tech1: {
-      image: "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgsz9zr06due4akk95h6lhl-lc-300-tech-side-by-side-02-682x460.desktop.jpg",
+      title: "Technology",
+      subtitle: "Smart features for seamless driving",
+      image:
+        "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgsz9zr06due4akk95h6lhl-lc-300-tech-side-by-side-02-682x460.desktop.jpg",
     },
     tech2: {
-      image: "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgtbm92002gg6aktgguhnjg-lc-300-tech-side-by-side-01-682x460.desktop.jpg",
+      title: "Technology",
+      subtitle: "Innovation that enhances every drive",
+      image:
+        "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgtbm92002gg6aktgguhnjg-lc-300-tech-side-by-side-01-682x460.desktop.jpg",
     },
   },
   hotspots: {
     highlights: [
-      { id: "grille", x: "50%", y: "40%", label: "Dynamic Grille", detail: "Aggressive fascia with LED accents" },
-      { id: "lights", x: "70%", y: "30%", label: "LED Headlights", detail: "Adaptive bi-beam LEDs" },
+      {
+        id: "grille",
+        x: "50%",
+        y: "40%",
+        label: "Dynamic Grille",
+        detail: "Aggressive fascia with LED accents",
+      },
+      {
+        id: "lights",
+        x: "70%",
+        y: "30%",
+        label: "LED Headlights",
+        detail: "Adaptive bi-beam LEDs",
+      },
     ],
     safety: [
-      { id: "airbags", x: "60%", y: "50%", label: "Safety Airbags", detail: "Comprehensive 9-airbag system" },
-    ],
-    tech1: [
-      { id: "display", x: "40%", y: "60%", label: "Info Display", detail: "Side-by-side tech view 1" },
-    ],
-    tech2: [
-      { id: "sensors", x: "60%", y: "40%", label: "Sensors", detail: "Advanced safety sensors" },
+      {
+        id: "airbags",
+        x: "60%",
+        y: "50%",
+        label: "Safety Airbags",
+        detail: "Comprehensive 9-airbag system",
+      },
     ],
   },
 };
@@ -57,13 +95,13 @@ const ModelImmersiveGallery: React.FC = () => {
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
-  // Autoplay scenes
+  // Autoplay (8s per scene)
   useEffect(() => {
     const timer = setInterval(() => {
       const idx = SCENE_KEYS.indexOf(currentSceneKey);
       const next = SCENE_KEYS[(idx + 1) % SCENE_KEYS.length];
       setCurrentSceneKey(next);
-      setActiveHotspot(null); // reset hotspots
+      setActiveHotspot(null);
     }, 8000);
     return () => clearInterval(timer);
   }, [currentSceneKey]);
@@ -73,23 +111,26 @@ const ModelImmersiveGallery: React.FC = () => {
     setProgress(0);
     const iv = setInterval(() => {
       setProgress((p) => (p >= 100 ? 100 : p + 2));
-    }, 160); // 8s
+    }, 160);
     return () => clearInterval(iv);
   }, [currentSceneKey]);
 
-  // Swipe
+  // Swipe (mobile)
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
+    onSwipeLeft: () => {
       const idx = SCENE_KEYS.indexOf(currentSceneKey);
       setCurrentSceneKey(SCENE_KEYS[(idx + 1) % SCENE_KEYS.length]);
     },
-    onSwipedRight: () => {
+    onSwipeRight: () => {
       const idx = SCENE_KEYS.indexOf(currentSceneKey);
-      setCurrentSceneKey(SCENE_KEYS[(idx - 1 + SCENE_KEYS.length) % SCENE_KEYS.length]);
+      setCurrentSceneKey(
+        SCENE_KEYS[(idx - 1 + SCENE_KEYS.length) % SCENE_KEYS.length]
+      );
     },
+    threshold: 50,
   });
 
-  // Parallax
+  // Parallax (desktop hover)
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
   const parallaxX = useTransform(mouseX, [0, 1], [-30, 30]);
@@ -117,6 +158,7 @@ const ModelImmersiveGallery: React.FC = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
         >
+          {/* Scene Background */}
           <motion.img
             src={galleryConfig.scenes[currentSceneKey].image}
             alt={currentSceneKey}
@@ -124,7 +166,27 @@ const ModelImmersiveGallery: React.FC = () => {
             style={{ x: parallaxX, y: parallaxY }}
           />
 
-          {/* Hotspots */}
+          {/* Scene Overlay Title */}
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 text-center z-20">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-4xl md:text-6xl font-serif tracking-wide drop-shadow-xl"
+            >
+              {galleryConfig.scenes[currentSceneKey].title}
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="text-lg md:text-2xl opacity-80"
+            >
+              {galleryConfig.scenes[currentSceneKey].subtitle}
+            </motion.p>
+          </div>
+
+          {/* Hotspots with HUD animation */}
           {galleryConfig.hotspots[currentSceneKey] &&
             galleryConfig.hotspots[currentSceneKey].map((spot) => (
               <motion.div
@@ -142,13 +204,13 @@ const ModelImmersiveGallery: React.FC = () => {
                 <AnimatePresence>
                   {activeHotspot === spot.id && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className="absolute left-8 top-1/2 -translate-y-1/2 p-3 bg-black/70 backdrop-blur-xl rounded-xl shadow-xl w-48"
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute left-10 top-1/2 -translate-y-1/2 px-4 py-3 bg-gradient-to-br from-black/70 to-black/40 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl w-56"
                     >
                       <h3 className="text-sm font-semibold">{spot.label}</h3>
-                      <p className="text-xs opacity-70">{spot.detail}</p>
+                      <p className="text-xs opacity-80">{spot.detail}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -157,18 +219,23 @@ const ModelImmersiveGallery: React.FC = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Scene Navigator (dots) */}
-      <div className="absolute top-6 right-6 z-50 flex flex-col gap-2">
+      {/* Thumbnail Navigator */}
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-2 z-50">
         {SCENE_KEYS.map((key) => (
-          <button
+          <motion.button
             key={key}
             onClick={() => setCurrentSceneKey(key)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              key === currentSceneKey
-                ? "bg-white"
-                : "bg-white/40 hover:bg-white/70"
+            whileHover={{ scale: 1.05 }}
+            className={`w-20 h-12 rounded-md overflow-hidden border-2 ${
+              key === currentSceneKey ? "border-white" : "border-white/30"
             }`}
-          />
+          >
+            <img
+              src={galleryConfig.scenes[key].image}
+              alt={key}
+              className="w-full h-full object-cover"
+            />
+          </motion.button>
         ))}
       </div>
 
@@ -181,15 +248,27 @@ const ModelImmersiveGallery: React.FC = () => {
         />
       </div>
 
-      {/* CTA */}
+      {/* Floating CTA */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 px-6 py-4 rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg z-50">
-        <Button variant="default" size="lg" className="bg-white/20 text-white hover:bg-white/30">
+        <Button
+          variant="default"
+          size="lg"
+          className="bg-white/20 text-white hover:bg-white/30"
+        >
           Reserve
         </Button>
-        <Button variant="outline" size="lg" className="text-white border-white/40 hover:bg-white/20">
+        <Button
+          variant="outline"
+          size="lg"
+          className="text-white border-white/40 hover:bg-white/20"
+        >
           Test Drive
         </Button>
-        <Button variant="outline" size="lg" className="text-white border-white/40 hover:bg-white/20">
+        <Button
+          variant="outline"
+          size="lg"
+          className="text-white border-white/40 hover:bg-white/20"
+        >
           Configure
         </Button>
       </div>
