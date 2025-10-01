@@ -306,11 +306,6 @@ const VehicleDetails = () => {
                     <VirtualShowroom vehicleName={vehicle.name} />
                   </section>
 
-                  {/* Pre-Owned Similar - After Virtual Showroom */}
-                  <section id="pre-owned">
-                    <PreOwnedSimilar currentVehicle={vehicle.name} />
-                  </section>
-
                   <section id="offers">
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
@@ -334,11 +329,6 @@ const VehicleDetails = () => {
                   {/* Virtual Showroom - Under Storytelling */}
                   <section id="virtual-showroom">
                     <VirtualShowroom vehicleName={vehicle.name} />
-                  </section>
-
-                  {/* Pre-Owned Similar - After Virtual Showroom */}
-                  <section id="pre-owned">
-                    <PreOwnedSimilar currentVehicle={vehicle.name} />
                   </section>
                 </Suspense>
 
@@ -391,6 +381,11 @@ const VehicleDetails = () => {
               <section id="related" aria-labelledby="related-vehicles-heading">
                 <h2 id="related-vehicles-heading" className="sr-only">Related Vehicles</h2>
                 <CinematicRelatedVehicles currentVehicle={vehicle} />
+              </section>
+              
+              {/* Pre-Owned Similar - Above FAQ */}
+              <section id="pre-owned">
+                <PreOwnedSimilar />
               </section>
               
               <section id="faq">

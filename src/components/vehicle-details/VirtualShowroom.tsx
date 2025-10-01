@@ -9,6 +9,14 @@ interface VirtualShowroomProps {
 
 const VirtualShowroom: React.FC<VirtualShowroomProps> = ({ vehicleName }) => {
   const [isActive, setIsActive] = useState(false);
+  
+  // Convert vehicle name to URL format (e.g., "Toyota Land Cruiser" -> "land-cruiser")
+  const urlPath = vehicleName
+    .toLowerCase()
+    .replace(/toyota\s+/gi, "")
+    .replace(/\s+/g, "-");
+  
+  const iframeUrl = `https://www.virtualshowroom.toyota.ae/configurator/${urlPath}/en`;
 
   const handleActivate = () => {
     setIsActive(true);
@@ -23,7 +31,7 @@ const VirtualShowroom: React.FC<VirtualShowroomProps> = ({ vehicleName }) => {
         className="relative w-full h-screen bg-background/95 backdrop-blur-sm"
       >
         <iframe
-          src={`https://www.toyota.com/360-congfigurator/${vehicleName.toLowerCase()}`}
+          src={iframeUrl}
           className="w-full h-full border-0"
           title={`${vehicleName} Virtual Showroom`}
           loading="lazy"
