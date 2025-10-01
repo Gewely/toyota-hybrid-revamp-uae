@@ -38,10 +38,6 @@ const CinematicRelatedVehicles = createLazyComponent(
   () => import("@/components/vehicle-details/CinematicRelatedVehicles")
 );
 
-const Spiral3DGallery = createLazyComponent(
-  () => import("@/components/vehicle-details/Spiral3DGallery")
-);
-
 const TechnologyShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/TechnologyShowcase")
 );
@@ -58,8 +54,8 @@ const PremiumMediaShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/PremiumMediaShowcase")
 );
 
-const CinematicFlagshipGallery = createLazyComponent(
-  () => import("@/components/vehicle-details/CinematicFlagshipGallery")
+const SeamlessCinematicShowroom = createLazyComponent(
+  () => import("@/components/vehicle-details/SeamlessCinematicShowroom")
 );
 
 const VirtualShowroom = createLazyComponent(
@@ -266,13 +262,17 @@ const VehicleDetails = () => {
             </section>
           </PerformanceErrorBoundary>
 
-          {/* Cinematic Flagship Gallery - Above Storytelling */}
+          {/* Seamless Cinematic Showroom - Immersive Gallery Experience */}
           {shouldRenderHeavyContent && (
             <Suspense fallback={<ComponentLoading />}>
-              <section id="cinematic-gallery">
-                <CinematicFlagshipGallery
+              <section id="seamless-showroom">
+                <SeamlessCinematicShowroom
                   vehicleName={vehicle.name}
-                  galleryImages={galleryImages}
+                  galleryImages={galleryImages.map((src, index) => ({
+                    url: src,
+                    alt: `${vehicle.name} view ${index + 1}`,
+                    category: index < 3 ? 'exterior' : 'interior'
+                  }))}
                   onReserve={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
                   onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
                   onConfigure={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
@@ -352,20 +352,6 @@ const VehicleDetails = () => {
             </>
           )}
           
-          <section id="gallery">
-            <Suspense fallback={<ComponentLoading />}>
-              <Spiral3DGallery 
-                images={galleryImages.map((src, index) => ({
-                  id: `gallery-${index}`,
-                  src,
-                  alt: `${vehicle.name} view ${index + 1}`,
-                  category: index < 3 ? 'Exterior' : index < 6 ? 'Interior' : 'Details',
-                  title: `${vehicle.name} - ${index < 3 ? 'Exterior' : index < 6 ? 'Interior' : 'Details'} View`
-                }))}
-              />
-            </Suspense>
-          </section>
-
           <section id="configuration">
             <EngineGradeSelection
               vehicle={vehicle}
