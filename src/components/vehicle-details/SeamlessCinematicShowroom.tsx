@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useSwipeable } from "react-swipeable";
+import { useSwipeable } from "@/hooks/use-swipeable";
 
 // ---------------- CONFIG ----------------
 const galleryConfig = {
@@ -83,7 +83,7 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
   }, [currentScene]);
 
   // Swipe support
-  const swipeHandlers = useSwipeable({
+  const swipeRef = useSwipeable({
     onSwipeLeft: () => {
       const idx = SCENES.indexOf(currentScene);
       setCurrentScene(SCENES[(idx + 1) % SCENES.length]);
@@ -91,7 +91,8 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
     onSwipeRight: () => {
       const idx = SCENES.indexOf(currentScene);
       setCurrentScene(SCENES[(idx - 1 + SCENES.length) % SCENES.length]);
-    }
+    },
+    threshold: 50
   });
 
   // Parallax
@@ -110,7 +111,7 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
   }, [mouseX, mouseY]);
 
   return (
-    <section {...swipeHandlers} className="relative w-full h-screen overflow-hidden bg-black text-white">
+    <section ref={swipeRef} className="relative w-full h-screen overflow-hidden bg-black text-white">
       <AnimatePresence mode="wait">
         {/* Scene 1: HERO */}
         {currentScene === "hero" && (
