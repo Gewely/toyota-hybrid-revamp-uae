@@ -35,6 +35,8 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
   const [rotation360, setRotation360] = useState(0);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
+  const heroX = useTransform(mouseX, [-1, 1], [-10, 10]);
+  const heroY = useTransform(mouseY, [-1, 1], [-10, 10]);
 
   const nextScene = () => {
     const currentIndex = scenes.indexOf(currentScene);
@@ -125,8 +127,8 @@ const SeamlessCinematicShowroom: React.FC<SeamlessCinematicShowroomProps> = ({
             <motion.div 
               className="relative w-full h-full"
               style={{
-                x: useTransform(mouseX, [-1, 1], [-10, 10]),
-                y: useTransform(mouseY, [-1, 1], [-10, 10]),
+                x: heroX,
+                y: heroY,
               }}
             >
               <img
