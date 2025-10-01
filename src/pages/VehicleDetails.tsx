@@ -268,11 +268,6 @@ const VehicleDetails = () => {
               <section id="seamless-showroom">
                 <SeamlessCinematicShowroom
   vehicleName={vehicle.name}
-  galleryImages={galleryImages.map((src, index) => ({
-    url: src,
-    alt: `${vehicle.name} view ${index + 1}`,
-    category: index < 3 ? "exterior" : "interior"
-  }))}
   onReserve={() => modalHandlers.updateModal("isCarBuilderOpen", true)}
   onTestDrive={() => modalHandlers.updateModal("isBookingOpen", true)}
   onConfigure={() => modalHandlers.updateModal("isCarBuilderOpen", true)}
