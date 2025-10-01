@@ -18,44 +18,51 @@ const galleryConfig = {
     hero: {
       title: "Design",
       subtitle: "Sculpted strength with elegance",
-      image:
+      background:
         "https://media.cdntoyota.co.za/toyotacms23/attachments/clpslz0vh04i6zbak5vbxi2gx-lc-300-design-hero-1920x1080.desktop.jpg",
+      foreground: null,
     },
     highlights: {
       title: "Highlights",
       subtitle: "Every detail crafted for presence",
-      image:
+      background:
         "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1080w.jpg",
+      foreground: null,
     },
     exterior: {
       title: "Exterior",
       subtitle: "Commanding stance, unmistakable Toyota DNA",
-      image:
+      background:
         "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg",
+      foreground: null,
     },
     power: {
       title: "Performance",
       subtitle: "Unstoppable power, refined control",
-      image:
+      background:
         "https://media.cdntoyota.co.za/toyotacms23/attachments/clp5594z201l0okak4xj2z22v-lc-300-power-hero-1920x1080.desktop.jpg",
+      foreground: null,
     },
     safety: {
       title: "Safety",
       subtitle: "Advanced protection for every journey",
-      image:
+      background:
         "https://media.cdntoyota.co.za/toyotacms23/attachments/clsojuxxrb5bwcyak1ignyxsb-lc-300-safety-hero-1920x1080-desktop-with-disclaimer.desktop.jpg",
+      foreground: null,
     },
     tech1: {
       title: "Technology",
       subtitle: "Smart features for seamless driving",
-      image:
+      background:
         "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgsz9zr06due4akk95h6lhl-lc-300-tech-side-by-side-02-682x460.desktop.jpg",
+      foreground: null,
     },
     tech2: {
       title: "Technology",
       subtitle: "Innovation that enhances every drive",
-      image:
+      background:
         "https://media.cdntoyota.co.za/toyotacms23/attachments/clpgtbm92002gg6aktgguhnjg-lc-300-tech-side-by-side-01-682x460.desktop.jpg",
+      foreground: null,
     },
   },
   hotspots: {
@@ -133,8 +140,13 @@ const ModelImmersiveGallery: React.FC = () => {
   // Parallax (desktop hover)
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
-  const parallaxX = useTransform(mouseX, [0, 1], [-30, 30]);
-  const parallaxY = useTransform(mouseY, [0, 1], [-15, 15]);
+  const parallaxBgX = useTransform(mouseX, [0, 1], [-20, 20]);
+  const parallaxBgY = useTransform(mouseY, [0, 1], [-10, 10]);
+  const parallaxMidX = useTransform(mouseX, [0, 1], [-40, 40]);
+  const parallaxMidY = useTransform(mouseY, [0, 1], [-20, 20]);
+  const parallaxFgX = useTransform(mouseX, [0, 1], [-60, 60]);
+  const parallaxFgY = useTransform(mouseY, [0, 1], [-30, 30]);
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       mouseX.set(e.clientX / window.innerWidth);
@@ -158,13 +170,21 @@ const ModelImmersiveGallery: React.FC = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
         >
-          {/* Scene Background */}
+          {/* Layered Parallax: Background / Foreground */}
           <motion.img
-            src={galleryConfig.scenes[currentSceneKey].image}
+            src={galleryConfig.scenes[currentSceneKey].background}
             alt={currentSceneKey}
-            className="w-full h-full object-cover"
-            style={{ x: parallaxX, y: parallaxY }}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ x: parallaxBgX, y: parallaxBgY }}
           />
+          {galleryConfig.scenes[currentSceneKey].foreground && (
+            <motion.img
+              src={galleryConfig.scenes[currentSceneKey].foreground as string}
+              alt="foreground"
+              className="absolute inset-0 w-full h-full object-contain z-10"
+              style={{ x: parallaxFgX, y: parallaxFgY }}
+            />
+          )}
 
           {/* Scene Overlay Title */}
           <div className="absolute top-20 left-1/2 -translate-x-1/2 text-center z-20">
@@ -186,7 +206,7 @@ const ModelImmersiveGallery: React.FC = () => {
             </motion.p>
           </div>
 
-          {/* Hotspots with HUD animation */}
+          {/* Hotspots */}
           {galleryConfig.hotspots[currentSceneKey] &&
             galleryConfig.hotspots[currentSceneKey].map((spot) => (
               <motion.div
@@ -231,7 +251,7 @@ const ModelImmersiveGallery: React.FC = () => {
             }`}
           >
             <img
-              src={galleryConfig.scenes[key].image}
+              src={galleryConfig.scenes[key].background}
               alt={key}
               className="w-full h-full object-cover"
             />
