@@ -58,6 +58,17 @@ const PremiumMediaShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/PremiumMediaShowcase")
 );
 
+const CinematicFlagshipGallery = createLazyComponent(
+  () => import("@/components/vehicle-details/CinematicFlagshipGallery")
+);
+
+const VirtualShowroom = createLazyComponent(
+  () => import("@/components/vehicle-details/VirtualShowroom")
+);
+
+const PreOwnedSimilar = createLazyComponent(
+  () => import("@/components/vehicle-details/PreOwnedSimilar")
+);
 
 // Remove PremiumGallery as it's replaced by Spiral3DGallery
 
@@ -251,9 +262,24 @@ const VehicleDetails = () => {
                 onToggleFavorite={toggleFavorite}
                 onBookTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
                 onCarBuilder={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
-        />
+              />
             </section>
           </PerformanceErrorBoundary>
+
+          {/* Cinematic Flagship Gallery - Above Storytelling */}
+          {shouldRenderHeavyContent && (
+            <Suspense fallback={<ComponentLoading />}>
+              <section id="cinematic-gallery">
+                <CinematicFlagshipGallery
+                  vehicleName={vehicle.name}
+                  galleryImages={galleryImages}
+                  onReserve={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
+                  onTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
+                  onConfigure={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
+                />
+              </section>
+            </Suspense>
+          )}
 
           {shouldRenderHeavyContent ? (
             shouldUseSuspense ? (
@@ -275,6 +301,16 @@ const VehicleDetails = () => {
                     onInteriorExplore={modalHandlers.handleInteriorExplore}
                   />
 
+                  {/* Virtual Showroom - Under Storytelling */}
+                  <section id="virtual-showroom">
+                    <VirtualShowroom vehicleName={vehicle.name} />
+                  </section>
+
+                  {/* Pre-Owned Similar - After Virtual Showroom */}
+                  <section id="pre-owned">
+                    <PreOwnedSimilar currentVehicle={vehicle.name} />
+                  </section>
+
                   <section id="offers">
                     <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
                   </section>
@@ -294,6 +330,16 @@ const VehicleDetails = () => {
                     onHybridTechExplore={modalHandlers.handleHybridTechExplore}
                     onInteriorExplore={modalHandlers.handleInteriorExplore}
                   />
+
+                  {/* Virtual Showroom - Under Storytelling */}
+                  <section id="virtual-showroom">
+                    <VirtualShowroom vehicleName={vehicle.name} />
+                  </section>
+
+                  {/* Pre-Owned Similar - After Virtual Showroom */}
+                  <section id="pre-owned">
+                    <PreOwnedSimilar currentVehicle={vehicle.name} />
+                  </section>
                 </Suspense>
 
                 <section id="offers">
