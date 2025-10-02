@@ -1,6 +1,6 @@
 import React from 'react';
 import PremiumMediaShowcase from './hero/PremiumMediaShowcase';
-import MobileStickyNav from './nav/MobileStickyNav';
+import MobileStickyNav from './MobileStickyNav';
 import DesktopActionPanel from './nav/DesktopActionPanel';
 import VehicleHighlights from './cards/VehicleHighlights';
 import ThreeDCardCarousel from './carousel/ThreeDCardCarousel';
@@ -52,11 +52,8 @@ const LuxuryShowcase: React.FC<LuxuryShowcaseProps> = ({
 
       {/* Navigation */}
       <MobileStickyNav
-        onCompare={onCompare}
-        onBuild={onBuild}
-        onTestDrive={onTestDrive}
-        onShare={onShare}
-        compareCount={0}
+        onBookTestDrive={onTestDrive}
+        onCarBuilder={onBuild}
       />
 
       <DesktopActionPanel

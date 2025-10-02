@@ -1310,8 +1310,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   role="navigation"
   aria-label="Primary"
   className={cn(
-    "fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,.1)] rounded-t-2xl",
-    "h-14 sm:h-16 md:h-20", // responsive height
+    "fixed bottom-0 left-0 right-0 z-[100] rounded-t-2xl",
+    "h-14 sm:h-16 md:h-20",
     "pb-safe-area-inset-bottom mobile-force-visible"
   )}
         initial={{ y: 100, opacity: 0 }}
@@ -1324,7 +1324,13 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         }}
         transition={reduceMotion ? { duration: 0.1 } : spring}
         style={
-          isGR ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" } : undefined
+          isGR 
+            ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" } 
+            : { 
+                background: 'linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+                border: '1px solid rgba(200, 200, 200, 0.3)'
+              }
         }
       >
         <div
@@ -1335,7 +1341,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   )}
 >
           <NavItem
-            icon={<Car className={cn(isGR ? "text-neutral-100" : "", "transition-all", "h-5 w-5")} />}
+            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-5 w-5")} />}
             label="Models"
             to="#"
             onClick={() => handleSectionToggle("models")}
@@ -1345,7 +1351,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             deviceCategory={deviceInfo.deviceCategory}
           />
           <NavItem
-            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "", "transition-all", "h-5 w-5")} />}
+            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-5 w-5")} />}
             label="Pre-Owned"
             to="#"
             onClick={() => handleSectionToggle("pre-owned")}
@@ -1406,10 +1412,18 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     {/* Icon pill */}
                    <div
   className={cn(
-    "flex items-center justify-center rounded-full shadow-lg shadow-red-500/30 transition-transform",
-    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16" // responsive scaling
+    "flex items-center justify-center rounded-full transition-transform",
+    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16"
   )}
-  style={{ backgroundColor: "#EB0A1E" }}
+  style={{ 
+    background: 'linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)',
+    boxShadow: `
+      0 6px 20px rgba(235, 10, 30, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2)
+    `
+  }}
 >
   <Bolt className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
 </div>
@@ -1435,7 +1449,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           )}
 
           <NavItem
-            icon={<Search className={cn(isGR ? "text-neutral-100" : "", "transition-all", "h-5 w-5")} />}
+            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-5 w-5")} />}
             label="Search"
             to="#"
             onClick={() => handleSectionToggle("search")}
@@ -1445,7 +1459,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             deviceCategory={deviceInfo.deviceCategory}
           />
           <NavItem
-            icon={<Menu className={cn(isGR ? "text-red-400" : "text-red-600", "transition-all", "h-5 w-5")} />}
+            icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-5 w-5")} />}
             label="Menu"
             to="#"
             onClick={toggleMenu}
@@ -1545,8 +1559,7 @@ const NavItem: React.FC<NavItemProps> = ({
          {React.cloneElement(icon as React.ReactElement, {
   className: cn(
     "transition-transform duration-300",
-    isActive ? "text-[#EB0A1E]" : "text-gray-600 dark:text-gray-400",
-    "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" // responsive sizes
+    "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7"
   ),
 })}
           {typeof badge === "number" && (
@@ -1566,8 +1579,8 @@ const NavItem: React.FC<NavItemProps> = ({
           <span
   className={cn(
     "text-center font-medium mt-1 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-    grMode ? (isActive ? "text-red-300" : "text-neutral-300") : isActive ? "text-toyota-red" : "text-gray-600 dark:text-gray-400",
-    "text-[10px] sm:text-xs md:text-sm" // responsive text
+    grMode ? (isActive ? "text-red-300" : "text-neutral-300") : "text-gray-900",
+    "text-[10px] sm:text-xs md:text-sm"
   )}
 >
   {label}
