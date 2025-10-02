@@ -266,14 +266,7 @@ const VehicleDetails = () => {
           {shouldRenderHeavyContent && (
             <Suspense fallback={<ComponentLoading />}>
               <section id="seamless-showroom">
-                <SeamlessCinematicShowroom
-                  vehicleName={vehicle.name}
-                  vehicleImages={galleryImages}
-                  onReserve={() => modalHandlers.updateModal("isCarBuilderOpen", true)}
-                  onTestDrive={() => modalHandlers.updateModal("isBookingOpen", true)}
-                  onConfigure={() => modalHandlers.updateModal("isCarBuilderOpen", true)}
-                />
-
+               <SeamlessCinematicShowroom />
               </section>
             </Suspense>
           )}
