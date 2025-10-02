@@ -1309,38 +1309,38 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   role="navigation"
   aria-label="Primary"
   className={cn(
-    "fixed bottom-0 left-0 right-0 z-[100]",
+    "fixed left-0 right-0 z-[100]",
     "mobile-force-visible backdrop-blur-xl"
   )}
   style={{
-    position: 'fixed',
     bottom: 0,
-    left: 0,
-    right: 0,
+    paddingBottom: "env(safe-area-inset-bottom)", // ✅ Safe area padding
   }}
-        initial={{ y: 100, opacity: 0 }}
-        animate={{
-          y: 0,
-          opacity: 1,
-        }}
-        transition={reduceMotion ? { duration: 0.1 } : spring}
-      >
+  initial={{ y: 100, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={reduceMotion ? { duration: 0.1 } : spring}
+>
+  {/* content */}
+</motion.nav>
+
         <div
-          className={cn(
-            "rounded-t-2xl",
-            "py-2 sm:py-3"
-          )}
-          style={
-            isGR 
-              ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" } 
-              : { 
-                  background: 'linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)',
-                  boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)',
-                  border: '1px solid rgba(200, 200, 200, 0.3)',
-                  borderBottom: 'none'
-                }
-          }
-        >
+  className={cn(
+    "rounded-t-2xl",
+    "py-2 sm:py-3"
+  )}
+  style={{
+    paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)", // ✅ safe area fix
+    ...(isGR
+      ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
+      : { 
+          background: 'linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)',
+          boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)',
+          border: '1px solid rgba(200, 200, 200, 0.3)',
+          borderBottom: 'none'
+        })
+  }}
+>
+
         <div
   className={cn(
     "grid items-center transition-all duration-500",
