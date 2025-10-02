@@ -1597,17 +1597,4 @@ const NavItem: React.FC<NavItemProps> = ({
   );
 };
 
-
-  return (
-    <Link
-      to={to}
-      className="relative flex items-center justify-center px-1 py-2 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
-      style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
-      aria-current={isActive ? "page" : undefined}
-    >
-      {content}
-    </Link>
-  );
-};
-
 export default MobileStickyNav;
