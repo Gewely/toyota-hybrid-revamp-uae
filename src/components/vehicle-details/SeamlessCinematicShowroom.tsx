@@ -4,13 +4,27 @@ import { X, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ==================== TYPES ====================
+interface ShowroomProps {
+  vehicleName: string;
+  vehicleImages: string[];
+  onReserve: () => void;
+  onTestDrive: () => void;
+  onConfigure: () => void;
+}
+
 type ModalType = "interior" | "exterior" | "performance" | "safety" | "technology" | null;
 type DriveMode = "eco" | "normal" | "sport";
 type InteriorStep = 0 | 1 | 2 | 3;
 type ExteriorColor = "white" | "black" | "red";
 
 // ==================== MAIN ====================
-const SeamlessCinematicShowroom: React.FC = () => {
+const SeamlessCinematicShowroom: React.FC<ShowroomProps> = ({
+  vehicleName,
+  vehicleImages,
+  onReserve,
+  onTestDrive,
+  onConfigure,
+}) => {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const openModal = (m: ModalType) => setActiveModal(m);
   const closeModal = () => setActiveModal(null);
