@@ -4,6 +4,7 @@ import { X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSwipeable } from '@/hooks/use-swipeable';
 
+// ==================== TYPES ====================
 interface ShowroomProps {
   vehicleImages: string[];
   vehicleName: string;
@@ -12,14 +13,13 @@ interface ShowroomProps {
   onConfigure?: () => void;
 }
 
-// ==================== MODAL TYPES ====================
 type ModalType = 'interior' | 'exterior' | 'performance' | 'safety' | 'technology' | null;
 type DriveMode = 'eco' | 'normal' | 'sport';
 type InteriorStep = 0 | 1 | 2 | 3;
 type ExteriorColor = 'white' | 'black' | 'red';
 
 // ==================== MAIN COMPONENT ====================
-export const SeamlessCinematicShowroom: React.FC<ShowroomProps> = ({ 
+const SeamlessCinematicShowroom: React.FC<ShowroomProps> = ({ 
   vehicleImages, 
   vehicleName,
   onReserve,
@@ -33,7 +33,7 @@ export const SeamlessCinematicShowroom: React.FC<ShowroomProps> = ({
 
   return (
     <section className="relative w-full bg-black">
-      {/* ==================== HERO SECTION ==================== */}
+      {/* ================= HERO SECTION ================= */}
       <HeroSection 
         vehicleImages={vehicleImages} 
         vehicleName={vehicleName}
@@ -42,10 +42,10 @@ export const SeamlessCinematicShowroom: React.FC<ShowroomProps> = ({
         onConfigure={onConfigure}
       />
 
-      {/* ==================== JOURNEY CARDS ==================== */}
+      {/* ================= JOURNEY CARDS ================= */}
       <JourneyCards openModal={openModal} />
 
-      {/* ==================== MODALS ==================== */}
+      {/* ================= MODALS ================= */}
       <AnimatePresence mode="wait">
         {activeModal === 'interior' && <InteriorModal onClose={closeModal} onReserve={onReserve} onTestDrive={onTestDrive} />}
         {activeModal === 'exterior' && <ExteriorModal onClose={closeModal} onReserve={onReserve} onTestDrive={onTestDrive} />}
@@ -66,8 +66,8 @@ const HeroSection: React.FC<{
   onConfigure?: () => void;
 }> = ({ vehicleImages, vehicleName, onReserve, onTestDrive, onConfigure }) => {
   return (
-    <div className="relative h-screen w-full overflow-hidden">
-      {/* Hero Image */}
+    <div className="relative h-[90vh] sm:h-screen w-full overflow-hidden">
+      {/* Hero Background */}
       <div className="absolute inset-0">
         <img
           src={vehicleImages[0] || 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=1920&q=80'}
@@ -78,12 +78,12 @@ const HeroSection: React.FC<{
       </div>
 
       {/* Hero Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-24 md:pb-32">
+      <div className="relative z-10 flex h-full flex-col items-center justify-end px-4 pb-16 sm:px-6 md:pb-32">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-4 text-center text-5xl font-bold text-white md:text-7xl"
+          className="mb-4 text-center text-3xl font-bold text-white sm:text-5xl md:text-7xl"
         >
           Discover the {vehicleName}
         </motion.h1>
@@ -92,7 +92,7 @@ const HeroSection: React.FC<{
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-12 text-center text-lg text-white/90 md:text-xl"
+          className="mb-8 text-center text-base text-white/90 sm:text-lg md:mb-12 md:text-xl"
         >
           Exhilaration engineered for every journey
         </motion.p>
@@ -102,12 +102,12 @@ const HeroSection: React.FC<{
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="flex flex-col gap-4 sm:flex-row"
+          className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row"
         >
           <Button
             size="lg"
             onClick={onReserve}
-            className="bg-[#EB0A1E] px-12 py-6 text-lg font-semibold text-white hover:bg-[#d0091a]"
+            className="w-full bg-[#EB0A1E] px-12 py-6 text-lg font-semibold text-white hover:bg-[#d0091a] sm:w-auto"
           >
             Reserve Now
           </Button>
@@ -115,7 +115,7 @@ const HeroSection: React.FC<{
             size="lg"
             onClick={onTestDrive}
             variant="outline"
-            className="border-2 border-white bg-transparent px-12 py-6 text-lg font-semibold text-white hover:bg-white/10"
+            className="w-full border-2 border-white bg-transparent px-12 py-6 text-lg font-semibold text-white hover:bg-white/10 sm:w-auto"
           >
             Book Test Drive
           </Button>
@@ -123,7 +123,7 @@ const HeroSection: React.FC<{
             size="lg"
             onClick={onConfigure}
             variant="outline"
-            className="border-2 border-zinc-400 bg-transparent px-12 py-6 text-lg font-semibold text-zinc-300 hover:bg-zinc-800/50"
+            className="w-full border-2 border-zinc-400 bg-transparent px-12 py-6 text-lg font-semibold text-zinc-300 hover:bg-zinc-800/50 sm:w-auto"
           >
             Configure
           </Button>
@@ -169,7 +169,7 @@ const JourneyCards: React.FC<{ openModal: (modal: ModalType) => void }> = ({ ope
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-6 bg-black p-6 md:grid-cols-2 lg:grid-cols-4 lg:p-12">
+    <div className="grid grid-cols-1 gap-6 bg-black p-4 sm:grid-cols-2 lg:grid-cols-5 lg:p-12">
       {cards.map((card, index) => (
         <motion.button
           key={card.id}
@@ -177,17 +177,17 @@ const JourneyCards: React.FC<{ openModal: (modal: ModalType) => void }> = ({ ope
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: index * 0.1 }}
           onClick={() => openModal(card.id)}
-          className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-left transition-all hover:border-zinc-700 hover:bg-zinc-900"
+          className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-left transition-all hover:border-zinc-700 hover:bg-zinc-900"
         >
-          <div className="mb-4 h-48 overflow-hidden rounded-xl">
+          <div className="mb-4 h-40 sm:h-48 overflow-hidden rounded-xl">
             <img
               src={card.image}
               alt={card.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
           </div>
-          <h3 className="mb-2 text-2xl font-bold text-white">{card.title}</h3>
-          <p className="mb-4 text-zinc-400">{card.description}</p>
+          <h3 className="mb-2 text-xl font-bold text-white sm:text-2xl">{card.title}</h3>
+          <p className="mb-4 text-sm text-zinc-400 sm:text-base">{card.description}</p>
           <div className="flex items-center text-zinc-300">
             <span className="text-sm font-semibold">Learn More</span>
             <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -197,7 +197,6 @@ const JourneyCards: React.FC<{ openModal: (modal: ModalType) => void }> = ({ ope
     </div>
   );
 };
-
 // ==================== INTERIOR MODAL ====================
 const InteriorModal: React.FC<{ onClose: () => void; onReserve?: () => void; onTestDrive?: () => void }> = ({ 
   onClose, 
@@ -209,19 +208,23 @@ const InteriorModal: React.FC<{ onClose: () => void; onReserve?: () => void; onT
   const steps = [
     {
       title: 'Interior Design',
-      description: 'Explore the refined and spacious design of interior. Enjoy premium materials, advanced technology, and intuitive controls.',
+      description: 'Premium materials, ambient lighting, and a driver-focused layout.',
+      image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1200&q=80'
     },
     {
       title: 'Dashboard',
-      description: 'State-of-the-art digital instrument cluster with customizable displays and real-time vehicle information.',
+      description: 'State-of-the-art digital cluster with customizable themes.',
+      image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=1200&q=80'
     },
     {
       title: 'Infotainment',
-      description: '12.3" touchscreen with wireless connectivity, premium audio system, and seamless smartphone integration.',
+      description: '12.3" touchscreen, wireless CarPlay, premium JBL audio.',
+      image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=1200&q=80'
     },
     {
       title: 'Comfort',
-      description: 'Premium leather seats with heating and ventilation, ambient lighting, and spacious cargo area.',
+      description: 'Ventilated leather seats, spacious rear, dual-zone climate.',
+      image: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=1200&q=80'
     },
   ];
 
@@ -234,11 +237,8 @@ const InteriorModal: React.FC<{ onClose: () => void; onReserve?: () => void; onT
   return (
     <ModalWrapper onClose={onClose}>
       <div {...swipeHandlers} className="flex h-full flex-col">
-        {/* Header */}
         <ModalHeader title="INTERIOR" onClose={onClose} />
-
-        {/* Content */}
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12">
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8 md:px-12">
           <motion.div
             key={currentStep}
             initial={{ opacity: 0, x: 20 }}
@@ -246,46 +246,26 @@ const InteriorModal: React.FC<{ onClose: () => void; onReserve?: () => void; onT
             exit={{ opacity: 0, x: -20 }}
             className="w-full max-w-5xl"
           >
-            <img
-              src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1200&q=80"
-              alt="Interior"
-              className="mb-8 w-full rounded-2xl"
-            />
-
-            {/* Step Indicators */}
-            <div className="mb-8 flex justify-center gap-4">
-              {[0, 1, 2, 3].map((step) => (
+            <img src={steps[currentStep].image} alt={steps[currentStep].title} className="mb-6 w-full rounded-2xl" />
+            <div className="mb-6 flex justify-center gap-3">
+              {[0,1,2,3].map((step) => (
                 <button
                   key={step}
                   onClick={() => setCurrentStep(step as InteriorStep)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all ${
-                    currentStep === step
-                      ? 'border-white bg-white text-black'
-                      : 'border-zinc-600 text-zinc-400 hover:border-zinc-400'
-                  }`}
-                >
-                  {step + 1}
-                </button>
+                  className={`h-3 w-10 rounded-full transition-all ${currentStep === step ? 'bg-[#EB0A1E]' : 'bg-zinc-600 hover:bg-zinc-400'}`}
+                />
               ))}
             </div>
-
-            <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">
-              {steps[currentStep].title}
-            </h2>
-            <p className="mb-8 text-lg text-zinc-300 md:text-xl">
-              {steps[currentStep].description}
-            </p>
-
+            <h2 className="mb-2 text-2xl font-bold text-white sm:text-3xl">{steps[currentStep].title}</h2>
+            <p className="mb-6 text-base text-zinc-300 sm:text-lg">{steps[currentStep].description}</p>
             <Button
               onClick={() => currentStep < 3 ? setCurrentStep((prev) => (prev + 1) as InteriorStep) : onClose()}
-              className="border-2 border-white bg-transparent px-8 py-6 text-lg font-semibold text-white hover:bg-white/10"
+              className="w-full border-2 border-white bg-transparent py-4 text-lg font-semibold text-white hover:bg-white/10 sm:w-auto sm:px-8"
             >
               {currentStep < 3 ? 'Next' : 'Finish'}
             </Button>
           </motion.div>
         </div>
-
-        {/* Footer CTAs */}
         <ModalFooter onReserve={onReserve} onTestDrive={onTestDrive} />
       </div>
     </ModalWrapper>
@@ -300,7 +280,7 @@ const ExteriorModal: React.FC<{ onClose: () => void; onReserve?: () => void; onT
 }) => {
   const [selectedColor, setSelectedColor] = useState<ExteriorColor>('white');
 
-  const colors: { id: ExteriorColor; name: string; class: string }[] = [
+  const colors = [
     { id: 'white', name: 'Pearl White', class: 'bg-zinc-100' },
     { id: 'black', name: 'Midnight Black', class: 'bg-zinc-900 border-zinc-600' },
     { id: 'red', name: 'Supersonic Red', class: 'bg-[#EB0A1E]' },
@@ -308,70 +288,48 @@ const ExteriorModal: React.FC<{ onClose: () => void; onReserve?: () => void; onT
 
   const features = [
     { title: 'Stylish Design', image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=600&q=80' },
-    { title: 'Advanced Lighting', image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=80' },
-    { title: 'Versatile Roof Rails', image: 'https://images.unsplash.com/photo-1581540222194-0def2dda95b8?w=600&q=80' },
+    { title: 'LED Lighting', image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=80' },
+    { title: 'Roof Rails', image: 'https://images.unsplash.com/photo-1581540222194-0def2dda95b8?w=600&q=80' },
   ];
 
   return (
     <ModalWrapper onClose={onClose}>
       <div className="flex h-full flex-col">
-        <ModalHeader title="Exterior" onClose={onClose} />
-
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12">
-          <div className="w-full max-w-6xl">
-            <h2 className="mb-8 text-2xl font-medium text-zinc-400">
-              Explore the captivating exterior features.
-            </h2>
-
-            <motion.img
-              key={selectedColor}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              src="https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1400&q=80"
-              alt="Exterior"
-              className="mb-8 w-full rounded-2xl"
-            />
-
-            {/* Color Selector */}
-            <div className="mb-12 flex flex-wrap gap-4">
-              {colors.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => setSelectedColor(color.id)}
-                  className={`flex items-center gap-3 rounded-full border-2 px-6 py-3 transition-all ${
-                    selectedColor === color.id
-                      ? 'border-white bg-white/10'
-                      : 'border-zinc-700 hover:border-zinc-500'
-                  }`}
-                >
-                  <div className={`h-8 w-8 rounded-full border-2 ${color.class}`} />
-                  <span className="font-semibold text-white">{color.name}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Feature Cards */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {features.map((feature) => (
-                <div
-                  key={feature.title}
-                  className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50"
-                >
-                  <img
-                    src={feature.image}
-                    alt={feature.title}
-                    className="h-48 w-full object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="mb-2 text-lg font-bold text-white">{feature.title}</h3>
-                    <ChevronRight className="h-5 w-5 text-zinc-400 transition-transform group-hover:translate-x-1" />
-                  </div>
+        <ModalHeader title="EXTERIOR" onClose={onClose} />
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8 md:px-12">
+          <motion.img
+            key={selectedColor}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            src="https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1400&q=80"
+            alt="Exterior"
+            className="mb-6 w-full rounded-2xl"
+          />
+          {/* Color Selector */}
+          <div className="mb-8 flex flex-wrap justify-center gap-3">
+            {colors.map((color) => (
+              <button
+                key={color.id}
+                onClick={() => setSelectedColor(color.id as ExteriorColor)}
+                className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 ${selectedColor === color.id ? 'border-white bg-white/10' : 'border-zinc-700 hover:border-zinc-500'}`}
+              >
+                <div className={`h-5 w-5 rounded-full border ${color.class}`} />
+                <span className="text-white">{color.name}</span>
+              </button>
+            ))}
+          </div>
+          {/* Features */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {features.map((f) => (
+              <div key={f.title} className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
+                <img src={f.image} alt={f.title} className="h-40 w-full object-cover" />
+                <div className="p-4">
+                  <h3 className="text-lg font-bold text-white">{f.title}</h3>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-
         <ModalFooter onReserve={onReserve} onTestDrive={onTestDrive} />
       </div>
     </ModalWrapper>
@@ -391,131 +349,73 @@ const PerformanceModal: React.FC<{ onClose: () => void; onReserve?: () => void; 
     normal: { hp: 225, torque: 265, acceleration: 7.2, topSpeed: 220 },
     sport: { hp: 300, torque: 300, acceleration: 6.5, topSpeed: 260 },
   };
-
-  const currentStats = stats[driveMode];
+  const current = stats[driveMode];
 
   return (
     <ModalWrapper onClose={onClose}>
       <div className="flex h-full flex-col">
-        <ModalHeader title="PERFORMANCE UNLEASHED" onClose={onClose} />
-
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12">
-          <div className="w-full max-w-6xl">
-            <p className="mb-8 text-center text-xl text-zinc-400">
-              Exhilaration engineered for every journey
-            </p>
-
-            {/* Drive Mode Toggle */}
-            <div className="mb-8 flex justify-center gap-6">
-              {(['eco', 'normal', 'sport'] as DriveMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setDriveMode(mode)}
-                  className={`px-8 py-3 text-xl font-bold uppercase transition-all ${
-                    driveMode === mode
-                      ? 'text-[#EB0A1E]'
-                      : 'text-zinc-600 hover:text-zinc-400'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-
-            <motion.img
-              key={driveMode}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              src="https://images.unsplash.com/photo-1617654112368-307921291f42?w=1400&q=80"
-              alt="Performance"
-              className="mb-12 w-full rounded-2xl"
-            />
-
-            {/* Stats Grid */}
-            <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2">
-              {/* Left: Stats */}
-              <div>
-                <div className="mb-6 flex items-end justify-center gap-8">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-white">{currentStats.hp}</div>
-                    <div className="text-sm text-zinc-400">HP</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-white">{currentStats.torque}</div>
-                    <div className="text-sm text-zinc-400">Nm</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-white">{currentStats.acceleration}</div>
-                    <div className="text-xs text-zinc-400">SECONDS</div>
-                  </div>
-                </div>
-
-                {/* Torque Bar */}
-                <div className="mb-4">
-                  <div className="mb-2 text-sm font-semibold text-zinc-400">TORQUE</div>
-                  <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(currentStats.torque / 300) * 100}%` }}
-                      className="h-full bg-zinc-400"
-                    />
-                  </div>
-                </div>
+        <ModalHeader title="PERFORMANCE" onClose={onClose} />
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8 md:px-12">
+          <p className="mb-6 text-center text-lg text-zinc-400">Exhilaration engineered for every journey</p>
+          <div className="mb-6 flex flex-wrap justify-center gap-4">
+            {(['eco','normal','sport'] as DriveMode[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setDriveMode(m)}
+                className={`px-6 py-2 text-lg font-bold uppercase ${driveMode === m ? 'text-[#EB0A1E]' : 'text-zinc-600 hover:text-zinc-400'}`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          <motion.img key={driveMode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} src="https://images.unsplash.com/photo-1617654112368-307921291f42?w=1400&q=80" alt="Performance" className="mb-6 w-full rounded-2xl" />
+          {/* Stats */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div className="flex justify-around">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-white">{current.hp}</div>
+                <div className="text-sm text-zinc-400">HP</div>
               </div>
-
-              {/* Right: Speedometer */}
-              <div className="flex items-center justify-center">
-                <div className="relative">
-                  <svg width="280" height="280" viewBox="0 0 280 280">
-                    <circle
-                      cx="140"
-                      cy="140"
-                      r="110"
-                      fill="none"
-                      stroke="#27272a"
-                      strokeWidth="2"
-                    />
-                    {[60, 100, 120, 180, 220, 240, 260, 280].map((speed, i) => (
-                      <text
-                        key={speed}
-                        x={140 + Math.cos((i * 45 - 135) * (Math.PI / 180)) * 85}
-                        y={140 + Math.sin((i * 45 - 135) * (Math.PI / 180)) * 85}
-                        textAnchor="middle"
-                        fill="#71717a"
-                        fontSize="14"
-                      >
-                        {speed}
-                      </text>
-                    ))}
-                    <motion.line
-                      x1="140"
-                      y1="140"
-                      x2="140"
-                      y2="50"
-                      stroke="#EB0A1E"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      initial={{ rotate: -135 }}
-                      animate={{ rotate: (currentStats.topSpeed / 280) * 270 - 135 }}
-                      style={{ transformOrigin: '140px 140px' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-5xl font-bold text-white">{currentStats.topSpeed}</div>
-                    <div className="text-sm text-zinc-400">KM/H</div>
-                  </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-white">{current.torque}</div>
+                <div className="text-sm text-zinc-400">Nm</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-white">{current.acceleration}</div>
+                <div className="text-sm text-zinc-400">Sec</div>
+              </div>
+            </div>
+            {/* Speedometer */}
+            <div className="flex items-center justify-center">
+              <div className="relative">
+                <svg width="200" height="200" viewBox="0 0 280 280">
+                  <circle cx="140" cy="140" r="110" fill="none" stroke="#27272a" strokeWidth="2" />
+                  <motion.line
+                    x1="140"
+                    y1="140"
+                    x2="140"
+                    y2="50"
+                    stroke="#EB0A1E"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    initial={{ rotate: -135 }}
+                    animate={{ rotate: (current.topSpeed/280)*270 -135 }}
+                    style={{ transformOrigin: '140px 140px' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-3xl font-bold text-white">{current.topSpeed}</div>
+                  <div className="text-sm text-zinc-400">KM/H</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
         <ModalFooter onReserve={onReserve} onTestDrive={onTestDrive} />
       </div>
     </ModalWrapper>
   );
 };
-
 // ==================== SAFETY MODAL ====================
 const SafetyModal: React.FC<{ onClose: () => void; onReserve?: () => void; onTestDrive?: () => void }> = ({ 
   onClose, 
@@ -523,57 +423,34 @@ const SafetyModal: React.FC<{ onClose: () => void; onReserve?: () => void; onTes
   onTestDrive 
 }) => {
   const features = [
-    {
-      title: 'Pre-Collision System',
-      description: 'Advanced radar and camera system that detects potential collisions and applies brakes automatically.',
-      icon: '🛡️',
-    },
-    {
-      title: 'Blind Spot Monitor',
-      description: 'Radar sensors detect vehicles in blind spots and alert you with visual and audible warnings.',
-      icon: '👁️',
-    },
-    {
-      title: 'Lane Departure Alert',
-      description: 'Monitors lane markings and alerts you if the vehicle begins to drift without signaling.',
-      icon: '🛣️',
-    },
-    {
-      title: 'Adaptive Cruise Control',
-      description: 'Maintains a preset distance from the vehicle ahead and adjusts speed automatically.',
-      icon: '🎯',
-    },
+    { title: 'Pre-Collision System', description: 'Radar + camera detect potential collisions and apply brakes automatically.', icon: '🛡️' },
+    { title: 'Blind Spot Monitor', description: 'Alerts you to vehicles in blind spots with visual + audible cues.', icon: '👁️' },
+    { title: 'Lane Departure Alert', description: 'Keeps you centered with warnings when drifting lanes.', icon: '🛣️' },
+    { title: 'Adaptive Cruise Control', description: 'Maintains distance and adjusts speed automatically.', icon: '🎯' },
   ];
 
   return (
     <ModalWrapper onClose={onClose}>
       <div className="flex h-full flex-col">
-        <ModalHeader title="Safety" onClose={onClose} />
-
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12">
-          <div className="w-full max-w-6xl">
-            <h2 className="mb-12 text-center text-2xl text-zinc-400">
-              Learn about the advanced safety features
-            </h2>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8"
-                >
-                  <div className="mb-4 text-5xl">{feature.icon}</div>
-                  <h3 className="mb-4 text-2xl font-bold text-white">{feature.title}</h3>
-                  <p className="text-zinc-400">{feature.description}</p>
-                </motion.div>
-              ))}
-            </div>
+        <ModalHeader title="SAFETY" onClose={onClose} />
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8 md:px-12">
+          <h2 className="mb-6 text-center text-lg text-zinc-400 sm:text-xl">Advanced Toyota Safety Sense Features</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {features.map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
+              >
+                <div className="mb-2 text-4xl">{f.icon}</div>
+                <h3 className="mb-2 text-lg font-bold text-white">{f.title}</h3>
+                <p className="text-sm text-zinc-400">{f.description}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
-
         <ModalFooter onReserve={onReserve} onTestDrive={onTestDrive} />
       </div>
     </ModalWrapper>
@@ -587,54 +464,55 @@ const TechnologyModal: React.FC<{ onClose: () => void; onReserve?: () => void; o
   onTestDrive 
 }) => {
   const features = [
-    { title: '12.3" Digital Cluster', description: 'High-resolution customizable display' },
-    { title: 'Wireless CarPlay', description: 'Seamless smartphone integration' },
-    { title: 'Advanced Navigation', description: 'Real-time traffic and route optimization' },
-    { title: 'Connected Services', description: 'Remote control and monitoring' },
+    { title: '12.3" Digital Cluster', description: 'Customizable high-resolution instrument display', image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=800&q=80' },
+    { title: 'Wireless CarPlay', description: 'Seamless smartphone integration with no cables', image: 'https://images.unsplash.com/photo-1517059224940-d4af9eec41e5?w=800&q=80' },
+    { title: 'AI Navigation', description: 'Smart traffic-aware routing with 3D maps', image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80' },
+    { title: 'Connected Services', description: 'Remote start, lock/unlock, and service reminders', image: 'https://images.unsplash.com/photo-1581093588401-22f82f2f09c2?w=800&q=80' },
   ];
+
+  const [activeIndex, setActiveIndex] = useState(0);
 
   return (
     <ModalWrapper onClose={onClose}>
-      <div className="flex h-full flex-col">
-        <ModalHeader title="Technology" onClose={onClose} />
+      <div className="flex h-full flex-col bg-black">
+        <ModalHeader title="TECHNOLOGY" onClose={onClose} />
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8 md:flex-row md:gap-12 md:px-12">
+          {/* Left: Device / Image */}
+          <div className="w-full max-w-md mb-6 md:mb-0">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.6 }}
+              className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900"
+            >
+              <img src={features[activeIndex].image} alt={features[activeIndex].title} className="w-full object-cover" />
+            </motion.div>
+          </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12">
-          <div className="w-full max-w-4xl">
-            <img
-              src="https://images.unsplash.com/photo-1556656793-08538906a9f8?w=1200&q=80"
-              alt="Technology"
-              className="mb-8 w-full rounded-2xl"
-            />
+          {/* Right: Feature Content */}
+          <div className="flex w-full max-w-xl flex-col items-start">
+            <h2 className="mb-4 text-2xl font-bold text-white sm:text-4xl">{features[activeIndex].title}</h2>
+            <p className="mb-6 text-base text-zinc-300 sm:text-lg">{features[activeIndex].description}</p>
 
-            <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">
-              12.3" Touchscreen and Connected Services
-            </h2>
-            <p className="mb-8 text-lg text-zinc-300">
-              Experience our advanced technology, including a large touchscreen and
-              digital instrument cluster.
-            </p>
-
-            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {features.map((feature) => (
-                <div
-                  key={feature.title}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6"
-                >
-                  <h3 className="mb-2 font-semibold text-white">{feature.title}</h3>
-                  <p className="text-sm text-zinc-400">{feature.description}</p>
-                </div>
+            {/* Carousel Controls */}
+            <div className="mb-6 flex gap-2">
+              {features.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveIndex(i)}
+                  className={`h-2 w-8 rounded-full transition-all ${activeIndex === i ? 'bg-[#EB0A1E]' : 'bg-zinc-600 hover:bg-zinc-400'}`}
+                />
               ))}
             </div>
 
-            <Button
-              size="lg"
-              className="w-full bg-[#EB0A1E] py-6 text-lg font-semibold text-white hover:bg-[#d0091a] md:w-auto md:px-16"
-            >
-              LEARN MORE
-            </Button>
+            <div className="flex w-full flex-col gap-3 sm:flex-row">
+              <Button className="w-full bg-[#EB0A1E] py-4 font-semibold text-white hover:bg-[#d0091a] sm:w-auto sm:px-12">Learn More</Button>
+              <Button onClick={onReserve} className="w-full border-2 border-white bg-transparent py-4 font-semibold text-white hover:bg-white/10 sm:w-auto sm:px-12">Reserve Now</Button>
+            </div>
           </div>
         </div>
-
         <ModalFooter onReserve={onReserve} onTestDrive={onTestDrive} />
       </div>
     </ModalWrapper>
@@ -642,26 +520,16 @@ const TechnologyModal: React.FC<{ onClose: () => void; onReserve?: () => void; o
 };
 
 // ==================== REUSABLE COMPONENTS ====================
-const ModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({
-  children,
-  onClose,
-}) => {
+const ModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 overflow-y-auto bg-black"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/95"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <motion.div
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.95 }}
-        className="min-h-screen"
-      >
+      <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="min-h-screen">
         {children}
       </motion.div>
     </motion.div>
@@ -670,47 +538,38 @@ const ModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }>
 
 const ModalHeader: React.FC<{ title: string; onClose: () => void }> = ({ title, onClose }) => {
   return (
-    <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-6 md:px-12">
-      <div className="flex items-center gap-4">
-        <svg width="40" height="32" viewBox="0 0 40 32" fill="white">
+    <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-4 sm:px-6 md:px-12">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <svg width="32" height="24" viewBox="0 0 40 32" fill="white">
           <ellipse cx="20" cy="16" rx="18" ry="10" fill="none" stroke="white" strokeWidth="2" />
           <ellipse cx="20" cy="16" rx="11" ry="7" fill="none" stroke="white" strokeWidth="2" />
           <ellipse cx="20" cy="16" rx="4" ry="10" fill="none" stroke="white" strokeWidth="2" />
         </svg>
-        <span className="text-xl font-bold text-white">TOYOTA</span>
+        <span className="text-base font-bold text-white sm:text-xl">TOYOTA</span>
       </div>
-      <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold text-white md:text-4xl">
-        {title}
-      </h1>
-      <button
-        onClick={onClose}
-        className="rounded-full bg-zinc-900 p-3 transition-colors hover:bg-zinc-800"
-        aria-label="Close"
-      >
-        <X className="h-6 w-6 text-white" />
+      <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-white sm:text-2xl md:text-3xl">{title}</h1>
+      <button onClick={onClose} className="rounded-full bg-zinc-900 p-2 hover:bg-zinc-800 sm:p-3">
+        <X className="h-5 w-5 text-white sm:h-6 sm:w-6" />
       </button>
     </div>
   );
 };
 
-const ModalFooter: React.FC<{ onReserve?: () => void; onTestDrive?: () => void }> = ({ 
-  onReserve, 
-  onTestDrive 
-}) => {
+const ModalFooter: React.FC<{ onReserve?: () => void; onTestDrive?: () => void }> = ({ onReserve, onTestDrive }) => {
   return (
-    <div className="flex flex-col gap-4 border-t border-zinc-800 px-6 py-8 sm:flex-row sm:justify-center md:px-12">
+    <div className="flex flex-col gap-3 border-t border-zinc-800 px-4 py-6 sm:flex-row sm:justify-center sm:px-6 md:px-12">
       <Button
         size="lg"
         onClick={onTestDrive}
         variant="outline"
-        className="border-2 border-white bg-transparent px-12 py-6 text-lg font-semibold text-white hover:bg-white/10"
+        className="w-full border-2 border-white bg-transparent py-4 font-semibold text-white hover:bg-white/10 sm:w-auto sm:px-10"
       >
-        Book a Test Drive
+        Book Test Drive
       </Button>
       <Button
         size="lg"
         onClick={onReserve}
-        className="bg-[#EB0A1E] px-12 py-6 text-lg font-semibold text-white hover:bg-[#d0091a]"
+        className="w-full bg-[#EB0A1E] py-4 font-semibold text-white hover:bg-[#d0091a] sm:w-auto sm:px-10"
       >
         Reserve Now
       </Button>
@@ -718,4 +577,5 @@ const ModalFooter: React.FC<{ onReserve?: () => void; onTestDrive?: () => void }
   );
 };
 
+// ==================== EXPORT ====================
 export default SeamlessCinematicShowroom;
