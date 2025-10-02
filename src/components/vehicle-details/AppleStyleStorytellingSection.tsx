@@ -171,7 +171,6 @@ const StorytellingSection: React.FC<Props> = ({
         subtitle: "Power, efficiency, and innovation in perfect harmony.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
-        backgroundVideoWistiaId: undefined,
         cta: {
           label: "Reserve Now",
           action: () => setIsBookingOpen(true),
@@ -282,7 +281,8 @@ const StorytellingSection: React.FC<Props> = ({
   const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const isLocked = index < scenes.length - 1;
+
+  const isLocked = index < scenes.length - 1; // unlock scroll after last
   const active = scenes[index];
 
   /* ----------------- Visibility watcher (restart at scene 0) ----------------- */
@@ -314,7 +314,7 @@ const StorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  /* ----------------- Scroll Handlers (wheel/touch/keyboard) ----------------- */
+  /* ----------------- Scroll Handlers ----------------- */
   const onWheel = useCallback(
     (e: WheelEvent) => {
       if (!isLocked) return;
@@ -337,6 +337,22 @@ const StorytellingSection: React.FC<Props> = ({
   const onTouchStart = useCallback((e: TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   }, []);
+
+  const onTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isLocked) return;
+      if (
+        Math.abs(
+          (touchStartY.current ?? e.touches[0].clientY) -
+            e.touches[0].clientY
+        ) > 10
+      ) {
+        e.preventDefault();
+      }
+    },
+    [isLocked]
+  );
+
   const onTouchEnd = useCallback(
     (e: TouchEvent) => {
       if (!isLocked || touchStartY.current === null) return;
@@ -396,27 +412,23 @@ const StorytellingSection: React.FC<Props> = ({
   useEffect(() => {
     if (isLocked) {
       window.addEventListener("wheel", onWheel, { passive: false });
-      window.addEventListener("touchstart", onTouchStart, {
-        passive: true,
-      });
-      window.addEventListener("touchend", onTouchEnd, {
-        passive: true,
-      });
+      window.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: false });
+      window.addEventListener("touchend", onTouchEnd, { passive: true });
       window.addEventListener("keydown", onKeyDown);
     }
     return () => {
       window.removeEventListener("wheel", onWheel as any);
       window.removeEventListener("touchstart", onTouchStart as any);
+      window.removeEventListener("touchmove", onTouchMove as any);
       window.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown as any);
     };
-  }, [isLocked, onWheel, onTouchStart, onTouchEnd, onKeyDown]);
+  }, [isLocked, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
   /* ----------------- Wistia Player ----------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(
     active.backgroundVideoWistiaId
-      ? active.backgroundVideoWistiaId
-      : undefined
   );
 
   useEffect(() => {
@@ -459,81 +471,61 @@ const StorytellingSection: React.FC<Props> = ({
             src={active.backgroundImage}
             alt={active.title}
             className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              const t = e.currentTarget as HTMLImageElement;
-              t.onerror = null;
-              t.src = "/placeholder.svg";
-            }}
           />
-          {/* Video */}
           {active.backgroundVideoWistiaId && (
             <div className="absolute inset-0">
-              <div className="w-full h-full relative">
-                <div className="absolute inset-0">
-                  <div
-                    className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} videoFoam=true`}
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </div>
-              </div>
+              <div
+                className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} videoFoam=true`}
+                style={{ width: "100%", height: "100%" }}
+              />
             </div>
           )}
-          {/* Animated gradient overlay */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay"
-            animate={{
-              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
           />
-          {/* Vignette */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         </motion.div>
       </AnimatePresence>
 
-      {/* CONTENT LAYER (bottom docked, avoids overlap) */}
-<div className="absolute bottom-0 left-0 w-full z-10 flex justify-start px-10 pb-20">
-  <motion.div
-    key={`content-${active.id}`}
-    initial={{ opacity: 0, y: 40 }}
-    animate={{
-      opacity: 1,
-      y: 0,
-    }}
-    exit={{ opacity: 0, y: -40 }}
-    transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
-    className="max-w-3xl text-left"
-  >
-    <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-            <h2 className="text-3xl md:text-6xl font-extralight tracking-tight mb-4">
+      {/* SOUND TOGGLE */}
+      {active.backgroundVideoWistiaId && (
+        <button
+          onClick={() => setIsMuted((m) => !m)}
+          className="absolute top-6 left-6 z-20 bg-black/55 text-white p-2 rounded-full hover:bg-black/70 transition"
+        >
+          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </button>
+      )}
+
+      {/* CONTENT LAYER */}
+      <div className="absolute bottom-0 left-0 w-full z-10 flex justify-start px-10 pb-20">
+        <motion.div
+          key={`content-${active.id}`}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
+          className="max-w-3xl text-left"
+        >
+          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+            <h2 className="text-3xl md:text-6xl font-extralight mb-4">
               {active.title}
             </h2>
-            <p className="text-base md:text-2xl text-white/90 mb-6 md:mb-8">
-              {active.subtitle}
-            </p>
+            <p className="text-base md:text-2xl text-white/90 mb-6">{active.subtitle}</p>
 
             {/* Stats */}
             {active.stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-8 mb-6 md:mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
                 {active.stats.map((s, i) => (
                   <div key={i} className="text-center">
-                    <div className="flex justify-center mb-2">
-                      {s.icon}
-                    </div>
+                    <div className="flex justify-center mb-2">{s.icon}</div>
                     <div className="text-xl md:text-3xl font-light">
-                      <AnimatedNumber
-                        value={s.value}
-                        suffix={s.suffix}
-                      />
+                      <AnimatedNumber value={s.value} suffix={s.suffix} />
                     </div>
-                    <div className="text-xs md:text-sm text-white/70">
-                      {s.label}
-                    </div>
+                    <div className="text-xs md:text-sm text-white/70">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -541,12 +533,9 @@ const StorytellingSection: React.FC<Props> = ({
 
             {/* Features */}
             {active.features && (
-              <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
+              <div className="flex flex-wrap justify-center gap-2 mb-6">
                 {active.features.map((f, i) => (
-                  <Badge
-                    key={i}
-                    className="bg-white/10 text-white border-white/20 backdrop-blur-sm"
-                  >
+                  <Badge key={i} className="bg-white/10 text-white border-white/20">
                     {f}
                   </Badge>
                 ))}
@@ -583,47 +572,21 @@ const StorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* SOUND TOGGLE */}
-      {active.backgroundVideoWistiaId && (
-        <button
-          onClick={() => setIsMuted((m) => !m)}
-          className="absolute top-6 left-6 z-20 bg-black/55 text-white p-2 rounded-full hover:bg-black/70 transition"
-          aria-label={isMuted ? "Unmute video" : "Mute video"}
-        >
-          {isMuted ? (
-            <VolumeX className="w-5 h-5" />
-          ) : (
-            <Volume2 className="w-5 h-5" />
-          )}
-        </button>
-      )}
-
-      {/* PROGRESS DOTS + LABELS */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-        <div className="flex space-x-6">
-          {scenes.map((s, i) => (
-            <div key={s.id} className="flex flex-col items-center">
-              <button
-                onClick={() => setIndex(i)}
-                className={`h-2 rounded-full mb-1 transition-all ${
-                  i === index
-                    ? "bg-white w-8"
-                    : "bg-white/40 hover:bg-white/60 w-2"
-                }`}
-              />
-              <span
-                className={`text-xs ${
-                  i === index ? "text-white" : "text-white/50"
-                }`}
-              >
-                {labels[i]}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 text-white/70 text-xs">
-          {index + 1} / {scenes.length}
-        </div>
+      {/* PROGRESS DOTS */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex space-x-6">
+        {scenes.map((s, i) => (
+          <div key={s.id} className="flex flex-col items-center">
+            <button
+              onClick={() => setIndex(i)}
+              className={`h-2 rounded-full mb-1 transition-all ${
+                i === index ? "bg-white w-8" : "bg-white/40 hover:bg-white/60 w-2"
+              }`}
+            />
+            <span className={`text-xs ${i === index ? "text-white" : "text-white/50"}`}>
+              {labels[i]}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* PROGRESS BAR */}
@@ -633,7 +596,7 @@ const StorytellingSection: React.FC<Props> = ({
         transition={{ duration: prefersReduced ? 0.2 : 0.45 }}
       />
 
-      {/* MORPHING SCROLL HINT */}
+      {/* SCROLL HINT */}
       {(isFirst || isLast) && (
         <motion.div
           className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 text-center text-white/80 text-sm"
