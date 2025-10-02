@@ -103,13 +103,26 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
           className={`fixed bottom-6 left-0 right-0 z-[100] lg:hidden px-4 ${className}`}
         >
-          {/* Rounded pill container */}
-          <div className="max-w-md mx-auto bg-gradient-to-b from-white to-gray-50 rounded-full shadow-2xl border border-gray-200/50 px-4 py-3">
-            <div className="flex items-center justify-around gap-2">
+          {/* Premium rounded pill container */}
+          <div 
+            className="max-w-md mx-auto rounded-full px-6 py-3.5 backdrop-blur-sm"
+            style={{
+              background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%)',
+              boxShadow: `
+                0 20px 60px -15px rgba(0, 0, 0, 0.4),
+                0 10px 30px -10px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.05)
+              `,
+              border: '1px solid rgba(255, 255, 255, 0.8)'
+            }}
+          >
+            <div className="flex items-center justify-around gap-1">
               {navItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = activeAction === item.id;
                 const isCenterButton = item.id === 'build';
+                const isModels = item.id === 'compare';
                 
                 return (
                   <motion.div
@@ -126,25 +139,33 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     className="relative"
                   >
                     {isCenterButton ? (
-                      // Large center button
+                      // Premium center button with 3D effect
                       <Button
                         onClick={item.action}
                         size="lg"
-                        className={`
-                          relative h-16 w-16 rounded-full p-0
-                          bg-gradient-to-b from-red-600 to-red-700
-                          hover:from-red-700 hover:to-red-800
-                          shadow-xl shadow-red-600/30
-                          border-4 border-white
-                          transition-all duration-200 touch-manipulation
-                          ${isActive ? 'scale-95' : 'scale-100'}
-                        `}
+                        className="relative h-16 w-16 rounded-full p-0 transition-all duration-200 touch-manipulation group"
                         style={{
                           minHeight: '64px',
-                          minWidth: '64px'
+                          minWidth: '64px',
+                          background: 'linear-gradient(180deg, #dc2626 0%, #991b1b 100%)',
+                          boxShadow: `
+                            0 8px 20px -6px rgba(220, 38, 38, 0.5),
+                            0 4px 12px -4px rgba(153, 27, 27, 0.4),
+                            inset 0 2px 4px rgba(255, 255, 255, 0.2),
+                            inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                            0 0 0 4px #ffffff,
+                            0 0 0 5px rgba(0, 0, 0, 0.1)
+                          `,
+                          transform: isActive ? 'scale(0.95)' : 'scale(1)'
                         }}
                       >
-                        <Icon className="h-7 w-7 text-white" />
+                        <div 
+                          className="absolute inset-0 rounded-full transition-opacity duration-200"
+                          style={{
+                            background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 60%)',
+                          }}
+                        />
+                        <Icon className="h-7 w-7 text-white relative z-10" strokeWidth={2.5} />
                         
                         {/* Haptic feedback ripple */}
                         <AnimatePresence>
@@ -160,38 +181,42 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                         </AnimatePresence>
                       </Button>
                     ) : (
-                      // Regular buttons
+                      // Regular buttons - minimal design
                       <Button
                         onClick={item.action}
                         variant="ghost"
                         size="sm"
                         className={`
-                          flex-col h-auto p-2 gap-1
-                          ${item.id === 'compare' ? 'text-red-600 hover:text-red-700' : 'text-gray-900 hover:text-gray-700'}
+                          flex-col h-auto p-2 gap-1.5
+                          ${isModels ? 'text-red-600 hover:text-red-700' : 'text-gray-900 hover:text-gray-700'}
                           hover:bg-gray-100/50
                           transition-all duration-200 touch-manipulation
                           ${isActive ? 'scale-95' : ''}
                         `}
                         style={{
-                          minHeight: '44px',
-                          minWidth: '44px'
+                          minHeight: '48px',
+                          minWidth: '52px'
                         }}
                       >
                         <div className="relative">
-                          <Icon className="h-5 w-5" />
+                          <Icon className="h-6 w-6" strokeWidth={isModels ? 2.5 : 2} />
                           
                           {/* Badge for compare count */}
                           {item.badge && (
                             <Badge
-                              variant="destructive"
-                              className="absolute -top-2 -right-2 h-4 w-4 p-0 text-[10px] flex items-center justify-center bg-red-600 border-none"
+                              className="absolute -top-2 -right-2 h-4 w-4 p-0 text-[10px] flex items-center justify-center border-none font-semibold"
+                              style={{
+                                background: 'linear-gradient(180deg, #dc2626 0%, #991b1b 100%)',
+                                color: 'white',
+                                boxShadow: '0 2px 6px rgba(220, 38, 38, 0.4)'
+                              }}
                             >
                               {item.badge}
                             </Badge>
                           )}
                         </div>
                         
-                        <span className="text-[11px] font-medium leading-none">
+                        <span className="text-[13px] font-medium leading-none">
                           {item.label}
                         </span>
                       </Button>
