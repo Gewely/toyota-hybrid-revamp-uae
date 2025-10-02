@@ -1,23 +1,45 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { ArrowDown, Settings, Calendar, Pause, Play, ChevronLeft, ChevronRight, Gauge, Battery, Car } from "lucide-react";
+import {
+  ArrowDown,
+  Settings,
+  Calendar,
+  Pause,
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  Gauge,
+  Battery,
+  Car,
+} from "lucide-react";
+
+// ✅ Props interface
+interface MinimalHeroSectionProps {
+  vehicle: any; // 👉 replace `any` with VehicleModel if you import that type
+  galleryImages: string[];
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  onBookTestDrive: () => void;
+  onCarBuilder: () => void;
+}
 
 // --- CONFIGURABLE DATA ---
-const galleryImages = [
-  "https://images5.alphacoders.com/116/thumbbig-1162016.webp",
-  "https://images7.alphacoders.com/127/thumbbig-1272437.webp",
-  "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-2160.jpg"
-];
-
 const HEADLINE = "2026 Toyota GR Carbon";
 const TAGLINE = "Electrified performance meets everyday usability";
 const SPECS = [
   { label: "0–100 km/h", value: 3.2, unit: "s", icon: <Gauge className="w-5 h-5 text-[#EB0A1E]" /> },
   { label: "Range", value: 650, unit: " km", icon: <Battery className="w-5 h-5 text-[#EB0A1E]" /> },
-  { label: "AWD", value: "Dual Motor", icon: <Car className="w-5 h-5 text-[#EB0A1E]" /> }
+  { label: "AWD", value: "Dual Motor", icon: <Car className="w-5 h-5 text-[#EB0A1E]" /> },
 ];
 
-const HeroSection: React.FC = () => {
+const HeroSection: React.FC<MinimalHeroSectionProps> = ({
+  vehicle,
+  galleryImages,
+  isFavorite,
+  onToggleFavorite,
+  onBookTestDrive,
+  onCarBuilder,
+}) => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ target: heroRef });
 
@@ -93,7 +115,12 @@ const HeroSection: React.FC = () => {
       }, 16);
       return () => clearInterval(interval);
     }, [target]);
-    return <span className="text-[#EB0A1E] font-bold text-lg">{val.toFixed(0)}{unit}</span>;
+    return (
+      <span className="text-[#EB0A1E] font-bold text-lg">
+        {val.toFixed(0)}
+        {unit}
+      </span>
+    );
   };
 
   return (
@@ -168,6 +195,7 @@ const HeroSection: React.FC = () => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <motion.button
+              onClick={onCarBuilder}
               aria-label="Configure and Order"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
@@ -178,6 +206,7 @@ const HeroSection: React.FC = () => {
             </motion.button>
 
             <motion.button
+              onClick={onBookTestDrive}
               aria-label="Book Test Drive"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
@@ -252,6 +281,6 @@ const HeroSection: React.FC = () => {
   );
 };
 
-// ✅ Correct single export
+// ✅ Export the right way
 const MinimalHeroSection = HeroSection;
 export default MinimalHeroSection;
