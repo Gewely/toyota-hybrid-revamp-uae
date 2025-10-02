@@ -1307,14 +1307,13 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
       {/* Bottom Nav with ATTRACT on Actions */}
       <motion.nav
-        role="navigation"
-        aria-label="Primary"
-        className={cn(
-          "fixed bottom-0 left-0 right-0 z-[100] backdrop-blur-xl border-t",
-          isGR ? "" : "bg-white/90 dark:bg-gray-900/90 border-gray-200 dark:border-gray-800 shadow-[0_-6px_30px_rgba(0,0,0,.15)]",
-          "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "!block !visible !opacity-100 pb-safe-area-inset-bottom mobile-force-visible"
-        )}
+  role="navigation"
+  aria-label="Primary"
+  className={cn(
+    "fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,.1)] rounded-t-2xl",
+    "h-14 sm:h-16 md:h-20", // responsive height
+    "pb-safe-area-inset-bottom mobile-force-visible"
+  )}
         initial={{ y: 100, opacity: 0 }}
         animate={{
           y: 0,
@@ -1329,11 +1328,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         }
       >
         <div
-          className={cn(
-            "grid gap-1 px-2 items-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-            vehicle ? "grid-cols-5" : "grid-cols-4"
-          )}
-        >
+  className={cn(
+    "grid items-center transition-all duration-500",
+    vehicle ? "grid-cols-5" : "grid-cols-4",
+    "gap-1 px-2 sm:gap-2 sm:px-4 md:gap-3 md:px-6" // responsive spacing
+  )}
+>
           <NavItem
             icon={<Car className={cn(isGR ? "text-neutral-100" : "", "transition-all", "h-5 w-5")} />}
             label="Models"
@@ -1404,16 +1404,16 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     </AnimatePresence>
 
                     {/* Icon pill */}
-                    <div
-                      className="relative rounded-full p-2"
-                      style={
-                        isGR
-                          ? { backgroundColor: "#1D1F22", border: `1px solid ${GR_EDGE}` }
-                          : { backgroundColor: "#EF4444" }
-                      }
-                    >
-                      <Bolt className="text-white h-4 w-4" />
-                    </div>
+                   <div
+  className={cn(
+    "flex items-center justify-center rounded-full shadow-lg shadow-red-500/30 transition-transform",
+    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16" // responsive scaling
+  )}
+  style={{ backgroundColor: "#EB0A1E" }}
+>
+  <Bolt className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+</div>
+
                   </motion.div>
                 }
                 label="Actions"
@@ -1542,7 +1542,13 @@ const NavItem: React.FC<NavItemProps> = ({
           aria-current={isActive ? "page" : undefined}
           style={{ WebkitTapHighlightColor: "transparent", minHeight: "44px", minWidth: "44px" }}
         >
-          {icon}
+         {React.cloneElement(icon as React.ReactElement, {
+  className: cn(
+    "transition-transform duration-300",
+    isActive ? "text-[#EB0A1E]" : "text-gray-600 dark:text-gray-400",
+    "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" // responsive sizes
+  ),
+})}
           {typeof badge === "number" && (
             <motion.div
               className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"
@@ -1558,13 +1564,15 @@ const NavItem: React.FC<NavItemProps> = ({
 
         {!isScrolled && (
           <span
-            className={cn(
-              "text-xs text-center font-medium mt-1 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-              grMode ? (isActive ? "text-red-300" : "text-neutral-300") : isActive ? "text-toyota-red" : "text-gray-600 dark:text-gray-400"
-            )}
-          >
-            {label}
-          </span>
+  className={cn(
+    "text-center font-medium mt-1 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+    grMode ? (isActive ? "text-red-300" : "text-neutral-300") : isActive ? "text-toyota-red" : "text-gray-600 dark:text-gray-400",
+    "text-[10px] sm:text-xs md:text-sm" // responsive text
+  )}
+>
+  {label}
+</span>
+        
         )}
       </div>
     </>
