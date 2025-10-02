@@ -176,13 +176,15 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
           <p className="mt-4 text-white/90 text-lg sm:text-xl lg:text-2xl font-light max-w-2xl">{TAGLINE}</p>
         </div>
 
-        {/* Specs */}
+        {/* Specs (fixed layout) */}
         <div className="w-full px-6 sm:px-12 md:px-24 pb-12 space-y-8">
-          <div className="grid grid-cols-3 gap-4 sm:flex sm:gap-x-12">
+          <div className="grid grid-cols-3 gap-y-6 sm:gap-x-12 text-center sm:text-left">
             {SPECS.map((spec, i) => (
-              <div key={i} className="flex items-center space-x-2">
-                {spec.icon}
-                <span className="text-white/60">{spec.label}</span>
+              <div key={i} className="flex flex-col items-center sm:items-start">
+                <div className="flex items-center gap-2">
+                  {spec.icon}
+                  <span className="text-white/60 text-sm sm:text-base">{spec.label}</span>
+                </div>
                 {typeof spec.value === "number" ? (
                   <AnimatedNumber target={spec.value} unit={spec.unit} />
                 ) : (
