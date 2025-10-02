@@ -1307,13 +1307,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
       {/* Bottom Nav with ATTRACT on Actions */}
       <motion.nav
-  role="navigation"
-  aria-label="Primary"
-  className={cn(
-    "fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-4px_20px_rgba(0,0,0,.1)] rounded-t-2xl",
-    "h-14 sm:h-16 md:h-20", // responsive height
-    "pb-safe-area-inset-bottom mobile-force-visible"
-  )}
+        role="navigation"
+        aria-label="Primary"
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-[100] backdrop-blur-xl border-t",
+          isGR ? "" : "bg-white/90 dark:bg-gray-900/90 border-gray-200 dark:border-gray-800 shadow-[0_-6px_30px_rgba(0,0,0,.15)]",
+          "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "!block !visible !opacity-100 pb-safe-area-inset-bottom mobile-force-visible"
+        )}
         initial={{ y: 100, opacity: 0 }}
         animate={{
           y: 0,
@@ -1328,12 +1329,16 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         }
       >
         <div
-  className={cn(
-    "grid items-center transition-all duration-500",
-    vehicle ? "grid-cols-5" : "grid-cols-4",
-    "gap-1 px-2 sm:gap-2 sm:px-4 md:gap-3 md:px-6" // responsive spacing
-  )}
->
+         className={cn(
+  "fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2",
+  "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+  "max-w-md w-[90%] rounded-3xl",
+  isGR
+    ? ""
+    : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+)}
+
+        >
           <NavItem
             icon={<Car className={cn(isGR ? "text-neutral-100" : "", "transition-all", "h-5 w-5")} />}
             label="Models"
@@ -1361,24 +1366,18 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               {/* Coachmark bubble */}
               <AnimatePresence>
                 {showCoachmark && !navigationState.isActionsExpanded && (
-                  <motion.div
-                    className={cn(
-                      "absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold shadow-lg",
-                      isGR ? "bg-[#16181A] text-neutral-100 border border-[#212428]" : "bg-white text-gray-900 border border-gray-200"
-                    )}
-                    variants={coachVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                  >
-                    Try Actions
-                    <div
-                      className={cn(
-                        "absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8",
-                        isGR ? "border-t-[#16181A] border-l-transparent border-r-transparent" : "border-t-white border-l-transparent border-r-transparent"
-                      )}
-                    />
-                  </motion.div>
+                  <div
+  className="relative rounded-full shadow-xl flex items-center justify-center"
+  style={{
+    backgroundColor: isGR ? "#1D1F22" : "#EB0A1E",
+    width: "56px",
+    height: "56px",
+    border: isGR ? `1px solid ${GR_EDGE}` : "none",
+  }}
+>
+  <Bolt className="text-white w-6 h-6" />
+</div>
+
                 )}
               </AnimatePresence>
 
@@ -1404,16 +1403,16 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     </AnimatePresence>
 
                     {/* Icon pill */}
-                   <div
-  className={cn(
-    "flex items-center justify-center rounded-full shadow-lg shadow-red-500/30 transition-transform",
-    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16" // responsive scaling
-  )}
-  style={{ backgroundColor: "#EB0A1E" }}
->
-  <Bolt className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
-</div>
-
+                    <div
+                      className="relative rounded-full p-2"
+                      style={
+                        isGR
+                          ? { backgroundColor: "#1D1F22", border: `1px solid ${GR_EDGE}` }
+                          : { backgroundColor: "#EF4444" }
+                      }
+                    >
+                      <Bolt className="text-white h-4 w-4" />
+                    </div>
                   </motion.div>
                 }
                 label="Actions"
@@ -1514,81 +1513,90 @@ const NavItem: React.FC<NavItemProps> = ({
   };
 
   const content = (
-    <>
-      <div
-        className="flex flex-col items-center justify-center relative w-full transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
-        style={{ minHeight: getNavItemHeight() }}
-      >
-        <motion.div
-          className={cn(
-            "p-2 rounded-xl transition-all relative touch-target duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center",
-            "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0B0C]",
-            isActive
-              ? grMode
-                ? "bg-[#141618] text-[#E6E7E9] scale-110 shadow-[inset_0_0_0_1px_#17191B]"
-                : "text-toyota-red bg-red-50 dark:bg-red-950 scale-110"
-              : grMode
-              ? "text-[#E6E7E9] bg-[#101214] hover:bg-[#121416] shadow-[inset_0_0_0_1px_#17191B]"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
-          )}
-          animate={{
-            minWidth: getIconSize(),
-            minHeight: getIconSize(),
-            padding: isScrolled ? "6px" : "8px",
-          }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          whileHover={{ scale: isActive ? 1.1 : 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          aria-current={isActive ? "page" : undefined}
-          style={{ WebkitTapHighlightColor: "transparent", minHeight: "44px", minWidth: "44px" }}
-        >
-         {React.cloneElement(icon as React.ReactElement, {
-  className: cn(
-    "transition-transform duration-300",
-    isActive ? "text-[#EB0A1E]" : "text-gray-600 dark:text-gray-400",
-    "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" // responsive sizes
-  ),
-})}
-          {typeof badge === "number" && (
-            <motion.div
-              className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              style={{ background: grMode ? "#1F2124" : TOYOTA_GRADIENT, border: grMode ? `1px solid ${GR_EDGE}` : undefined }}
-            >
-              {badge > 9 ? "9+" : badge}
-            </motion.div>
-          )}
-        </motion.div>
-
-        {!isScrolled && (
-          <span
-  className={cn(
-    "text-center font-medium mt-1 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-    grMode ? (isActive ? "text-red-300" : "text-neutral-300") : isActive ? "text-toyota-red" : "text-gray-600 dark:text-gray-400",
-    "text-[10px] sm:text-xs md:text-sm" // responsive text
-  )}
->
-  {label}
-</span>
-        
+    <div
+      className="flex flex-col items-center justify-center relative w-full transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      style={{ minHeight: getNavItemHeight() }}
+    >
+      <motion.div
+        className={cn(
+          "p-2 rounded-xl transition-all relative flex items-center justify-center",
+          "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700",
+          grMode
+            ? isActive
+              ? "text-[#E6E7E9] scale-110"
+              : "text-[#9DA2A6] hover:text-[#E6E7E9]"
+            : isActive
+            ? "text-[#EB0A1E] font-semibold"
+            : "text-gray-700 dark:text-gray-300 hover:text-black"
         )}
-      </div>
-    </>
+        animate={{
+          minWidth: getIconSize(),
+          minHeight: getIconSize(),
+        }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        whileHover={{ scale: isActive ? 1.1 : 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        aria-current={isActive ? "page" : undefined}
+        style={{ WebkitTapHighlightColor: "transparent", minHeight: "44px", minWidth: "44px" }}
+      >
+        {icon}
+
+        {typeof badge === "number" && (
+          <motion.div
+            className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+            style={{ background: grMode ? "#1F2124" : TOYOTA_GRADIENT }}
+          >
+            {badge > 9 ? "9+" : badge}
+          </motion.div>
+        )}
+      </motion.div>
+
+      {!isScrolled && (
+        <span
+          className={cn(
+            "text-xs text-center font-medium mt-1 leading-tight transition-colors duration-700",
+            grMode
+              ? isActive
+                ? "text-red-300"
+                : "text-neutral-300"
+              : isActive
+              ? "text-[#EB0A1E]"
+              : "text-gray-700 dark:text-gray-300"
+          )}
+        >
+          {label}
+        </span>
+      )}
+    </div>
   );
 
   if (onClick) {
     return (
       <button
         onClick={onClick}
-        className="relative flex items-center justify-center px-1 py-2 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
+        className="relative flex items-center justify-center px-1 py-2 rounded-lg"
         style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
       >
         {content}
       </button>
     );
   }
+
+  return (
+    <Link
+      to={to}
+      className="relative flex items-center justify-center px-1 py-2 rounded-lg"
+      style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
+      aria-current={isActive ? "page" : undefined}
+    >
+      {content}
+    </Link>
+  );
+};
+
 
   return (
     <Link
