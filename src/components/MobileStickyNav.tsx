@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -343,6 +343,30 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const spring = isGR
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
+
+  // Measure nav height to set CSS var for safe content padding
+  const navRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const updateNavHeight = () => {
+      const h = navRef.current?.getBoundingClientRect().height;
+      if (h) {
+        document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
+      }
+    };
+    updateNavHeight();
+    window.addEventListener("resize", updateNavHeight);
+    window.addEventListener("orientationchange", updateNavHeight);
+    // iOS dynamic viewport when browser chrome collapses
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    vv?.addEventListener("resize", updateNavHeight);
+    vv?.addEventListener("scroll", updateNavHeight);
+    return () => {
+      window.removeEventListener("resize", updateNavHeight);
+      window.removeEventListener("orientationchange", updateNavHeight);
+      vv?.removeEventListener("resize", updateNavHeight);
+      vv?.removeEventListener("scroll", updateNavHeight);
+    };
+  }, [deviceInfo.deviceCategory, isGR, isScrolled, navigationState.isMenuOpen, navigationState.isActionsExpanded]);
 
   const quickActionCards: Array<{
     id: string;
@@ -1308,13 +1332,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       <motion.nav
   role="navigation"
   aria-label="Primary"
+  ref={navRef}
   className={cn(
     "fixed left-0 right-0 z-[100]",
     "mobile-force-visible backdrop-blur-xl"
   )}
   style={{
     bottom: 0,
-    paddingBottom: "env(safe-area-inset-bottom)", // ✅ Safe area padding
+    paddingBottom: "env(safe-area-inset-bottom)", // ✅ Safe area padding only once
   }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
@@ -1323,10 +1348,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         <div
   className={cn(
     "rounded-t-2xl",
-    "py-2 sm:py-3"
+    "py-1.5 sm:py-2"
   )}
   style={{
-    paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)", // ✅ safe area fix
     ...(isGR
       ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
       : { 
@@ -1342,11 +1366,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   className={cn(
     "grid items-center transition-all duration-500",
     vehicle ? "grid-cols-5" : "grid-cols-4",
-    "gap-1 px-2 sm:gap-2 sm:px-4 md:gap-3 md:px-6"
+    "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4"
   )}
 >
           <NavItem
-            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-5 w-5")} />}
+            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-4 w-4")} />}
             label="Models"
             to="#"
             onClick={() => handleSectionToggle("models")}
@@ -1356,7 +1380,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             deviceCategory={deviceInfo.deviceCategory}
           />
           <NavItem
-            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-5 w-5")} />}
+            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
             label="Pre-Owned"
             to="#"
             onClick={() => handleSectionToggle("pre-owned")}
@@ -1418,7 +1442,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                    <div
   className={cn(
     "flex items-center justify-center rounded-full transition-transform",
-    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16"
+    "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"
   )}
   style={{ 
     background: 'linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)',
@@ -1430,7 +1454,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     `
   }}
 >
-  <Bolt className="text-white w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+  <Bolt className="text-white w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
 </div>
 
                   </motion.div>
@@ -1454,7 +1478,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           )}
 
           <NavItem
-            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-5 w-5")} />}
+            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
             label="Search"
             to="#"
             onClick={() => handleSectionToggle("search")}
@@ -1464,7 +1488,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             deviceCategory={deviceInfo.deviceCategory}
           />
           <NavItem
-            icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-5 w-5")} />}
+            icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-4 w-4")} />}
             label="Menu"
             to="#"
             onClick={toggleMenu}
@@ -1507,29 +1531,29 @@ const NavItem: React.FC<NavItemProps> = ({
     if (isScrolled) {
       switch (deviceCategory) {
         case "smallMobile":
-          return "36px";
+          return "32px";
         case "standardMobile":
-          return "40px";
+          return "36px";
         default:
-          return "44px";
+          return "40px";
       }
     } else {
       switch (deviceCategory) {
         case "smallMobile":
-          return "44px";
+          return "38px";
         case "standardMobile":
-          return "48px";
+          return "42px";
         default:
-          return "52px";
+          return "46px";
       }
     }
   };
 
   const getIconSize = () => {
     if (isScrolled) {
-      return deviceCategory === "smallMobile" ? "32px" : "36px";
+      return deviceCategory === "smallMobile" ? "28px" : "32px";
     } else {
-      return deviceCategory === "smallMobile" ? "40px" : "44px";
+      return deviceCategory === "smallMobile" ? "34px" : "38px";
     }
   };
 
@@ -1586,7 +1610,7 @@ const NavItem: React.FC<NavItemProps> = ({
   className={cn(
     "text-center font-medium mt-0.5 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
     grMode ? (isActive ? "text-red-300" : "text-neutral-300") : "text-gray-900",
-    "text-[9px] sm:text-[10px] md:text-xs"
+    "text-[8px] sm:text-[9px] md:text-[10px]"
   )}
 >
   {label}
@@ -1601,7 +1625,7 @@ const NavItem: React.FC<NavItemProps> = ({
     return (
       <button
         onClick={onClick}
-        className="relative flex items-center justify-center px-1 py-2 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
+        className="relative flex items-center justify-center px-1 py-1 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
         style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
       >
         {content}
@@ -1612,7 +1636,7 @@ const NavItem: React.FC<NavItemProps> = ({
   return (
     <Link
       to={to}
-      className="relative flex items-center justify-center px-1 py-2 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
+      className="relative flex items-center justify-center px-1 py-1 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
       style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
       aria-current={isActive ? "page" : undefined}
     >
