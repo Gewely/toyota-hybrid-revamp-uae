@@ -522,7 +522,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 <h3 className={cn("font-bold", isGR ? "text-white" : "text-gray-900")}>
                   {vehicle.name}
                 </h3>
-                <span className={cn("text-lg font-bold", isGR ? "text-red-400" : "text-primary")}>
+                <span className={cn("text-lg font-bold", isGR ? "text-red-400" : "text-gray-900 dark:text-gray-100")}>
                   AED {fmt.format(vehicle.price)}
                 </span>
               </div>
@@ -653,7 +653,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             aria-modal="true"
             aria-label="Toyota Connect menu"
             style={
-              isGR ? carbonMatte : { backgroundColor: "white", borderImage: `${TOYOTA_GRADIENT} 1` }
+              isGR ? carbonMatte : { backgroundColor: "white", border: '1px solid #e5e7eb' }
             }
           >
             <div
@@ -662,12 +662,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             >
               <div>
                 <h3
-                  className={cn("font-bold text-lg", isGR ? "text-white" : "text-black dark:text-red-500")}
+                  className={cn("font-bold text-lg", isGR ? "text-white" : "text-gray-900 dark:text-gray-100")}
                   style={{ letterSpacing: ".02em" }}
                 >
                   Toyota Connect
                 </h3>
-                <p className={cn("text-sm", isGR ? "text-neutral-300" : "text-red-600 dark:text-red-400")}>
+                <p className={cn("text-sm", isGR ? "text-neutral-300" : "text-gray-600 dark:text-gray-400")}>
                   {isGR ? "GR Performance Hub" : "Your gateway to Toyota"}
                 </p>
               </div>
@@ -698,7 +698,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   className={cn(
                     "rounded-full h-8 w-8 p-0",
                     getTouchTargetSize(),
-                    isGR ? "text-[#E6E7E9] hover:bg-[#16181A]" : "text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                    isGR ? "text-[#E6E7E9] hover:bg-[#16181A]" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                   )}
                   aria-label="Close menu"
                 >
@@ -752,15 +752,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                       <div className="opacity-90">{card.icon}</div>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                      <div className="h-[3px] w-24 rounded-full bg-red-800/50" />
+                                      <div className="h-[3px] w-24 rounded-full bg-gray-700/30" />
                                       <ChevronRight className="h-4 w-4 opacity-90" />
                                     </div>
                                   </div>
                                 </div>
                               ) : (
                                 <Card
-                                  className="h-32 overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-shadow"
-                                  style={{ background: TOYOTA_GRADIENT }}
+                                  className="h-32 overflow-hidden shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700"
                                 >
                                   <CardContent className="flex flex-col justify-between h-full p-4 text-white">
                                     <div className="flex items-start justify-between">
@@ -834,10 +833,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                   ? isGR
                                     ? "shadow-[0_0_0_1px_rgba(235,10,30,.5)]"
                                     : "text-white shadow-lg scale-105"
-                                  : isGR
-                                  ? "hover:bg-[#121416]"
-                                  : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-                              )}
+                                   : isGR
+                                   ? "hover:bg-[#121416]"
+                                   : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+                               )}
                               style={
                                 isGR
                                   ? {
@@ -846,7 +845,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                       border: `1px solid ${GR_EDGE}`,
                                     }
                                   : selectedCategory === category.id
-                                  ? { background: TOYOTA_GRADIENT }
+                                  ? { background: 'linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)' }
                                   : undefined
                               }
                               whileHover={reduceMotion ? {} : { scale: 1.05 }}
@@ -921,10 +920,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                     <h3 className="font-semibold text-base mb-1 text-gray-900 dark:text-gray-100">{v.name}</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">From AED {fmt.format(v.price)}</p>
                                     <div className="flex justify-between items-center">
-                                      <span className="text-xs bg-red-100 text-toyota-red px-2 py-1 rounded-full font-medium">
+                                      <span className="text-xs bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded-full font-medium">
                                         {v.category}
                                       </span>
-                                      <span className="text-toyota-red text-sm font-semibold flex items-center">
+                                      <span className="text-gray-900 dark:text-gray-100 text-sm font-semibold flex items-center">
                                         View <ChevronRight className="h-3 w-3 ml-1" />
                                       </span>
                                     </div>
@@ -943,7 +942,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       to={`/new-cars${selectedCategory !== "all" ? `?category=${selectedCategory}` : ""}`}
                       className={cn(
                         "font-semibold flex items-center justify-center rounded-lg",
-                        isGR ? "text-red-400 hover:text-red-300" : "text-toyota-red hover:text-red-700"
+                        isGR ? "text-red-400 hover:text-red-300" : "text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300"
                       )}
                       onClick={navigationState.resetNavigation}
                     >
@@ -1140,7 +1139,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                       border: `1px solid ${GR_EDGE}`,
                                     }
                                   : selectedCategory === category.id
-                                  ? { background: TOYOTA_GRADIENT }
+                                  ? { background: 'linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)' }
                                   : undefined
                               }
                               whileHover={{ scale: reduceMotion ? 1 : 1.05 }}
@@ -1206,7 +1205,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                             to={`/pre-owned/${encodeURIComponent(v.name.toLowerCase().replace(/\s+/g, "-"))}`}
                             onClick={navigationState.resetNavigation}
                             aria-label={`View ${v.name}`}
-                            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-xl"
+                            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-700 rounded-xl"
                           >
                             <motion.div whileHover={{ scale: reduceMotion ? 1 : 1.02 }} whileTap={{ scale: reduceMotion ? 1 : 0.98 }}>
                               {isGR ? (
@@ -1251,8 +1250,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                 <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl">
                                   <div className="aspect-[16/10] w-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 relative">
                                     <img src={v.image} alt={v.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                                    <div className="absolute top-2 right-2">
-                                      <span className="text-white px-2 py-1 rounded-full text-xs font-medium shadow-md" style={{ background: TOYOTA_GRADIENT }}>
+                                     <div className="absolute top-2 right-2">
+                                      <span className="bg-gray-900 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
                                         {v.year}
                                       </span>
                                     </div>
@@ -1260,14 +1259,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                   <CardContent className="p-4">
                                     <h3 className="font-semibold text-base mb-1 text-gray-900 dark:text-gray-100">{v.name}</h3>
                                     <div className="flex justify-between items-center mb-2">
-                                      <p className="text-sm font-bold text-toyota-red">AED {fmt.format(v.price)}</p>
+                                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">AED {fmt.format(v.price)}</p>
                                       <p className="text-xs text-gray-500 dark:text-gray-400">{v.mileage}</p>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                      <span className="text-xs bg-red-100 text-toyota-red px-2 py-1 rounded-full font-medium">
+                                      <span className="text-xs bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded-full font-medium">
                                         Certified Pre-Owned
                                       </span>
-                                      <span className="text-toyota-red text-sm font-semibold flex items-center">
+                                      <span className="text-gray-900 dark:text-gray-100 text-sm font-semibold flex items-center">
                                         View <ChevronRight className="h-3 w-3 ml-1" />
                                       </span>
                                     </div>
@@ -1286,7 +1285,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       to={`/pre-owned${selectedCategory !== "all" ? `?category=${selectedCategory}` : ""}`}
                       className={cn(
                         "font-semibold flex items-center justify-center rounded-lg",
-                        isGR ? "text-red-400 hover:text-red-300" : "text-toyota-red hover:text-red-700"
+                        isGR ? "text-red-400 hover:text-red-300" : "text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300"
                       )}
                       onClick={navigationState.resetNavigation}
                     >
@@ -1540,7 +1539,7 @@ const NavItem: React.FC<NavItemProps> = ({
             isActive
               ? grMode
                 ? "bg-[#141618] text-[#E6E7E9] scale-110 shadow-[inset_0_0_0_1px_#17191B]"
-                : "text-toyota-red bg-red-50 dark:bg-red-950 scale-110"
+                : "text-gray-900 bg-gray-100 dark:bg-gray-800 scale-110"
               : grMode
               ? "text-[#E6E7E9] bg-[#101214] hover:bg-[#121416] shadow-[inset_0_0_0_1px_#17191B]"
               : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
@@ -1559,7 +1558,7 @@ const NavItem: React.FC<NavItemProps> = ({
          {React.cloneElement(icon as React.ReactElement, {
   className: cn(
     "transition-transform duration-300",
-    "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7"
+    "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
   ),
 })}
           {typeof badge === "number" && (
@@ -1568,19 +1567,19 @@ const NavItem: React.FC<NavItemProps> = ({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              style={{ background: grMode ? "#1F2124" : TOYOTA_GRADIENT, border: grMode ? `1px solid ${GR_EDGE}` : undefined }}
+              style={{ background: grMode ? "#1F2124" : "linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)", border: grMode ? `1px solid ${GR_EDGE}` : undefined }}
             >
               {badge > 9 ? "9+" : badge}
             </motion.div>
           )}
         </motion.div>
 
-        {!isScrolled && (
+        {!isScrolled && label && (
           <span
   className={cn(
-    "text-center font-medium mt-1 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+    "text-center font-medium mt-0.5 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
     grMode ? (isActive ? "text-red-300" : "text-neutral-300") : "text-gray-900",
-    "text-[10px] sm:text-xs md:text-sm"
+    "text-[9px] sm:text-[10px] md:text-xs"
   )}
 >
   {label}

@@ -131,7 +131,7 @@ const ToyotaLayout: React.FC<ToyotaLayoutProps> = ({
       <main className={cn(
         "flex-1",
         // Add bottom padding for mobile sticky nav when it's present
-        shouldShowMobileNav && "pb-16 safe-area-pb"
+        shouldShowMobileNav && "pb-24 sm:pb-28 md:pb-32 safe-area-pb"
       )}>
         {children}
       </main>
