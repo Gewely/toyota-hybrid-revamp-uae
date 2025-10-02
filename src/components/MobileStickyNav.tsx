@@ -1320,9 +1320,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}
 >
-  {/* content */}
-</motion.nav>
-
         <div
   className={cn(
     "rounded-t-2xl",

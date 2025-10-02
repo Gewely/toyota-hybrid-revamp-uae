@@ -257,6 +257,12 @@
   overflow: hidden;
 }
 
+/* Mobile Main Content with Nav - Fixed spacing for sticky nav */
+.mobile-main-with-nav {
+  --mobile-nav-height: 80px;
+  min-height: calc(100vh - var(--mobile-nav-height) - env(safe-area-inset-bottom));
+}
+
 /* Enhanced Safe Area Insets */
 .safe-area-inset-top {
   padding-top: max(16px, env(safe-area-inset-top));
