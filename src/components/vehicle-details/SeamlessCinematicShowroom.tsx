@@ -10,7 +10,7 @@ type ModalType = "interior" | "exterior" | "performance" | "safety" | "technolog
 // Props for main showroom
 interface ShowroomProps {
   vehicleName: string;
-  heroImage: string;
+  vehicleImages: string[];
   onReserve?: () => void;
   onTestDrive?: () => void;
   onConfigure?: () => void;
@@ -19,11 +19,12 @@ interface ShowroomProps {
 // ==================== MAIN WRAPPER ====================
 const SeamlessCinematicShowroom: React.FC<ShowroomProps> = ({
   vehicleName,
-  heroImage,
+  vehicleImages,
   onReserve,
   onTestDrive,
   onConfigure,
 }) => {
+  const heroImage = vehicleImages[0] || "/lovable-uploads/89971938-ac2c-4968-b6cb-a4fcd702b56c.png";
   const [activeModal, setActiveModal] = useState<ModalType>(null);
 
   return (
