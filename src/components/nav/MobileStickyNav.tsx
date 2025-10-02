@@ -101,17 +101,15 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
           exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 100 }}
           transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className={`fixed bottom-0 left-0 right-0 z-[100] lg:hidden ${className}`}
+          className={`fixed bottom-6 left-0 right-0 z-[100] lg:hidden px-4 ${className}`}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl border-t border-white/10" />
-          
-          {/* Content */}
-          <div className="relative px-4 py-3 safe-area-inset-bottom">
-            <div className="flex items-center justify-between max-w-sm mx-auto">
+          {/* Rounded pill container */}
+          <div className="max-w-md mx-auto bg-gradient-to-b from-white to-gray-50 rounded-full shadow-2xl border border-gray-200/50 px-4 py-3">
+            <div className="flex items-center justify-around gap-2">
               {navItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = activeAction === item.id;
+                const isCenterButton = item.id === 'build';
                 
                 return (
                   <motion.div
@@ -127,57 +125,77 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     }}
                     className="relative"
                   >
-                    <Button
-                      onClick={item.action}
-                      variant="ghost"
-                      size="sm"
-                      className={`
-                        flex-col h-auto p-3 text-white hover:text-white hover:bg-white/10
-                        transition-all duration-200 touch-manipulation min-h-touch-target
-                        ${isActive ? 'scale-95' : ''}
-                      `}
-                      style={{
-                        minHeight: '44px',
-                        minWidth: '44px'
-                      }}
-                    >
-                      <div className="relative">
-                        <div className={`
-                          w-8 h-8 rounded-lg flex items-center justify-center mb-1
-                          ${isActive ? item.color : 'bg-white/10'}
-                          transition-colors duration-200
-                        `}>
-                          <Icon className="h-4 w-4" />
+                    {isCenterButton ? (
+                      // Large center button
+                      <Button
+                        onClick={item.action}
+                        size="lg"
+                        className={`
+                          relative h-16 w-16 rounded-full p-0
+                          bg-gradient-to-b from-red-600 to-red-700
+                          hover:from-red-700 hover:to-red-800
+                          shadow-xl shadow-red-600/30
+                          border-4 border-white
+                          transition-all duration-200 touch-manipulation
+                          ${isActive ? 'scale-95' : 'scale-100'}
+                        `}
+                        style={{
+                          minHeight: '64px',
+                          minWidth: '64px'
+                        }}
+                      >
+                        <Icon className="h-7 w-7 text-white" />
+                        
+                        {/* Haptic feedback ripple */}
+                        <AnimatePresence>
+                          {isActive && !prefersReducedMotion && (
+                            <motion.div
+                              className="absolute inset-0 rounded-full bg-white/30"
+                              initial={{ scale: 0, opacity: 0.6 }}
+                              animate={{ scale: 1.5, opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.4, ease: "easeOut" }}
+                            />
+                          )}
+                        </AnimatePresence>
+                      </Button>
+                    ) : (
+                      // Regular buttons
+                      <Button
+                        onClick={item.action}
+                        variant="ghost"
+                        size="sm"
+                        className={`
+                          flex-col h-auto p-2 gap-1
+                          ${item.id === 'compare' ? 'text-red-600 hover:text-red-700' : 'text-gray-900 hover:text-gray-700'}
+                          hover:bg-gray-100/50
+                          transition-all duration-200 touch-manipulation
+                          ${isActive ? 'scale-95' : ''}
+                        `}
+                        style={{
+                          minHeight: '44px',
+                          minWidth: '44px'
+                        }}
+                      >
+                        <div className="relative">
+                          <Icon className="h-5 w-5" />
+                          
+                          {/* Badge for compare count */}
+                          {item.badge && (
+                            <Badge
+                              variant="destructive"
+                              className="absolute -top-2 -right-2 h-4 w-4 p-0 text-[10px] flex items-center justify-center bg-red-600 border-none"
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
                         </div>
                         
-                        {/* Badge for compare count */}
-                        {item.badge && (
-                          <Badge
-                            variant="destructive"
-                            className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center bg-red-600 border-none"
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <span className="text-xs font-medium leading-none">
-                        {item.label}
-                      </span>
-                    </Button>
-
-                    {/* Haptic feedback ripple */}
-                    <AnimatePresence>
-                      {isActive && !prefersReducedMotion && (
-                        <motion.div
-                          className="absolute inset-0 rounded-lg bg-white/20"
-                          initial={{ scale: 0, opacity: 0.6 }}
-                          animate={{ scale: 1.5, opacity: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                        />
-                      )}
-                    </AnimatePresence>
+                        <span className="text-[11px] font-medium leading-none">
+                          {item.label}
+                        </span>
+                      </Button>
+                    )}
                   </motion.div>
                 );
               })}
