@@ -9,7 +9,7 @@ interface DesktopGridProps {
 
 const DesktopGrid: React.FC<DesktopGridProps> = ({ cards, onCardClick }) => {
   return (
-    <div className="hidden lg:grid grid-cols-2 gap-8 p-8">
+    <div className="hidden lg:grid grid-cols-2 gap-6 p-8 max-w-7xl mx-auto">
       {cards.map((card, index) => (
         <ShowroomCard
           key={card.id}

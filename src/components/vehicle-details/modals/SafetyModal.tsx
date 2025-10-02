@@ -82,26 +82,26 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
               transition={{ delay: idx * 0.1 }}
               className={`border-2 rounded-2xl overflow-hidden transition-colors ${
                 expandedId === feature.id
-                  ? 'border-[hsl(var(--toyota-red))] bg-zinc-50'
-                  : 'border-zinc-200 bg-white'
+                  ? 'border-foreground bg-accent'
+                  : 'border-border bg-background'
               }`}
             >
               <button
                 onClick={() => toggleExpand(feature.id)}
                 className="w-full p-6 flex items-start gap-4 text-left"
               >
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                   expandedId === feature.id
-                    ? 'bg-[hsl(var(--toyota-red))] text-white'
-                    : 'bg-zinc-100 text-zinc-600'
+                    ? 'bg-foreground text-background'
+                    : 'bg-accent text-foreground'
                 }`}>
-                  <feature.icon className="h-6 w-6" />
+                  <feature.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg text-zinc-900 mb-1">
+                  <h3 className="font-bold text-base sm:text-lg text-foreground mb-1">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-zinc-600">{feature.tagline}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{feature.tagline}</p>
                 </div>
               </button>
 
@@ -114,13 +114,13 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
                     transition={{ duration: 0.3 }}
                     className="px-6 pb-6"
                   >
-                    <div className="pl-16">
-                      <p className="text-zinc-700 mb-4">{feature.description}</p>
+                    <div className="pl-12 sm:pl-16">
+                      <p className="text-sm sm:text-base text-foreground/80 mb-3 sm:mb-4">{feature.description}</p>
                       <ul className="space-y-2">
                         {feature.features.map((item, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--toyota-red))] mt-2 flex-shrink-0" />
-                            <span className="text-sm text-zinc-600">{item}</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm text-foreground/70">{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -143,22 +143,22 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
               transition={{ delay: idx * 0.1 }}
               className={`p-8 rounded-2xl border-2 text-left transition-all ${
                 expandedId === feature.id
-                  ? 'border-[hsl(var(--toyota-red))] bg-zinc-50 shadow-lg'
-                  : 'border-zinc-200 bg-white hover:border-zinc-300'
+                  ? 'border-foreground bg-accent shadow-lg'
+                  : 'border-border bg-background hover:border-foreground/50'
               }`}
             >
               <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${
                 expandedId === feature.id
-                  ? 'bg-[hsl(var(--toyota-red))] text-white'
-                  : 'bg-zinc-100 text-zinc-600'
+                  ? 'bg-foreground text-background'
+                  : 'bg-accent text-foreground'
               }`}>
                 <feature.icon className="h-8 w-8" />
               </div>
 
-              <h3 className="font-bold text-xl text-zinc-900 mb-2">
+              <h3 className="font-bold text-xl text-foreground mb-2">
                 {feature.title}
               </h3>
-              <p className="text-zinc-600 mb-4">{feature.tagline}</p>
+              <p className="text-muted-foreground mb-4">{feature.tagline}</p>
 
               <AnimatePresence>
                 {expandedId === feature.id && (
@@ -166,14 +166,14 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="mt-4 pt-4 border-t border-zinc-200"
+                    className="mt-4 pt-4 border-t border-border"
                   >
-                    <p className="text-zinc-700 mb-4">{feature.description}</p>
+                    <p className="text-foreground/80 mb-4">{feature.description}</p>
                     <ul className="space-y-2">
                       {feature.features.map((item, i) => (
                         <li key={i} className="flex items-start gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[hsl(var(--toyota-red))] mt-2 flex-shrink-0" />
-                          <span className="text-zinc-700">{item}</span>
+                          <span className="w-2 h-2 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                          <span className="text-foreground/70">{item}</span>
                         </li>
                       ))}
                     </ul>
@@ -189,13 +189,13 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 text-center"
+          className="mt-8 sm:mt-12 p-6 sm:p-8 rounded-2xl bg-foreground text-center"
         >
-          <Shield className="h-12 w-12 text-[hsl(var(--toyota-red))] mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-white mb-2">
+          <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-background mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-xl sm:text-2xl font-bold text-background mb-2">
             Toyota Safety Sense™
           </h3>
-          <p className="text-zinc-300 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-background/80 max-w-2xl mx-auto">
             A comprehensive suite of active safety technologies designed to protect you and your passengers on every journey.
           </p>
         </motion.div>

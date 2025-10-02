@@ -73,19 +73,19 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
         onClick={(e) => e.stopPropagation()}
         className={`
           ${background} rounded-3xl shadow-2xl relative
-          ${isMobile ? 'w-full h-full rounded-none' : `w-[95%] ${maxWidth} max-h-[90vh]`}
+          ${isMobile ? 'w-full h-full rounded-none' : `w-[95%] ${maxWidth} max-h-[95vh]`}
           overflow-hidden flex flex-col
         `}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-border/50 p-6 flex items-center justify-between">
-          <h1 className="text-2xl lg:text-3xl font-bold text-zinc-900">{title}</h1>
+        <div className="sticky top-0 z-10 bg-background border-b border-border p-4 sm:p-6 flex items-center justify-between">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">{title}</h1>
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 transition-colors"
+            className="p-2 rounded-full bg-accent hover:bg-accent/80 transition-colors"
             aria-label="Close modal"
           >
-            <X className="h-5 w-5 text-zinc-800" />
+            <X className="h-5 w-5 text-foreground" />
           </button>
         </div>
 
@@ -95,15 +95,15 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
         </div>
 
         {/* Footer CTAs */}
-        <div className="sticky bottom-0 bg-white border-t border-border/50 p-6 flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="sticky bottom-0 bg-background border-t border-border p-4 sm:p-6 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <Button 
-            className="bg-[hsl(var(--toyota-red))] text-white hover:bg-[hsl(var(--toyota-red))]/90 px-8 py-6 text-lg"
+            className="bg-foreground text-background hover:bg-foreground/90 px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg w-full sm:w-auto"
           >
             Reserve Now
           </Button>
           <Button 
             variant="outline" 
-            className="border-2 border-zinc-800 text-zinc-800 hover:bg-zinc-100 px-8 py-6 text-lg"
+            className="border-2 border-foreground text-foreground hover:bg-accent px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg w-full sm:w-auto"
           >
             Book Test Drive
           </Button>

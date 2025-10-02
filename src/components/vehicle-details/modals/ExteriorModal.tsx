@@ -72,10 +72,10 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
             <button
               key={color.id}
               onClick={() => setSelectedColor(color.id)}
-              className={`group flex items-center gap-3 px-6 py-3 rounded-full border-2 transition-all ${
+              className={`group flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full border-2 transition-all ${
                 selectedColor === color.id
-                  ? 'border-[hsl(var(--toyota-red))] bg-zinc-50'
-                  : 'border-zinc-300 hover:border-zinc-400'
+                  ? 'border-foreground bg-accent'
+                  : 'border-border hover:border-foreground/50'
               }`}
             >
               <div
@@ -83,8 +83,8 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
                 style={{ backgroundColor: color.hex }}
               />
               <div className="text-left hidden sm:block">
-                <div className="text-sm font-semibold text-zinc-900">{color.name}</div>
-                <div className="text-xs text-zinc-600">{color.description}</div>
+                <div className="text-sm font-semibold text-foreground">{color.name}</div>
+                <div className="text-xs text-muted-foreground">{color.description}</div>
               </div>
             </button>
           ))}
@@ -117,14 +117,14 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
                 transition={{ delay: 0.5, type: 'spring' }}
                 whileHover={{ scale: 1.1 }}
               >
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--toyota-red))] text-white flex items-center justify-center shadow-lg">
+                  <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center shadow-lg">
                     <hotspot.icon className="h-5 w-5" />
                   </div>
                   <div className="absolute left-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <div className="bg-white rounded-lg shadow-xl p-4 w-56">
-                      <div className="font-bold text-zinc-900 mb-1">{hotspot.label}</div>
-                      <div className="text-sm text-zinc-600">{hotspot.description}</div>
+                    <div className="bg-background rounded-lg shadow-xl p-4 w-56 border border-border">
+                      <div className="font-bold text-foreground mb-1">{hotspot.label}</div>
+                      <div className="text-sm text-muted-foreground">{hotspot.description}</div>
                     </div>
                   </div>
                 </div>
@@ -134,18 +134,18 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
         </div>
 
         {/* Feature Cards - Mobile */}
-        <div className="lg:hidden grid grid-cols-1 gap-4">
+        <div className="lg:hidden grid grid-cols-1 gap-3 sm:gap-4">
           {hotspots.map((hotspot) => (
             <div
               key={hotspot.id}
-              className="flex items-start gap-4 p-4 rounded-xl border border-zinc-200 bg-white"
+              className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-border bg-background"
             >
-              <div className="w-12 h-12 rounded-full bg-[hsl(var(--toyota-red))] text-white flex items-center justify-center flex-shrink-0">
-                <hotspot.icon className="h-6 w-6" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-foreground text-background flex items-center justify-center flex-shrink-0">
+                <hotspot.icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <div className="font-bold text-zinc-900 mb-1">{hotspot.label}</div>
-                <div className="text-sm text-zinc-600">{hotspot.description}</div>
+                <div className="font-bold text-sm sm:text-base text-foreground mb-1">{hotspot.label}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">{hotspot.description}</div>
               </div>
             </div>
           ))}
@@ -159,13 +159,13 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 + idx * 0.1 }}
-              className="p-6 rounded-2xl border-2 border-zinc-200 bg-white hover:border-[hsl(var(--toyota-red))] transition-colors"
+              className="p-6 rounded-2xl border-2 border-border bg-background hover:border-foreground transition-colors"
             >
-              <div className="w-14 h-14 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-                <hotspot.icon className="h-7 w-7 text-[hsl(var(--toyota-red))]" />
+              <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <hotspot.icon className="h-7 w-7 text-foreground" />
               </div>
-              <h3 className="font-bold text-lg text-zinc-900 mb-2">{hotspot.label}</h3>
-              <p className="text-zinc-600">{hotspot.description}</p>
+              <h3 className="font-bold text-lg text-foreground mb-2">{hotspot.label}</h3>
+              <p className="text-muted-foreground">{hotspot.description}</p>
             </motion.div>
           ))}
         </div>

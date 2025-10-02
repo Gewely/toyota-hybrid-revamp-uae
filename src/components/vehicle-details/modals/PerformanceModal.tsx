@@ -47,10 +47,10 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`px-6 lg:px-8 py-3 lg:py-4 font-bold rounded-full text-sm lg:text-base transition-all ${
+              className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 font-bold rounded-full text-xs sm:text-sm lg:text-base transition-all ${
                 mode === m
-                  ? 'bg-[hsl(var(--toyota-red))] text-white shadow-lg scale-105'
-                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                  ? 'bg-foreground text-background shadow-lg scale-105'
+                  : 'bg-accent text-muted-foreground hover:bg-accent/80'
               }`}
             >
               {m.toUpperCase()}
@@ -59,8 +59,8 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
         </div>
 
         {/* Speedometer Gauge */}
-        <div className="flex justify-center mb-12">
-          <div className="relative w-64 h-64 lg:w-80 lg:h-80">
+        <div className="flex justify-center mb-8 sm:mb-12">
+          <div className="relative w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80">
             <svg viewBox="0 0 200 200" className="w-full h-full">
               {/* Background circle */}
               <circle
@@ -107,10 +107,10 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="text-center"
                 >
-                  <div className="text-5xl lg:text-6xl font-bold text-white mb-1">
+                  <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-background mb-1">
                     {current.speed}
                   </div>
-                  <div className="text-lg lg:text-xl text-zinc-400">km/h</div>
+                  <div className="text-base sm:text-lg lg:text-xl text-muted-foreground">km/h</div>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -122,30 +122,30 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
           key={mode}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6"
         >
-          <div className="p-6 rounded-2xl bg-zinc-800 border border-zinc-700">
-            <Zap className="h-8 w-8 text-[hsl(var(--toyota-red))] mb-3" />
-            <div className="text-3xl font-bold text-white mb-1">{current.hp}</div>
-            <div className="text-sm text-zinc-400">Horsepower</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-accent border border-border">
+            <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-foreground mb-2 sm:mb-3" />
+            <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{current.hp}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Horsepower</div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-zinc-800 border border-zinc-700">
-            <Cog className="h-8 w-8 text-[hsl(var(--toyota-red))] mb-3" />
-            <div className="text-3xl font-bold text-white mb-1">{current.torque}</div>
-            <div className="text-sm text-zinc-400">Nm Torque</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-accent border border-border">
+            <Cog className="h-6 w-6 sm:h-8 sm:w-8 text-foreground mb-2 sm:mb-3" />
+            <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{current.torque}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Nm Torque</div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-zinc-800 border border-zinc-700">
-            <Timer className="h-8 w-8 text-[hsl(var(--toyota-red))] mb-3" />
-            <div className="text-3xl font-bold text-white mb-1">{current.acceleration}s</div>
-            <div className="text-sm text-zinc-400">0-100 km/h</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-accent border border-border">
+            <Timer className="h-6 w-6 sm:h-8 sm:w-8 text-foreground mb-2 sm:mb-3" />
+            <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{current.acceleration}s</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">0-100 km/h</div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-zinc-800 border border-zinc-700">
-            <Gauge className="h-8 w-8 text-[hsl(var(--toyota-red))] mb-3" />
-            <div className="text-3xl font-bold text-white mb-1">{current.speed}</div>
-            <div className="text-sm text-zinc-400">Top Speed</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-accent border border-border">
+            <Gauge className="h-6 w-6 sm:h-8 sm:w-8 text-foreground mb-2 sm:mb-3" />
+            <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{current.speed}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Top Speed</div>
           </div>
         </motion.div>
 
@@ -154,12 +154,12 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
           key={`desc-${mode}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-8 p-6 rounded-2xl bg-zinc-800/50 border border-zinc-700"
+          className="mt-6 sm:mt-8 p-4 sm:p-6 rounded-2xl bg-accent/50 border border-border"
         >
-          <h3 className="text-xl font-bold text-white mb-2">
+          <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">
             {mode.charAt(0).toUpperCase() + mode.slice(1)} Mode
           </h3>
-          <p className="text-zinc-400">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {mode === 'eco' && 'Optimized for fuel efficiency with smooth power delivery and maximum range.'}
             {mode === 'normal' && 'Balanced performance and efficiency for everyday driving comfort.'}
             {mode === 'sport' && 'Maximum performance with responsive throttle and dynamic handling.'}

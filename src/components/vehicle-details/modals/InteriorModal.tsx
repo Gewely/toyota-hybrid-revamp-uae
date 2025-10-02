@@ -80,18 +80,18 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-zinc-900 mb-4">{currentStep.title}</h2>
-            <ul className="space-y-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">{currentStep.title}</h2>
+            <ul className="space-y-2 sm:space-y-3">
               {currentStep.features.map((feature, idx) => (
                 <motion.li
                   key={idx}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="flex items-start gap-3"
+                  className="flex items-start gap-2 sm:gap-3"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--toyota-red))] mt-2 flex-shrink-0" />
-                  <span className="text-zinc-700">{feature}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-foreground/80">{feature}</span>
                 </motion.li>
               ))}
             </ul>
@@ -103,9 +103,9 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
               variant="ghost"
               size="icon"
               onClick={prevStep}
-              className="rounded-full"
+              className="rounded-full text-foreground"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
 
             <div className="flex gap-2">
@@ -114,7 +114,7 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
                   key={idx}
                   onClick={() => setStep(idx)}
                   className={`h-2 rounded-full transition-all ${
-                    idx === step ? 'w-8 bg-[hsl(var(--toyota-red))]' : 'w-2 bg-zinc-300'
+                    idx === step ? 'w-8 bg-foreground' : 'w-2 bg-muted'
                   }`}
                   aria-label={`Go to step ${idx + 1}`}
                 />
@@ -125,9 +125,9 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
               variant="ghost"
               size="icon"
               onClick={nextStep}
-              className="rounded-full"
+              className="rounded-full text-foreground"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </div>
         </div>
@@ -157,13 +157,13 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
                     key={idx}
                     onClick={() => setStep(idx)}
                     className={`flex-1 h-1 rounded-full transition-all ${
-                      idx === step ? 'bg-[hsl(var(--toyota-red))]' : 'bg-zinc-200'
+                      idx === step ? 'bg-foreground' : 'bg-muted'
                     }`}
                   />
                 ))}
               </div>
 
-              <h2 className="text-3xl font-bold text-zinc-900 mb-6">{currentStep.title}</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-6">{currentStep.title}</h2>
               
               <ul className="space-y-4">
                 {currentStep.features.map((feature, idx) => (
@@ -174,8 +174,8 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
                     transition={{ delay: idx * 0.1 }}
                     className="flex items-start gap-3"
                   >
-                    <span className="w-2 h-2 rounded-full bg-[hsl(var(--toyota-red))] mt-2 flex-shrink-0" />
-                    <span className="text-lg text-zinc-700">{feature}</span>
+                    <span className="w-2 h-2 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                    <span className="text-lg text-foreground/80">{feature}</span>
                   </motion.li>
                 ))}
               </ul>
@@ -185,13 +185,13 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
               <Button
                 variant="outline"
                 onClick={prevStep}
-                className="flex-1"
+                className="flex-1 border-foreground text-foreground"
               >
                 <ChevronLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
               <Button
                 onClick={nextStep}
-                className="flex-1 bg-[hsl(var(--toyota-red))] hover:bg-[hsl(var(--toyota-red))]/90"
+                className="flex-1 bg-foreground text-background hover:bg-foreground/90"
               >
                 Next <ChevronRight className="ml-2 h-4 w-4" />
               </Button>

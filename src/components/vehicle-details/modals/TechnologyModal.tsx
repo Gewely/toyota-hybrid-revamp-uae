@@ -127,21 +127,21 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
               </div>
               
               <div className="p-6">
-                <div className="w-14 h-14 rounded-full bg-[hsl(var(--toyota-red))] text-white flex items-center justify-center mb-4">
-                  <currentFeature.icon className="h-7 w-7" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-foreground text-background flex items-center justify-center mb-3 sm:mb-4">
+                  <currentFeature.icon className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
                 
-                <h3 className="text-2xl font-bold text-zinc-900 mb-2">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                   {currentFeature.title}
                 </h3>
-                <p className="text-zinc-600 mb-4">{currentFeature.tagline}</p>
-                <p className="text-zinc-700 mb-6">{currentFeature.description}</p>
+                <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">{currentFeature.tagline}</p>
+                <p className="text-sm sm:text-base text-foreground/80 mb-4 sm:mb-6">{currentFeature.description}</p>
                 
-                <ul className="space-y-3">
+                <ul className="space-y-2 sm:space-y-3">
                   {currentFeature.highlights.map((highlight, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--toyota-red))] mt-2 flex-shrink-0" />
-                      <span className="text-zinc-700">{highlight}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-foreground/70">{highlight}</span>
                     </li>
                   ))}
                 </ul>
@@ -157,8 +157,8 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
                 onClick={() => setCurrentIndex(idx)}
                 className={`h-2 rounded-full transition-all ${
                   idx === currentIndex
-                    ? 'w-8 bg-[hsl(var(--toyota-red))]'
-                    : 'w-2 bg-zinc-300'
+                    ? 'w-8 bg-foreground'
+                    : 'w-2 bg-muted'
                 }`}
                 aria-label={`Go to feature ${idx + 1}`}
               />
@@ -174,7 +174,7 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="group bg-white rounded-2xl border-2 border-zinc-200 overflow-hidden hover:border-[hsl(var(--toyota-red))] transition-all cursor-pointer"
+              className="group bg-background rounded-2xl border-2 border-border overflow-hidden hover:border-foreground transition-all cursor-pointer"
             >
               <div className="aspect-[16/9] overflow-hidden">
                 <img
@@ -185,21 +185,21 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
               </div>
               
               <div className="p-6">
-                <div className="w-14 h-14 rounded-full bg-zinc-100 group-hover:bg-[hsl(var(--toyota-red))] text-zinc-600 group-hover:text-white flex items-center justify-center mb-4 transition-colors">
+                <div className="w-14 h-14 rounded-full bg-accent group-hover:bg-foreground text-foreground group-hover:text-background flex items-center justify-center mb-4 transition-colors">
                   <feature.icon className="h-7 w-7" />
                 </div>
                 
-                <h3 className="text-xl font-bold text-zinc-900 mb-2">
+                <h3 className="text-xl font-bold text-foreground mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-zinc-600 mb-3">{feature.tagline}</p>
-                <p className="text-zinc-700 text-sm mb-4">{feature.description}</p>
+                <p className="text-sm text-muted-foreground mb-3">{feature.tagline}</p>
+                <p className="text-foreground/80 text-sm mb-4">{feature.description}</p>
                 
                 <ul className="space-y-2">
                   {feature.highlights.map((highlight, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--toyota-red))] mt-2 flex-shrink-0" />
-                      <span className="text-sm text-zinc-700">{highlight}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-foreground mt-2 flex-shrink-0" />
+                      <span className="text-sm text-foreground/70">{highlight}</span>
                     </li>
                   ))}
                 </ul>
