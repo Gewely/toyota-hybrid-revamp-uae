@@ -259,8 +259,15 @@
 
 /* Mobile Main Content with Nav - Fixed spacing for sticky nav */
 .mobile-main-with-nav {
-  --mobile-nav-height: 80px;
-  min-height: calc(100vh - var(--mobile-nav-height) - env(safe-area-inset-bottom));
+  --mobile-nav-height: 64px;
+  min-height: calc(100dvh - var(--mobile-nav-height) - env(safe-area-inset-bottom));
+}
+
+/* Fallback for older browsers that don't support dvh */
+@supports not (height: 100dvh) {
+  .mobile-main-with-nav {
+    min-height: calc(100vh - var(--mobile-nav-height) - env(safe-area-inset-bottom));
+  }
 }
 
 /* Enhanced Safe Area Insets */

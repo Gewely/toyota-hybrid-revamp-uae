@@ -351,9 +351,18 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       const h = navRef.current?.getBoundingClientRect().height;
       if (h) {
         document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
+        console.debug('📏 Nav height updated:', Math.round(h));
       }
     };
     updateNavHeight();
+
+    // ResizeObserver for real-time height tracking (animations, safe-area changes)
+    let resizeObserver: ResizeObserver | null = null;
+    if (navRef.current && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => updateNavHeight());
+      resizeObserver.observe(navRef.current);
+    }
+
     window.addEventListener("resize", updateNavHeight);
     window.addEventListener("orientationchange", updateNavHeight);
     // iOS dynamic viewport when browser chrome collapses
@@ -361,12 +370,13 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     vv?.addEventListener("resize", updateNavHeight);
     vv?.addEventListener("scroll", updateNavHeight);
     return () => {
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", updateNavHeight);
       window.removeEventListener("orientationchange", updateNavHeight);
       vv?.removeEventListener("resize", updateNavHeight);
       vv?.removeEventListener("scroll", updateNavHeight);
     };
-  }, [deviceInfo.deviceCategory, isGR, isScrolled, navigationState.isMenuOpen, navigationState.isActionsExpanded]);
+  }, []);
 
   const quickActionCards: Array<{
     id: string;
@@ -1346,10 +1356,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   transition={reduceMotion ? { duration: 0.1 } : spring}
 >
         <div
-  className={cn(
-    "rounded-t-2xl",
-    "py-1.5 sm:py-2"
-  )}
+        className={cn(
+          "rounded-t-2xl",
+          "py-1 sm:py-1"
+        )}
   style={{
     ...(isGR
       ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
@@ -1442,7 +1452,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                    <div
   className={cn(
     "flex items-center justify-center rounded-full transition-transform",
-    "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"
+    "w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11"
   )}
   style={{ 
     background: 'linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)',
@@ -1454,7 +1464,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     `
   }}
 >
-  <Bolt className="text-white w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+  <Bolt className="text-white w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
 </div>
 
                   </motion.div>
