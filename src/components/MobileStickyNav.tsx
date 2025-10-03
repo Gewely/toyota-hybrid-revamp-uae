@@ -397,28 +397,31 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   // ✅ Track visual viewport offset so sticky nav stays pinned
     // iOS Safari / mobile browsers – keep sticky nav aligned when chrome hides
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
+  const vv = window.visualViewport;
+  if (!vv) return;
 
-    const updateOffset = () => {
-      const vvHeight = vv.height ?? window.innerHeight;
-      const diff = window.innerHeight - vvHeight;
-      const offset = diff > 0 ? diff : 0;
-      document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
-    };
+  const updateOffset = () => {
+    // How much UI chrome Safari has hidden
+    const diff = window.innerHeight - (vv.height + vv.offsetTop);
+    const offset = diff > 0 ? diff : 0;
 
-    updateOffset();
+    // Apply as CSS var
+    document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+  };
 
-    vv.addEventListener("resize", updateOffset);
-    vv.addEventListener("scroll", updateOffset);
-    window.addEventListener("resize", updateOffset);
+  updateOffset();
 
-    return () => {
-      vv.removeEventListener("resize", updateOffset);
-      vv.removeEventListener("scroll", updateOffset);
-      window.removeEventListener("resize", updateOffset);
-    };
-  }, []);
+  vv.addEventListener("resize", updateOffset);
+  vv.addEventListener("scroll", updateOffset);
+  window.addEventListener("resize", updateOffset);
+
+  return () => {
+    vv.removeEventListener("resize", updateOffset);
+    vv.removeEventListener("scroll", updateOffset);
+    window.removeEventListener("resize", updateOffset);
+  };
+}, []);
+
 
 
 
@@ -1384,13 +1387,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
       {/* Bottom Nav with ATTRACT on Actions */}
      <motion.nav
-  role="navigation"
-  aria-label="Primary"
   ref={navRef}
-  className={cn(
-    "fixed left-0 right-0 bottom-0 z-[100]",
-    "mobile-force-visible backdrop-blur-xl"
-  )}
+  className={cn("fixed left-0 right-0 bottom-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
+  style={{
+    bottom: "var(--nav-offset, 0px)",   // 👈 uses dynamic offset
+    paddingBottom: "env(safe-area-inset-bottom)",
+  }}
   style={{
     bottom: "var(--nav-offset, 0px)", // ✅ Always fallback to 0px
     paddingBottom: "env(safe-area-inset-bottom)",
