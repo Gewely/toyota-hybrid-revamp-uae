@@ -1367,11 +1367,12 @@ useEffect(() => {
       {/* Bottom Nav with ATTRACT on Actions */}
      <motion.nav
   ref={navRef}
-  className={cn("fixed left-0 right-0 bottom-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
-  style={{
-  style={{
-  bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--nav-offset, 0px))",
-}}
+  className={cn(
+    "fixed left-0 right-0 bottom-0 z-[100]",
+    "mobile-force-visible backdrop-blur-xl"
+  )}
+  // ✅ use a single, well‐formed style object here
+  style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}
