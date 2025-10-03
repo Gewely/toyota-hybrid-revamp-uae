@@ -395,16 +395,17 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     };
   }, [updateNavHeightThrottled]);
 
-    // ✅ Extra iOS Safari fix: re-pin nav when browser chrome hides/shows
+      // ✅ Safer iOS Safari fix: prevent flicker when bottom bar hides/shows
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
+    if (!vv || !navRef.current) return;
 
     const handleVV = () => {
-      const offset = vv.height + vv.offsetTop - window.innerHeight;
-      if (navRef.current) {
-        navRef.current.style.bottom = `${offset}px`;
-      }
+      // When Safari collapses the bottom bar, vv.height < window.innerHeight
+      // We clamp to 0 so nav never floats upward
+      const diff = window.innerHeight - vv.height - vv.offsetTop;
+      const offset = diff > 0 ? diff : 0;
+      navRef.current!.style.bottom = `${offset}px`;
     };
 
     handleVV();
@@ -416,6 +417,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       vv.removeEventListener("scroll", handleVV);
     };
   }, []);
+
 
   const quickActionCards: Array<{
     id: string;
