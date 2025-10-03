@@ -17,7 +17,7 @@ import {
   ChevronRight,
   Star,
 } from "lucide-react";
-
+import type { VehicleModel } from "@/types/vehicle";
 export type MinimalHeroSectionProps = {
    vehicle?: VehicleModel;
   galleryImages: string[];
