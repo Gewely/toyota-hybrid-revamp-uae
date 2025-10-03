@@ -347,78 +347,59 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   // Measure nav height to set CSS var for safe content padding
   // PERF: Throttled with RAF to prevent layout thrashing
   const navRef = useRef<HTMLElement | null>(null);
-  const rafId = useRef<number | null>(null);
+ 
   
-  const updateNavHeightThrottled = useCallback(() => {
-    // Only one RAF at a time
-    if (rafId.current !== null) return;
-    
-    rafId.current = requestAnimationFrame(() => {
-      const h = navRef.current?.getBoundingClientRect().height;
-      if (h) {
-        const rounded = Math.round(h);
-        document.documentElement.style.setProperty("--mobile-nav-height", `${rounded}px`);
-        console.debug('📏 Nav height updated:', rounded);
-      }
-      rafId.current = null;
-    });
-  }, []);
+  // Track both nav height and viewport offset in one go
+const rafId = useRef<number | null>(null);
 
-  useEffect(() => {
-    updateNavHeightThrottled();
+const updateNavMetrics = useCallback(() => {
+  if (rafId.current !== null) return;
 
-    // ResizeObserver for real-time height tracking (animations, safe-area changes)
-    let resizeObserver: ResizeObserver | null = null;
-    if (navRef.current && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(updateNavHeightThrottled);
-      resizeObserver.observe(navRef.current);
+  rafId.current = requestAnimationFrame(() => {
+    // nav height
+    const h = navRef.current?.getBoundingClientRect().height;
+    if (h) {
+      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
     }
 
-    window.addEventListener("resize", updateNavHeightThrottled, { passive: true });
-    window.addEventListener("orientationchange", updateNavHeightThrottled, { passive: true });
-    
-    // iOS dynamic viewport when browser chrome collapses
-    const vv = (window as any).visualViewport as VisualViewport | undefined;
-    vv?.addEventListener("resize", updateNavHeightThrottled, { passive: true });
-    vv?.addEventListener("scroll", updateNavHeightThrottled, { passive: true });
-    
-    return () => {
-      if (rafId.current !== null) {
-        cancelAnimationFrame(rafId.current);
-        rafId.current = null;
-      }
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", updateNavHeightThrottled);
-      window.removeEventListener("orientationchange", updateNavHeightThrottled);
-      vv?.removeEventListener("resize", updateNavHeightThrottled);
-      vv?.removeEventListener("scroll", updateNavHeightThrottled);
-    };
-  }, [updateNavHeightThrottled]);
-  // ✅ Track visual viewport offset so sticky nav stays pinned
-    // iOS Safari / mobile browsers – keep sticky nav aligned when chrome hides
-  useEffect(() => {
+    // visual viewport offset (when Safari/Chrome UI hides)
+    const vv = window.visualViewport;
+    if (vv) {
+      const offset = vv.offsetTop ?? (window.innerHeight - vv.height);
+      document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+    }
+
+    rafId.current = null;
+  });
+}, []);
+
+useEffect(() => {
+  updateNavMetrics();
+
+  let resizeObserver: ResizeObserver | null = null;
+  if (navRef.current && "ResizeObserver" in window) {
+    resizeObserver = new ResizeObserver(updateNavMetrics);
+    resizeObserver.observe(navRef.current);
+  }
+
+  window.addEventListener("resize", updateNavMetrics, { passive: true });
+  window.addEventListener("orientationchange", updateNavMetrics, { passive: true });
+
   const vv = window.visualViewport;
-  if (!vv) return;
-
-  const updateOffset = () => {
-  if (!vv) return;
-  const offset = vv.offsetTop ?? (window.innerHeight - vv.height);
-  document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
-};
-
-
-  updateOffset();
-
-  vv.addEventListener("resize", updateOffset);
-  vv.addEventListener("scroll", updateOffset);
-  window.addEventListener("resize", updateOffset);
+  vv?.addEventListener("resize", updateNavMetrics);
+  vv?.addEventListener("scroll", updateNavMetrics);
 
   return () => {
-    vv.removeEventListener("resize", updateOffset);
-    vv.removeEventListener("scroll", updateOffset);
-    window.removeEventListener("resize", updateOffset);
+    if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+    resizeObserver?.disconnect();
+    window.removeEventListener("resize", updateNavMetrics);
+    window.removeEventListener("orientationchange", updateNavMetrics);
+    vv?.removeEventListener("resize", updateNavMetrics);
+    vv?.removeEventListener("scroll", updateNavMetrics);
   };
-}, []);
+}, [updateNavMetrics]);
+
+
 
 
 
