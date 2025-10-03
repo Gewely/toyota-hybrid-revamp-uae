@@ -356,16 +356,22 @@ const updateNavMetrics = useCallback(() => {
   if (rafId.current !== null) return;
 
   rafId.current = requestAnimationFrame(() => {
-    // nav height
+    // Update nav height
     const h = navRef.current?.getBoundingClientRect().height;
     if (h) {
       document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
     }
-
+    // Compute viewport offset when browser bottom bar hides
+    const vv = window.visualViewport;
+    if (vv) {
+      const offset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+      document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+    }
 
     rafId.current = null;
   });
 }, []);
+
 
 useEffect(() => {
   updateNavMetrics();
@@ -1363,7 +1369,8 @@ useEffect(() => {
   ref={navRef}
   className={cn("fixed left-0 right-0 bottom-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
   style={{
-  bottom: "env(safe-area-inset-bottom, 0px)",
+  style={{
+  bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--nav-offset, 0px))",
 }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
