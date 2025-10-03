@@ -395,6 +395,28 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     };
   }, [updateNavHeightThrottled]);
 
+    // ✅ Extra iOS Safari fix: re-pin nav when browser chrome hides/shows
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleVV = () => {
+      const offset = vv.height + vv.offsetTop - window.innerHeight;
+      if (navRef.current) {
+        navRef.current.style.bottom = `${offset}px`;
+      }
+    };
+
+    handleVV();
+    vv.addEventListener("resize", handleVV);
+    vv.addEventListener("scroll", handleVV);
+
+    return () => {
+      vv.removeEventListener("resize", handleVV);
+      vv.removeEventListener("scroll", handleVV);
+    };
+  }, []);
+
   const quickActionCards: Array<{
     id: string;
     title: string;
