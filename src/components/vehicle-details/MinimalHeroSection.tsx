@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 export type MinimalHeroSectionProps = {
+   vehicle?: VehicleModel;
   galleryImages: string[];
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
