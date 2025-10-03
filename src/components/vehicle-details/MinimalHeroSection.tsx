@@ -13,9 +13,8 @@ import {
   Car,
 } from "lucide-react";
 
-// ✅ Props interface
 interface MinimalHeroSectionProps {
-  vehicle: any; // 👉 replace `any` with VehicleModel if you import that type
+  vehicle: any;
   galleryImages: string[];
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -23,13 +22,12 @@ interface MinimalHeroSectionProps {
   onCarBuilder: () => void;
 }
 
-// --- CONFIGURABLE DATA ---
 const HEADLINE = "2026 Toyota GR Carbon";
 const TAGLINE = "Electrified performance meets everyday usability";
 const SPECS = [
-  { label: "0–100 km/h", value: 3.2, unit: "s", icon: <Gauge className="w-5 h-5 text-[#EB0A1E]" /> },
-  { label: "Range", value: 650, unit: " km", icon: <Battery className="w-5 h-5 text-[#EB0A1E]" /> },
-  { label: "AWD", value: "Dual Motor", icon: <Car className="w-5 h-5 text-[#EB0A1E]" /> },
+  { label: "0–100 km/h", value: 3.2, unit: "s", icon: <Gauge className="w-5 h-5 text-sky-400" /> },
+  { label: "Range", value: 650, unit: " km", icon: <Battery className="w-5 h-5 text-sky-400" /> },
+  { label: "AWD", value: "Dual Motor", icon: <Car className="w-5 h-5 text-sky-400" /> },
 ];
 
 const HeroSection: React.FC<MinimalHeroSectionProps> = ({
@@ -43,7 +41,6 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ target: heroRef });
 
-  // Parallax transforms
   const bgScale = useTransform(scrollY, [0, 450], [1, 1.05]);
   const bgY = useTransform(scrollY, [0, 400], [0, -36]);
   const contentY = useTransform(scrollY, [0, 200], [0, -12]);
@@ -53,7 +50,6 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
 
-  // Autoplay images with progress
   useEffect(() => {
     if (!isAutoPlaying) return;
     const duration = 4800;
@@ -70,7 +66,6 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
     return () => clearInterval(timer);
   }, [isAutoPlaying, currentImageIndex]);
 
-  // Swipe controls
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -87,16 +82,13 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
     setProgress(0);
-    setIsAutoPlaying(false);
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
     setProgress(0);
-    setIsAutoPlaying(false);
   };
 
-  // Animated counter for numbers
   const AnimatedNumber = ({ target, unit }: { target: number; unit: string }) => {
     const [val, setVal] = useState(0);
     useEffect(() => {
@@ -116,7 +108,7 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
       return () => clearInterval(interval);
     }, [target]);
     return (
-      <span className="text-[#EB0A1E] font-bold text-lg">
+      <span className="text-sky-400 font-bold text-lg">
         {val.toFixed(0)}
         {unit}
       </span>
@@ -143,42 +135,31 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
             src={galleryImages[currentImageIndex]}
             alt={`Toyota GR Carbon View ${currentImageIndex + 1}`}
             loading="lazy"
-            className="w-full h-full object-cover object-center absolute inset-0"
+            className="w-full h-full object-cover absolute inset-0"
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
             draggable={false}
-            style={{ filter: "saturate(1.15) contrast(1.1)" }}
           />
         </AnimatePresence>
-
-        {/* Subtle red glow */}
-        <div
-          className="absolute left-1/2 bottom-0 w-[70vw] h-[30vh] -translate-x-1/2 blur-2xl opacity-25"
-          style={{ background: "radial-gradient(circle at center, #EB0A1E 0%, transparent 70%)" }}
-        />
       </motion.div>
 
-      {/* Gradient mask for text readability */}
-      <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-black/40 to-transparent pointer-events-none z-10" />
+      {/* Gradient mask */}
+      <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-black/40 to-transparent z-10" />
 
       {/* Main Content */}
       <motion.div style={{ y: contentY }} className="relative flex-1 flex flex-col justify-between z-20">
-        {/* Headline */}
         <div className="mt-24 px-6 sm:px-12 md:px-24">
-          <h1
-            className="text-white font-black text-4xl sm:text-6xl lg:text-7xl leading-tight"
-            style={{ textShadow: "0 4px 16px rgba(0,0,0,0.6), 0 0 32px rgba(235,10,30,0.3)" }}
-          >
+          <h1 className="text-white font-black text-4xl sm:text-6xl lg:text-7xl leading-tight drop-shadow-lg">
             {HEADLINE}
           </h1>
           <p className="mt-4 text-white/90 text-lg sm:text-xl lg:text-2xl font-light max-w-2xl">{TAGLINE}</p>
         </div>
 
-        {/* Specs (fixed layout) */}
+        {/* Specs */}
         <div className="w-full px-6 sm:px-12 md:px-24 pb-12 space-y-8">
-          <div className="grid grid-cols-3 gap-y-6 sm:gap-x-12 text-center sm:text-left">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 sm:gap-x-12 text-center sm:text-left">
             {SPECS.map((spec, i) => (
               <div key={i} className="flex flex-col items-center sm:items-start">
                 <div className="flex items-center gap-2">
@@ -188,7 +169,7 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
                 {typeof spec.value === "number" ? (
                   <AnimatedNumber target={spec.value} unit={spec.unit} />
                 ) : (
-                  <span className="text-[#EB0A1E] font-bold text-lg">{spec.value}</span>
+                  <span className="text-sky-400 font-bold text-lg">{spec.value}</span>
                 )}
               </div>
             ))}
@@ -201,7 +182,7 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
               aria-label="Configure and Order"
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="group flex items-center gap-3 px-8 py-4 bg-[#EB0A1E] rounded-full text-white font-semibold text-lg transition-all duration-300 hover:bg-[#ff1a1a] hover:shadow-[0_0_20px_rgba(235,10,30,0.3)]"
+              className="group flex items-center gap-3 px-8 py-4 bg-sky-500 rounded-full text-white font-semibold text-lg transition-all duration-300 hover:bg-sky-600 hover:shadow-[0_0_20px_rgba(56,189,248,0.5)]"
             >
               <Settings className="w-5 h-5 transition-transform group-hover:rotate-90" />
               Configure & Order
@@ -221,61 +202,32 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
         </div>
       </motion.div>
 
+      {/* Progress Bar */}
+      <div className="absolute bottom-10 left-0 w-full h-1 bg-white/20">
+        <motion.div className="h-1 bg-sky-500" style={{ width: `${progress}%` }} />
+      </div>
+
       {/* Controls */}
       <div className="absolute bottom-20 left-4 z-20 flex gap-3">
-        <motion.button
-          aria-label="Previous Image"
-          onClick={prevImage}
-          className="p-3 rounded-full bg-black/40 text-white/80 hover:text-white"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
+        <motion.button onClick={prevImage} className="p-3 rounded-full bg-black/40 text-white/80 hover:text-white">
           <ChevronLeft className="w-6 h-6" />
         </motion.button>
       </div>
-
       <div className="absolute bottom-20 right-4 z-20 flex gap-3">
-        <motion.button
-          aria-label="Next Image"
-          onClick={nextImage}
-          className="p-3 rounded-full bg-black/40 text-white/80 hover:text-white"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
+        <motion.button onClick={nextImage} className="p-3 rounded-full bg-black/40 text-white/80 hover:text-white">
           <ChevronRight className="w-6 h-6" />
         </motion.button>
-
-        <motion.button
-          aria-label={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
-          onClick={() => setIsAutoPlaying((p) => !p)}
-          className="p-3 rounded-full bg-black/40"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          {isAutoPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-[#EB0A1E]" />}
+        <motion.button onClick={() => setIsAutoPlaying((p) => !p)} className="p-3 rounded-full bg-black/40">
+          {isAutoPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-sky-400" />}
         </motion.button>
       </div>
-
-      {/* Progress Bar */}
-      <div className="absolute bottom-10 left-0 w-full h-1 bg-white/20">
-        <motion.div className="h-1 bg-[#EB0A1E]" style={{ width: `${progress}%` }} />
-      </div>
-
-      {/* Swipe Hint (mobile only) */}
-      <motion.div
-        className="absolute bottom-24 w-full text-center text-white/70 text-xs sm:hidden tracking-wide"
-        animate={{ opacity: [0.4, 1, 0.4] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-      >
-        Swipe to explore
-      </motion.div>
 
       {/* Scroll Indicator */}
       <motion.div
         className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20"
         style={{ opacity: scrollIndicatorOpacity }}
         animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+        transition={{ duration: 2, repeat: Infinity }}
       >
         <ArrowDown className="w-6 h-6 text-white/50" />
       </motion.div>
@@ -283,6 +235,5 @@ const HeroSection: React.FC<MinimalHeroSectionProps> = ({
   );
 };
 
-// ✅ Export the right way
 const MinimalHeroSection = HeroSection;
 export default MinimalHeroSection;
