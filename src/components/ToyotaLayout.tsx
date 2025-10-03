@@ -129,18 +129,28 @@ const ToyotaLayout: React.FC<ToyotaLayoutProps> = ({
       <Header />
       
       <main 
-        className={cn(
-          "flex-1",
-          shouldShowMobileNav && "mobile-main-with-nav"
-        )}
-        style={{
-          paddingBottom: shouldShowMobileNav 
-            ? 'var(--mobile-nav-height, 64px)' 
-            : undefined
-        }}
-      >
-        {children}
-      </main>
+  className={cn(
+    "flex-1",
+    shouldShowMobileNav && "mobile-main-with-nav"
+  )}
+  style={{
+    paddingBottom: shouldShowMobileNav 
+      ? 'var(--mobile-nav-height, 64px)' 
+      : undefined
+  }}
+>
+  {children}
+
+  {/* 👇 Spacer ensures content never gets hidden under the nav on iOS */}
+  {shouldShowMobileNav && (
+    <div
+      className="pointer-events-none"
+      style={{
+        height: "calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom))",
+      }}
+    />
+  )}
+</main>
       
       <Footer />
       
