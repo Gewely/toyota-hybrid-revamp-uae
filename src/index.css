@@ -299,7 +299,8 @@
 
 /* Car Builder Specific Styles */
 .car-builder-button {
-  @apply rounded-2xl border border-border/60 hover:border-border hover:bg-muted/30 active:scale-95 transition-all duration-200 ease-out touch-manipulation;
+  @apply rounded-2xl border hover:border-border hover:bg-muted/30 active:scale-95 transition-all duration-200 ease-out touch-manipulation;
+  border-color: hsl(var(--border) / 0.6); /* ✅ manual opacity */
 }
 
 .car-builder-button-primary {
