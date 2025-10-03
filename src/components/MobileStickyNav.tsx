@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -252,29 +252,29 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     [selectedCategory, priceRange]
   );
 
-  const handleSectionToggle = (section: string) => {
+  const handleSectionToggle = useCallback((section: string) => {
     contextualHaptic.stepProgress();
     if (navigationState.activeSection === section) {
       navigationState.resetNavigation();
     } else {
       navigationState.setActiveSection(section);
     }
-  };
+  }, [navigationState]);
 
-  const handleCategoryClick = (id: string) => {
+  const handleCategoryClick = useCallback((id: string) => {
     contextualHaptic.buttonPress();
     setSelectedCategory(id);
     setUserTouchedCategory(true);
-  };
+  }, []);
 
-  const toggleMenu = () => {
+  const toggleMenu = useCallback(() => {
     contextualHaptic.stepProgress();
     if (navigationState.isMenuOpen) {
       navigationState.resetNavigation();
     } else {
       navigationState.setActiveSection("quick-actions");
     }
-  };
+  }, [navigationState]);
 
   const getCardBasis = () => {
     switch (deviceInfo.deviceCategory) {
@@ -302,7 +302,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (!vehicle) return;
     contextualHaptic.buttonPress();
     try {
@@ -321,9 +321,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     } catch {
       /* user cancelled share */
     }
-  };
+  }, [vehicle, fmt, toast]);
 
-  const handleBrochureDownload = () => {
+  const handleBrochureDownload = useCallback(() => {
     if (!vehicle) return;
     contextualHaptic.buttonPress();
     toast({
@@ -336,7 +336,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         description: `${vehicle.name} brochure has been downloaded.`,
       });
     }, 1500);
-  };
+  }, [vehicle, toast]);
 
   const shouldShowNav = deviceInfo.isInitialized && deviceInfo.isMobile;
 
@@ -345,38 +345,55 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     : { type: "spring", stiffness: 260, damping: 20 };
 
   // Measure nav height to set CSS var for safe content padding
+  // PERF: Throttled with RAF to prevent layout thrashing
   const navRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    const updateNavHeight = () => {
+  const rafId = useRef<number | null>(null);
+  
+  const updateNavHeightThrottled = useCallback(() => {
+    // Only one RAF at a time
+    if (rafId.current !== null) return;
+    
+    rafId.current = requestAnimationFrame(() => {
       const h = navRef.current?.getBoundingClientRect().height;
       if (h) {
-        document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
-        console.debug('📏 Nav height updated:', Math.round(h));
+        const rounded = Math.round(h);
+        document.documentElement.style.setProperty("--mobile-nav-height", `${rounded}px`);
+        console.debug('📏 Nav height updated:', rounded);
       }
-    };
-    updateNavHeight();
+      rafId.current = null;
+    });
+  }, []);
+
+  useEffect(() => {
+    updateNavHeightThrottled();
 
     // ResizeObserver for real-time height tracking (animations, safe-area changes)
     let resizeObserver: ResizeObserver | null = null;
     if (navRef.current && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(() => updateNavHeight());
+      resizeObserver = new ResizeObserver(updateNavHeightThrottled);
       resizeObserver.observe(navRef.current);
     }
 
-    window.addEventListener("resize", updateNavHeight);
-    window.addEventListener("orientationchange", updateNavHeight);
+    window.addEventListener("resize", updateNavHeightThrottled, { passive: true });
+    window.addEventListener("orientationchange", updateNavHeightThrottled, { passive: true });
+    
     // iOS dynamic viewport when browser chrome collapses
     const vv = (window as any).visualViewport as VisualViewport | undefined;
-    vv?.addEventListener("resize", updateNavHeight);
-    vv?.addEventListener("scroll", updateNavHeight);
+    vv?.addEventListener("resize", updateNavHeightThrottled, { passive: true });
+    vv?.addEventListener("scroll", updateNavHeightThrottled, { passive: true });
+    
     return () => {
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
       resizeObserver?.disconnect();
-      window.removeEventListener("resize", updateNavHeight);
-      window.removeEventListener("orientationchange", updateNavHeight);
-      vv?.removeEventListener("resize", updateNavHeight);
-      vv?.removeEventListener("scroll", updateNavHeight);
+      window.removeEventListener("resize", updateNavHeightThrottled);
+      window.removeEventListener("orientationchange", updateNavHeightThrottled);
+      vv?.removeEventListener("resize", updateNavHeightThrottled);
+      vv?.removeEventListener("scroll", updateNavHeightThrottled);
     };
-  }, []);
+  }, [updateNavHeightThrottled]);
 
   const quickActionCards: Array<{
     id: string;
