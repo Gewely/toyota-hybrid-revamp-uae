@@ -1393,10 +1393,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     bottom: "var(--nav-offset, 0px)",   // 👈 uses dynamic offset
     paddingBottom: "env(safe-area-inset-bottom)",
   }}
-  style={{
-    bottom: "var(--nav-offset, 0px)", // ✅ Always fallback to 0px
-    paddingBottom: "env(safe-area-inset-bottom)",
-  }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}
