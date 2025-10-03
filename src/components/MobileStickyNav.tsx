@@ -1358,7 +1358,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         <div
         className={cn(
           "rounded-t-2xl",
-          "py-1 sm:py-1"
+          "py-0.5 sm:py-1"
         )}
   style={{
     ...(isGR

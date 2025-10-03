@@ -135,7 +135,7 @@ const ToyotaLayout: React.FC<ToyotaLayoutProps> = ({
         )}
         style={{
           paddingBottom: shouldShowMobileNav 
-            ? 'calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom))' 
+            ? 'var(--mobile-nav-height, 64px)' 
             : undefined
         }}
       >
