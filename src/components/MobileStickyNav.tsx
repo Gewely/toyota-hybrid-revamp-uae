@@ -395,22 +395,23 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     };
   }, [updateNavHeightThrottled]);
   // ✅ Track visual viewport offset so sticky nav stays pinned
+    // iOS Safari / mobile browsers – keep sticky nav aligned when chrome hides
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
 
     const updateOffset = () => {
-      const diff = window.innerHeight - (vv.height + vv.offsetTop);
+      const vvHeight = vv.height ?? window.innerHeight;
+      const diff = window.innerHeight - vvHeight;
       const offset = diff > 0 ? diff : 0;
       document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
     };
 
-   const updateOffset = () => {
-  const vvHeight = vv.height ?? window.innerHeight;
-  const diff = window.innerHeight - vvHeight;
-  const offset = diff > 0 ? diff : 0;
-  document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
-};
+    updateOffset();
+
+    vv.addEventListener("resize", updateOffset);
+    vv.addEventListener("scroll", updateOffset);
+    window.addEventListener("resize", updateOffset);
 
     return () => {
       vv.removeEventListener("resize", updateOffset);
@@ -418,6 +419,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       window.removeEventListener("resize", updateOffset);
     };
   }, []);
+
 
 
   const quickActionCards: Array<{
