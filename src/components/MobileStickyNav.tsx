@@ -405,10 +405,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
     };
 
-    updateOffset();
-    vv.addEventListener("resize", updateOffset);
-    vv.addEventListener("scroll", updateOffset);
-    window.addEventListener("resize", updateOffset);
+   const updateOffset = () => {
+  const vvHeight = vv.height ?? window.innerHeight;
+  const diff = window.innerHeight - vvHeight;
+  const offset = diff > 0 ? diff : 0;
+  document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+};
 
     return () => {
       vv.removeEventListener("resize", updateOffset);
