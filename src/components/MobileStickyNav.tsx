@@ -1379,23 +1379,23 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       </AnimatePresence>
 
       {/* Bottom Nav with ATTRACT on Actions */}
-      <motion.nav
+     <motion.nav
   role="navigation"
   aria-label="Primary"
   ref={navRef}
   className={cn(
-    "fixed left-0 right-0 z-[100]",
+    "fixed left-0 right-0 bottom-0 z-[100]",
     "mobile-force-visible backdrop-blur-xl"
   )}
   style={{
-    // We no longer hardcode bottom: 0
-    transform: "translateY(var(--nav-offset, 0px))",
+    bottom: "var(--nav-offset, 0px)", // ✅ Always fallback to 0px
     paddingBottom: "env(safe-area-inset-bottom)",
   }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}
 >
+
 
         <div
         className={cn(
