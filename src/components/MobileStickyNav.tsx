@@ -401,13 +401,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   if (!vv) return;
 
   const updateOffset = () => {
-    // How much UI chrome Safari has hidden
-    const diff = window.innerHeight - (vv.height + vv.offsetTop);
-    const offset = diff > 0 ? diff : 0;
+  if (!vv) return;
+  const offset = vv.offsetTop ?? (window.innerHeight - vv.height);
+  document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+};
 
-    // Apply as CSS var
-    document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
-  };
 
   updateOffset();
 
