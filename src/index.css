@@ -254,8 +254,12 @@
 .mobile-viewport {
   min-height: 100vh;
   min-height: 100dvh;
-  overflow: hidden;
+  overflow-x: hidden; /* keep horizontal safe */
+  overflow-y: auto;   /* allow vertical scroll */
 }
+<div className="mobile-viewport">
+  {/* page content */}
+</div>
 
 :root {
   --vvh: 100vh; /* fallback for browsers without visualViewport */
