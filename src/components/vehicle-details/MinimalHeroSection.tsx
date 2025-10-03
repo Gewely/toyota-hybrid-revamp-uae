@@ -1,232 +1,139 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  AnimatePresence,
-  useInView,
-  useReducedMotion,
-} from "framer-motion";
-import {
-  ArrowDown,
-  Settings,
-  Calendar,
-  Pause,
-  Play,
-  ChevronLeft,
-  ChevronRight,
-  Star,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Settings, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
-export type MinimalHeroSectionProps = {
-   vehicle?: VehicleModel;
+
+export type HybridHeroProps = {
+  vehicle?: VehicleModel;
   galleryImages: string[];
-  isFavorite?: boolean;
-  onToggleFavorite?: () => void;
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
 };
 
-export default function MinimalHeroSection({
+export default function HybridHero({
+  vehicle,
   galleryImages = [],
-  isFavorite = false,
-  onToggleFavorite,
   onBookTestDrive,
   onCarBuilder,
-}: MinimalHeroSectionProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll();
+}: HybridHeroProps) {
+  const [current, setCurrent] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
 
-  // Smooth parallax transforms
-  const bgScale = useTransform(scrollYProgress, [0, 0.5], [1, 1.08]);
-  const bgY = useTransform(scrollYProgress, [0, 0.5], [0, -60]);
-  const contentY = useTransform(scrollYProgress, [0, 0.3], [0, -30]);
-  const scrollIndicatorOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
-
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [progress, setProgress] = useState(0);
-
-  // Image change logic
-  const advanceImage = useCallback(
-    (dir: 1 | -1) => {
-      if (!galleryImages.length) return;
-      setCurrentImageIndex((prev) => (prev + dir + galleryImages.length) % galleryImages.length);
-      setProgress(0);
-    },
-    [galleryImages.length]
-  );
-
-  const userNext = () => {
-    setIsAutoPlaying(false);
-    advanceImage(1);
-  };
-  const userPrev = () => {
-    setIsAutoPlaying(false);
-    advanceImage(-1);
-  };
-
-  // Autoplay
+  // Auto-play
   useEffect(() => {
-    if (!isAutoPlaying || prefersReducedMotion || !galleryImages.length) return;
-    const duration = 5000;
-    const step = 100;
-    let elapsed = 0;
-    const id = window.setInterval(() => {
-      elapsed += step;
-      setProgress((elapsed / duration) * 100);
-      if (elapsed >= duration) {
-        advanceImage(1);
-        elapsed = 0;
-      }
-    }, step);
-    return () => window.clearInterval(id);
-  }, [isAutoPlaying, prefersReducedMotion, galleryImages.length, advanceImage]);
+    if (!autoPlay || !galleryImages.length) return;
+    const id = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % galleryImages.length);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [autoPlay, galleryImages.length]);
 
   const TOYOTA_RED = "#EB0A1E";
 
   return (
-    <section
-      className="relative w-full min-h-[100vh] flex flex-col bg-black overflow-hidden"
-      aria-label="Toyota Cinematic Hero"
-    >
-      {/* Background slideshow */}
-      <motion.div
-        style={{ scale: bgScale, y: bgY }}
-        className="absolute inset-0 w-full h-full z-0"
-      >
-        <AnimatePresence mode="wait">
-          {galleryImages.length ? (
-            <motion.img
-              key={currentImageIndex}
-              src={galleryImages[currentImageIndex]}
-              alt={`Toyota showcase ${currentImageIndex + 1}`}
-              loading="lazy"
-              className="w-full h-full object-cover absolute inset-0"
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 1, ease: "easeInOut" }}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black" />
-          )}
-        </AnimatePresence>
-      </motion.div>
+    <section className="relative w-full bg-black text-white">
+      <div className="grid grid-cols-1 md:grid-cols-2 min-h-[100vh]">
+        {/* === IMAGE AREA === */}
+        <div className="relative h-[60vh] md:h-auto overflow-hidden">
+          <AnimatePresence mode="wait">
+            {galleryImages.length > 0 && (
+              <motion.img
+                key={current}
+                src={galleryImages[current]}
+                alt={`Hero ${current + 1}`}
+                className="absolute inset-0 w-full h-full object-cover"
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 1, ease: "easeInOut" }}
+              />
+            )}
+          </AnimatePresence>
 
-      {/* Gradient mask */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/80 z-10" />
-
-      {/* Favorite toggle */}
-      {onToggleFavorite && (
-        <button
-          type="button"
-          onClick={onToggleFavorite}
-          className="absolute right-6 top-6 z-20 p-3 rounded-full bg-black/40 border border-white/20 hover:bg-black/70 transition"
-          style={{ color: TOYOTA_RED }}
-        >
-          <Star className={`w-6 h-6 ${isFavorite ? "fill-current" : "opacity-70"}`} />
-        </button>
-      )}
-
-      {/* Content */}
-      <motion.div
-        style={{ y: contentY }}
-        className="relative flex-1 flex flex-col justify-end z-20 px-6 sm:px-12 md:px-24 pb-24"
-      >
-        {/* Glassmorphism Specs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-          {["0–100 km/h: 3.2s", "Range: 650 km", "AWD: Dual Motor"].map((spec, i) => (
-            <div
-              key={i}
-              className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl px-6 py-4 text-white flex flex-col items-center sm:items-start shadow-lg"
-            >
-              <span className="text-lg font-bold text-white">{spec}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          {onCarBuilder && (
-            <motion.button
-              onClick={onCarBuilder}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              className="group flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-lg transition-all"
-              style={{
-                backgroundColor: TOYOTA_RED,
-                boxShadow: `0 0 30px ${TOYOTA_RED}80`,
+          {/* Overlay controls (edge aligned) */}
+          <div className="absolute inset-y-0 left-3 flex items-center z-20">
+            <button
+              onClick={() => {
+                setAutoPlay(false);
+                setCurrent((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
               }}
+              className="p-2 bg-black/40 hover:bg-black/70 rounded-md"
             >
-              <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-              Configure &amp; Order
-            </motion.button>
-          )}
-          {onBookTestDrive && (
-            <motion.button
-              onClick={onBookTestDrive}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-3 px-10 py-4 bg-white/10 border border-white/30 backdrop-blur-lg rounded-full text-white font-semibold text-lg transition-all hover:bg-white/20"
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="absolute inset-y-0 right-3 flex items-center z-20">
+            <button
+              onClick={() => {
+                setAutoPlay(false);
+                setCurrent((prev) => (prev + 1) % galleryImages.length);
+              }}
+              className="p-2 bg-black/40 hover:bg-black/70 rounded-md"
             >
-              <Calendar className="w-5 h-5" />
-              Book Test Drive
-            </motion.button>
-          )}
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Progress dots (mobile) */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 md:hidden">
+            {galleryImages.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === current ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                }`}
+              />
+            ))}
+          </div>
         </div>
-      </motion.div>
 
-      {/* Progress Bar */}
-      {isAutoPlaying && (
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-2/3 h-1 bg-white/20 rounded-full overflow-hidden">
-          <motion.div
-            className="h-1"
-            style={{ width: `${progress}%`, backgroundColor: TOYOTA_RED }}
-          />
+        {/* === CONTENT AREA (Dock / Split) === */}
+        <div className="flex flex-col justify-center px-6 sm:px-12 md:px-16 py-10 md:py-20 bg-black/90 backdrop-blur-md">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            {vehicle?.year} {vehicle?.name || "Toyota GR Carbon"}
+          </h1>
+          <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl max-w-lg">
+            {vehicle?.tagline || "Electrified performance meets everyday usability"}
+          </p>
+
+          {/* Glass spec chips */}
+          <div className="flex gap-2 mt-6 flex-wrap">
+            {["0–100 km/h 3.2s", "650 km Range", "Dual Motor AWD"].map((spec, i) => (
+              <span
+                key={i}
+                className="px-3 py-1.5 rounded-md bg-white/10 border border-white/20 text-sm backdrop-blur-sm"
+              >
+                {spec}
+              </span>
+            ))}
+          </div>
+
+          {/* Rectangle CTAs */}
+          <div className="flex gap-3 mt-8">
+            {onCarBuilder && (
+              <motion.button
+                onClick={onCarBuilder}
+                whileTap={{ scale: 0.96 }}
+                className="px-6 py-2 rounded-md text-white font-semibold text-sm shadow-md"
+                style={{ backgroundColor: TOYOTA_RED }}
+              >
+                <Settings className="inline w-4 h-4 mr-2" />
+                Configure
+              </motion.button>
+            )}
+            {onBookTestDrive && (
+              <motion.button
+                onClick={onBookTestDrive}
+                whileTap={{ scale: 0.96 }}
+                className="px-6 py-2 rounded-md bg-white/10 text-white font-semibold text-sm border border-white/20"
+              >
+                <Calendar className="inline w-4 h-4 mr-2" />
+                Test Drive
+              </motion.button>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Controls */}
-      <div className="absolute bottom-24 left-6 z-20 flex gap-3">
-        <motion.button
-          onClick={userPrev}
-          className="p-3 rounded-full bg-black/40 text-white/80 hover:text-white"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </motion.button>
       </div>
-      <div className="absolute bottom-24 right-6 z-20 flex gap-3">
-        <motion.button
-          onClick={userNext}
-          className="p-3 rounded-full bg-black/40 text-white/80 hover:text-white"
-        >
-          <ChevronRight className="w-6 h-6" />
-        </motion.button>
-        <motion.button
-          onClick={() => {
-            setIsAutoPlaying((p) => !p);
-            setProgress(0);
-          }}
-          className="p-3 rounded-full bg-black/40"
-        >
-          {isAutoPlaying ? (
-            <Pause className="w-4 h-4 text-white" />
-          ) : (
-            <Play className="w-4 h-4" style={{ color: TOYOTA_RED }} />
-          )}
-        </motion.button>
-      </div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20"
-        style={{ opacity: scrollIndicatorOpacity }}
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <ArrowDown className="w-6 h-6 text-white/70" />
-      </motion.div>
     </section>
   );
 }
