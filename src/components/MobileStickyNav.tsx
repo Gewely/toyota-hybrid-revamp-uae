@@ -394,27 +394,26 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       vv?.removeEventListener("scroll", updateNavHeightThrottled);
     };
   }, [updateNavHeightThrottled]);
-
-      // ✅ Safer iOS Safari fix: prevent flicker when bottom bar hides/shows
+  // ✅ Track visual viewport offset so sticky nav stays pinned
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv || !navRef.current) return;
+    if (!vv) return;
 
-    const handleVV = () => {
-      // When Safari collapses the bottom bar, vv.height < window.innerHeight
-      // We clamp to 0 so nav never floats upward
-      const diff = window.innerHeight - vv.height - vv.offsetTop;
+    const updateOffset = () => {
+      const diff = window.innerHeight - (vv.height + vv.offsetTop);
       const offset = diff > 0 ? diff : 0;
-      navRef.current!.style.bottom = `${offset}px`;
+      document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
     };
 
-    handleVV();
-    vv.addEventListener("resize", handleVV);
-    vv.addEventListener("scroll", handleVV);
+    updateOffset();
+    vv.addEventListener("resize", updateOffset);
+    vv.addEventListener("scroll", updateOffset);
+    window.addEventListener("resize", updateOffset);
 
     return () => {
-      vv.removeEventListener("resize", handleVV);
-      vv.removeEventListener("scroll", handleVV);
+      vv.removeEventListener("resize", updateOffset);
+      vv.removeEventListener("scroll", updateOffset);
+      window.removeEventListener("resize", updateOffset);
     };
   }, []);
 
@@ -1389,13 +1388,15 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     "mobile-force-visible backdrop-blur-xl"
   )}
   style={{
-    bottom: 0,
-    paddingBottom: "env(safe-area-inset-bottom)", // ✅ Safe area padding only once
+    // We no longer hardcode bottom: 0
+    transform: "translateY(var(--nav-offset, 0px))",
+    paddingBottom: "env(safe-area-inset-bottom)",
   }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}
 >
+
         <div
         className={cn(
           "rounded-t-2xl",
