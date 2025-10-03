@@ -267,7 +267,6 @@
   padding-bottom: calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom));
 }
 
-}
 
 /* Enhanced Safe Area Insets */
 .safe-area-inset-top {
