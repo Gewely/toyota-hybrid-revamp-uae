@@ -1390,9 +1390,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   ref={navRef}
   className={cn("fixed left-0 right-0 bottom-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
   style={{
-    bottom: "var(--nav-offset, 0px)",   // 👈 uses dynamic offset
-    paddingBottom: "env(safe-area-inset-bottom)",
-  }}
+  bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--nav-offset, 0px))",
+}}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}
