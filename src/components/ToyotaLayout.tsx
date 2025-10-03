@@ -110,7 +110,27 @@ const ToyotaLayout: React.FC<ToyotaLayoutProps> = ({
       document.getElementsByTagName('head')[0].appendChild(meta);
     }
   }, []);
+// Track iOS Safari visual viewport changes
+useEffect(() => {
+  const vv = window.visualViewport;
 
+  const update = () => {
+    if (!vv) return;
+    document.documentElement.style.setProperty("--vvh", `${vv.height}px`);
+    console.debug("📏 Updated --vvh:", vv.height);
+  };
+
+  update();
+  vv?.addEventListener("resize", update);
+  vv?.addEventListener("scroll", update);
+
+  return () => {
+    vv?.removeEventListener("resize", update);
+    vv?.removeEventListener("scroll", update);
+  };
+}, []);
+
+  
   // Enhanced mobile detection for sticky nav
   const shouldShowMobileNav = isInitialized && (isMobile || window.innerWidth <= 500);
 

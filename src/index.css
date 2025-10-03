@@ -257,16 +257,16 @@
   overflow: hidden;
 }
 
-/* Mobile Main Content with Nav - Fixed spacing for sticky nav */
-.mobile-main-with-nav {
-  min-height: calc(100dvh - var(--mobile-nav-height, 64px));
+:root {
+  --vvh: 100vh; /* fallback for browsers without visualViewport */
 }
 
-/* Fallback for older browsers that don't support dvh */
-@supports not (height: 100dvh) {
-  .mobile-main-with-nav {
-    min-height: calc(100vh - var(--mobile-nav-height, 64px));
-  }
+/* Mobile Main Content with Nav - dynamic safe height */
+.mobile-main-with-nav {
+  min-height: calc(var(--vvh) - var(--mobile-nav-height, 64px));
+  padding-bottom: calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom));
+}
+
 }
 
 /* Enhanced Safe Area Insets */
