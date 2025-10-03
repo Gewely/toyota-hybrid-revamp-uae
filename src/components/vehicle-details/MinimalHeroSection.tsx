@@ -3,23 +3,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Settings, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
 
-export type HybridHeroProps = {
-  vehicle?: VehicleModel;
+export type MinimalHeroSectionProps = {
+  vehicle?: VehicleModel & { tagline?: string }; // allow tagline safely
   galleryImages: string[];
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
 };
 
-export default function HybridHero({
+const MinimalHeroSection: React.FC<MinimalHeroSectionProps> = ({
   vehicle,
   galleryImages = [],
   onBookTestDrive,
   onCarBuilder,
-}: HybridHeroProps) {
+}) => {
   const [current, setCurrent] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
 
-  // Auto-play
+  // Auto-play slideshow
   useEffect(() => {
     if (!autoPlay || !galleryImages.length) return;
     const id = setInterval(() => {
@@ -50,7 +50,7 @@ export default function HybridHero({
             )}
           </AnimatePresence>
 
-          {/* Overlay controls (edge aligned) */}
+          {/* Controls (edge aligned) */}
           <div className="absolute inset-y-0 left-3 flex items-center z-20">
             <button
               onClick={() => {
@@ -74,7 +74,7 @@ export default function HybridHero({
             </button>
           </div>
 
-          {/* Progress dots (mobile) */}
+          {/* Progress dots (mobile only) */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 md:hidden">
             {galleryImages.map((_, i) => (
               <div
@@ -87,7 +87,7 @@ export default function HybridHero({
           </div>
         </div>
 
-        {/* === CONTENT AREA (Dock / Split) === */}
+        {/* === CONTENT AREA === */}
         <div className="flex flex-col justify-center px-6 sm:px-12 md:px-16 py-10 md:py-20 bg-black/90 backdrop-blur-md">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">
             {vehicle?.year} {vehicle?.name || "Toyota GR Carbon"}
@@ -136,4 +136,6 @@ export default function HybridHero({
       </div>
     </section>
   );
-}
+};
+
+export default MinimalHeroSection;
