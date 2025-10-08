@@ -201,13 +201,15 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     let baseHeight = vv.height;
 
     const updateNavState = () => {
-      if (!vv) return;
+      if (!vv || !nav) return;
 
-      // 🔥 Recalculate base height dynamically (fixes stuck position)
-      baseHeight = Math.max(baseHeight, vv.height);
+      // ✅ Always reset baseHeight when viewport expands back
+      if (vv.height > baseHeight - 20) {
+        baseHeight = vv.height;
+      }
 
-      const h = nav.getBoundingClientRect().height;
-      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
+      const navHeight = nav.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(navHeight)}px`);
 
       const keyboardOpen = baseHeight - vv.height > 120;
       const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
@@ -216,8 +218,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
         ) || 0;
 
-      const finalBottom = keyboardOpen ? offsetBottom + safeInset : Math.max(0, offsetBottom + safeInset);
-      document.documentElement.style.setProperty("--mobile-nav-bottom", `${finalBottom}px`);
+      const newBottom = keyboardOpen ? offsetBottom + safeInset : Math.max(0, offsetBottom + safeInset);
+
+      document.documentElement.style.setProperty("--mobile-nav-bottom", `${newBottom}px`);
     };
 
     const schedule = () => {
@@ -225,13 +228,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       raf = requestAnimationFrame(updateNavState);
     };
 
-    const syncLoop = setInterval(updateNavState, 400);
+    const syncLoop = setInterval(updateNavState, 300);
 
     vv.addEventListener("resize", schedule);
     vv.addEventListener("scroll", schedule);
     vv.addEventListener?.("geometrychange", schedule);
     window.addEventListener("resize", schedule, { passive: true });
-    window.addEventListener("scroll", schedule, { passive: true });
 
     schedule();
 
@@ -242,7 +244,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       vv.removeEventListener("scroll", schedule);
       vv.removeEventListener?.("geometrychange", schedule);
       window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule);
     };
   }, []);
 
@@ -604,40 +605,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           },
         },
   };
-  // Strong adaptive bottom tracking (cross-browser)
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav || typeof window === "undefined") return;
-
-    const updateNavBottom = () => {
-      const vv = window.visualViewport;
-      if (!vv) return;
-      const offsetTop = vv.offsetTop ?? 0;
-      const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
-      const safeInset =
-        Number(
-          getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
-        ) || 0;
-
-      const newBottom = Math.max(0, offsetBottom + safeInset);
-      document.documentElement.style.setProperty("--mobile-nav-bottom", `${newBottom}px`);
-    };
-
-    updateNavBottom();
-
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", updateNavBottom);
-    vv?.addEventListener("scroll", updateNavBottom);
-    window.addEventListener("resize", updateNavBottom, { passive: true });
-    window.addEventListener("scroll", updateNavBottom, { passive: true });
-
-    return () => {
-      vv?.removeEventListener("resize", updateNavBottom);
-      vv?.removeEventListener("scroll", updateNavBottom);
-      window.removeEventListener("resize", updateNavBottom);
-      window.removeEventListener("scroll", updateNavBottom);
-    };
-  }, []);
 
   // Early return AFTER all hooks have been called
   if (!shouldShowNav) return null;
@@ -1540,7 +1507,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         ref={navRef}
         className={cn("fixed left-0 right-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
         style={{
-          bottom: "var(--mobile-nav-bottom, 0px)",
+          bottom: "var(--mobile-nav-bottom, env(safe-area-inset-bottom, 0px))",
           transform: "translateZ(0)",
         }}
         initial={{ y: 100, opacity: 0 }}
