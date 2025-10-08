@@ -554,11 +554,21 @@
 
 .mobile-main-with-nav {
   min-height: calc(100dvh - var(--mobile-nav-height, 64px));
+  padding-bottom: calc(
+    var(--mobile-nav-height, 64px) +
+    var(--mobile-nav-bottom, 0px) +
+    env(safe-area-inset-bottom, 0px)
+  );
 }
 
 @supports not (height: 100dvh) {
   .mobile-main-with-nav {
     min-height: calc(100vh - var(--mobile-nav-height, 64px));
+    padding-bottom: calc(
+      var(--mobile-nav-height, 64px) +
+      var(--mobile-nav-bottom, 0px) +
+      env(safe-area-inset-bottom, 0px)
+    );
   }
 }
 
@@ -571,6 +581,6 @@
   }
 }
 :root {
-  --mobile-nav-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-nav-bottom: 0px;
   --mobile-nav-height: 64px;
 }
