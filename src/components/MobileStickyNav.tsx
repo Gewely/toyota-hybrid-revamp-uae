@@ -421,32 +421,49 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       vv?.removeEventListener("scroll", updateNavMetrics);
     };
   }, [updateNavMetrics]);
-  // Fix nav bottom position when browser controls hide/show
+  // ✅ Strong adaptive nav bottom (handles Safari shrink/reappear)
   useEffect(() => {
     const nav = navRef.current;
     if (!nav || typeof window === "undefined") return;
 
     const vv = window.visualViewport;
-    let lastBottom = 0;
+    let raf: number | null = null;
 
-    const updateBottomOffset = () => {
+    const updateNavBottom = () => {
       if (!vv) return;
-      const currentBottom = Math.max(vv.offsetTop, 0);
-      if (currentBottom !== lastBottom) {
-        nav.style.bottom = `max(env(safe-area-inset-bottom), ${currentBottom}px)`;
-        lastBottom = currentBottom;
-      }
+      const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
+      const safeInset =
+        Number(
+          getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
+        ) || 0;
+      const newBottom = Math.max(0, offsetBottom + safeInset);
+      document.documentElement.style.setProperty("--mobile-nav-bottom", `${newBottom}px`);
     };
 
-    vv?.addEventListener("resize", updateBottomOffset);
-    vv?.addEventListener("scroll", updateBottomOffset);
-    window.addEventListener("scroll", updateBottomOffset, { passive: true });
-    updateBottomOffset();
+    const schedule = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(updateNavBottom);
+    };
+
+    updateNavBottom();
+
+    vv?.addEventListener("resize", schedule);
+    vv?.addEventListener("scroll", schedule);
+    vv?.addEventListener?.("geometrychange", schedule);
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("scroll", schedule, { passive: true });
+
+    // 🔄 keep Safari synced while bars animate silently
+    const syncLoop = setInterval(updateNavBottom, 500);
 
     return () => {
-      vv?.removeEventListener("resize", updateBottomOffset);
-      vv?.removeEventListener("scroll", updateBottomOffset);
-      window.removeEventListener("scroll", updateBottomOffset);
+      if (raf) cancelAnimationFrame(raf);
+      clearInterval(syncLoop);
+      vv?.removeEventListener("resize", schedule);
+      vv?.removeEventListener("scroll", schedule);
+      vv?.removeEventListener?.("geometrychange", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
     };
   }, []);
 
