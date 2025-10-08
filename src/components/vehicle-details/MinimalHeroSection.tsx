@@ -6,6 +6,8 @@ import type { VehicleModel } from "@/types/vehicle";
 export type MinimalHeroSectionProps = {
   vehicle?: VehicleModel & { tagline?: string }; // allow tagline safely
   galleryImages: string[];
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
 };
