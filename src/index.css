@@ -572,4 +572,5 @@
 }
 :root {
   --mobile-nav-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-nav-height: 64px;
 }
