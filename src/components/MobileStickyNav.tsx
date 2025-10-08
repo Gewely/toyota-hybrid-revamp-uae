@@ -193,11 +193,57 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReduceMotion(!!mq.matches);
-    apply();
-    mq.addEventListener?.("change", apply);
-    return () => mq.removeEventListener?.("change", apply);
+    const nav = navRef.current;
+    const vv = window.visualViewport;
+    if (!nav || !vv) return;
+
+    let raf: number | null = null;
+    let baseHeight = vv.height;
+
+    const updateNavState = () => {
+      if (!vv) return;
+
+      // 🔥 Recalculate base height dynamically (fixes stuck position)
+      baseHeight = Math.max(baseHeight, vv.height);
+
+      const h = nav.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
+
+      const keyboardOpen = baseHeight - vv.height > 120;
+      const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
+      const safeInset =
+        Number(
+          getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
+        ) || 0;
+
+      const finalBottom = keyboardOpen ? offsetBottom + safeInset : Math.max(0, offsetBottom + safeInset);
+      document.documentElement.style.setProperty("--mobile-nav-bottom", `${finalBottom}px`);
+    };
+
+    const schedule = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(updateNavState);
+    };
+
+    const syncLoop = setInterval(updateNavState, 400);
+
+    vv.addEventListener("resize", schedule);
+    vv.addEventListener("scroll", schedule);
+    vv.addEventListener?.("geometrychange", schedule);
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("scroll", schedule, { passive: true });
+
+    schedule();
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      clearInterval(syncLoop);
+      vv.removeEventListener("resize", schedule);
+      vv.removeEventListener("scroll", schedule);
+      vv.removeEventListener?.("geometrychange", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
+    };
   }, []);
 
   // GR preset for category
