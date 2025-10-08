@@ -609,6 +609,40 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           },
         },
   };
+  // Strong adaptive bottom tracking (cross-browser)
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof window === "undefined") return;
+
+    const updateNavBottom = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const offsetTop = vv.offsetTop ?? 0;
+      const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
+      const safeInset =
+        Number(
+          getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
+        ) || 0;
+
+      const newBottom = Math.max(0, offsetBottom + safeInset);
+      document.documentElement.style.setProperty("--mobile-nav-bottom", `${newBottom}px`);
+    };
+
+    updateNavBottom();
+
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", updateNavBottom);
+    vv?.addEventListener("scroll", updateNavBottom);
+    window.addEventListener("resize", updateNavBottom, { passive: true });
+    window.addEventListener("scroll", updateNavBottom, { passive: true });
+
+    return () => {
+      vv?.removeEventListener("resize", updateNavBottom);
+      vv?.removeEventListener("scroll", updateNavBottom);
+      window.removeEventListener("resize", updateNavBottom);
+      window.removeEventListener("scroll", updateNavBottom);
+    };
+  }, []);
 
   // Early return AFTER all hooks have been called
   if (!shouldShowNav) return null;
@@ -1511,7 +1545,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         ref={navRef}
         className={cn("fixed left-0 right-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
         style={{
-          bottom: "max(env(safe-area-inset-bottom), var(--vv-bottom-offset, 0px))",
+          bottom: "var(--mobile-nav-bottom, 0px)",
           transform: "translateZ(0)",
         }}
         initial={{ y: 100, opacity: 0 }}
