@@ -501,6 +501,23 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Mobile Navigation Layout Fix */
+@media (max-width: 768px) {
+  body.has-mobile-nav {
+    padding-bottom: calc(var(--mobile-nav-height, 80px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.mobile-main-with-nav {
+  min-height: calc(100dvh - var(--mobile-nav-height, 64px));
+}
+
+@supports not (height: 100dvh) {
+  .mobile-main-with-nav {
+    min-height: calc(100vh - var(--mobile-nav-height, 64px));
+  }
+}
+
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   * {

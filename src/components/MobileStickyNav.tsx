@@ -179,6 +179,17 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const { isGR, toggleGR } = useGRMode();
   const [userTouchedCategory, setUserTouchedCategory] = useState(false);
 
+  // Add body class when mobile nav is shown
+  useEffect(() => {
+    const shouldShowNav = deviceInfo.isInitialized && (deviceInfo.isMobile || window.innerWidth <= 500);
+    if (shouldShowNav) {
+      document.body.classList.add('has-mobile-nav');
+      return () => {
+        document.body.classList.remove('has-mobile-nav');
+      };
+    }
+  }, [deviceInfo.isInitialized, deviceInfo.isMobile]);
+
   // Reduced motion
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
