@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useSwipeable } from "@/hooks/use-swipeable";
 
 interface HeroSlide {
   id: string;
@@ -25,6 +26,7 @@ interface HeroCarouselProps {
 
 const HeroCarousel: React.FC<HeroCarouselProps> = ({ slides: propSlides }) => {
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
 
@@ -105,17 +107,27 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ slides: propSlides }) => {
     setCurrentSlide(index);
   };
 
+  // Swipe gesture support for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipeLeft: nextSlide,
+    onSwipeRight: prevSlide,
+    threshold: Math.floor(window.innerWidth * 0.16), // 16% of viewport width
+  });
+
   return (
-    <section className="relative h-screen overflow-hidden bg-black">
+    <section 
+      ref={swipeHandlers} 
+      className="relative h-screen overflow-hidden bg-black touch-pan-y"
+    >
       {/* Background Images */}
       <div className="absolute inset-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
-            initial={{ opacity: 0, scale: 1.05 }}
+            initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
+            exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.98 }}
+            transition={{ duration: prefersReducedMotion ? 0.3 : 1.2, ease: "easeInOut" }}
             className="absolute inset-0"
           >
             <img

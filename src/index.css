@@ -140,6 +140,7 @@
     @apply border-border;
   }
   body {
+    margin: 0 !important;
     @apply bg-background text-foreground;
   }
 }
@@ -511,11 +512,35 @@
     padding-bottom: calc(var(--mobile-nav-height, 80px) + env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  /* Alternative: If body padding doesn't work, apply to main content */
-  .page-container,
-  main,
-  #root > div {
-    padding-bottom: calc(var(--mobile-nav-height, 80px) + env(safe-area-inset-bottom, 0px));
+  /* Scroll snap utilities for smooth storytelling sections */
+  .scroll-snap-y-mandatory {
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroll-snap-y-proximity {
+    scroll-snap-type: y proximity;
+  }
+
+  .scroll-snap-start {
+    scroll-snap-align: start;
+  }
+
+  .scroll-snap-center {
+    scroll-snap-align: center;
+  }
+
+  /* Touch action utilities */
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
   }
 }
 

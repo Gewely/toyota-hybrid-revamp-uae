@@ -154,9 +154,9 @@ useEffect(() => {
     shouldShowMobileNav && "mobile-main-with-nav"
   )}
   style={{
-    paddingBottom: shouldShowMobileNav 
-      ? 'calc(var(--mobile-nav-height, 64px) + env(safe-area-inset-bottom))' 
-      : undefined
+    minHeight: shouldShowMobileNav 
+      ? 'min(100svh, 100dvh)' 
+      : '100vh'
   }}
 >
   {children}

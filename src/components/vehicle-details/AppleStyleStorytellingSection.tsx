@@ -285,34 +285,44 @@ const StorytellingSection: React.FC<Props> = ({
   const isLocked = index < scenes.length - 1; // unlock scroll after last
   const active = scenes[index];
 
-  /* ----------------- Visibility watcher (restart at scene 0) ----------------- */
+  /* ----------------- Visibility watcher with IntersectionObserver ----------------- */
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const update = () => {
-      const visible = mostlyVisible(el, 0.8);
-      if (visible && !isVisibleEnough) setIndex(0);
-      setIsVisibleEnough(visible);
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = entry.intersectionRatio >= 0.6;
+        
+        // Only reset to scene 0 when entering section (not continuously)
+        if (visible && !isVisibleEnough) {
+          setIndex(0);
+        }
+        
+        setIsVisibleEnough(visible);
+      },
+      { threshold: 0.6 }
+    );
+    
+    observer.observe(el);
+    
     return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      observer.disconnect();
     };
   }, [isVisibleEnough]);
 
-  /* ----------------- Parallax ----------------- */
+  /* ----------------- Parallax (reduced motion guard) ----------------- */
   useEffect(() => {
+    if (prefersReduced) return; // Guard for reduced motion
+    
     const onMove = (e: MouseEvent) => {
       const cx = (e.clientX / window.innerWidth - 0.5) * 16;
       const cy = (e.clientY / window.innerHeight - 0.5) * 16;
       setParallax({ x: cx, y: cy });
     };
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+  }, [prefersReduced]);
 
   /* ----------------- Scroll Handlers ----------------- */
   const onWheel = useCallback(
@@ -340,14 +350,21 @@ const StorytellingSection: React.FC<Props> = ({
 
   const onTouchMove = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked) return;
-      if (
-        Math.abs(
-          (touchStartY.current ?? e.touches[0].clientY) -
-            e.touches[0].clientY
-        ) > 10
-      ) {
-        e.preventDefault();
+      if (!isLocked || !touchStartY.current) return;
+      
+      const currentY = e.touches[0].clientY;
+      const deltaY = Math.abs(touchStartY.current - currentY);
+      
+      // Only prevent if this is a clear vertical swipe within our section
+      // Don't prevent horizontal scrolling or small movements
+      if (deltaY > 10) {
+        const target = e.target as Element;
+        const isInSection = sectionRef.current?.contains(target);
+        
+        // Only preventDefault if we're in the section and it's vertical movement
+        if (isInSection) {
+          e.preventDefault();
+        }
       }
     },
     [isLocked]
@@ -450,7 +467,7 @@ const StorytellingSection: React.FC<Props> = ({
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100svh] bg-black text-white overflow-hidden"
+      className="relative min-h-[100svh] bg-black text-white overflow-hidden touch-pan-y"
       aria-label="Cinematic automotive storytelling"
     >
       {/* MEDIA LAYER */}

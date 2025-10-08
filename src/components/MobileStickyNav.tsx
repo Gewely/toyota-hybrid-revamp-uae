@@ -362,6 +362,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   
   // Track both nav height and viewport offset in one go
 const rafId = useRef<number | null>(null);
+const initialHeightRef = useRef<number>(0);
 
 const updateNavMetrics = useCallback(() => {
   if (rafId.current !== null) return;
@@ -372,11 +373,33 @@ const updateNavMetrics = useCallback(() => {
     if (h) {
       document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
     }
-    // Compute viewport offset when browser bottom bar hides
+    
+    // VisualViewport tracking for browser chrome and keyboard
     const vv = window.visualViewport;
     if (vv) {
-      const offset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
-      document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+      // Store initial height on first run
+      if (initialHeightRef.current === 0) {
+        initialHeightRef.current = vv.height;
+      }
+      
+      const currentHeight = vv.height;
+      const heightDiff = initialHeightRef.current - currentHeight;
+      
+      // Detect keyboard (IME) - if viewport shrinks by > 120px, keyboard is likely open
+      const isKeyboardOpen = heightDiff > 120;
+      
+      if (isKeyboardOpen) {
+        // Pin nav just above keyboard
+        const keyboardOffset = Math.max(0, window.innerHeight - currentHeight - vv.offsetTop);
+        document.documentElement.style.setProperty("--vv-bottom-offset", `${keyboardOffset}px`);
+      } else {
+        // Normal browser chrome show/hide
+        const offset = Math.max(0, vv.offsetTop);
+        document.documentElement.style.setProperty("--vv-bottom-offset", `${offset}px`);
+      }
+      
+      // Update visual viewport height for other components
+      document.documentElement.style.setProperty("--vvh", `${currentHeight}px`);
     }
 
     rafId.current = null;
@@ -1379,11 +1402,13 @@ useEffect(() => {
      <motion.nav
   ref={navRef}
   className={cn(
-    "fixed left-0 right-0 bottom-0 z-[100]",
+    "fixed left-0 right-0 z-[100]",
     "mobile-force-visible backdrop-blur-xl"
   )}
-  // ✅ use a single, well‐formed style object here
-  style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}
+  style={{ 
+    bottom: "max(env(safe-area-inset-bottom), var(--vv-bottom-offset, 0px))",
+    transform: "translateZ(0)"
+  }}
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}

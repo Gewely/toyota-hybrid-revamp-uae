@@ -81,7 +81,8 @@ const Header: React.FC = () => {
     return (
       <motion.header 
         className="bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100/50 sticky top-0 z-40"
-        initial={{ y: -100 }}
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 14px)' }}
+        initial={{ y: 0 }}
         animate={{ y: isVisible ? 0 : -100 }}
         transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
@@ -159,7 +160,8 @@ const Header: React.FC = () => {
   return (
     <motion.header 
       className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40"
-      initial={{ y: -100 }}
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}
+      initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
