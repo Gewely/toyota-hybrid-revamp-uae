@@ -346,122 +346,54 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // Measure nav height to set CSS var for safe content padding
-  // PERF: Throttled with RAF to prevent layout thrashing
   const navRef = useRef<HTMLElement | null>(null);
 
-  // Track both nav height and viewport offset in one go
-  const rafId = useRef<number | null>(null);
-  const initialHeightRef = useRef<number>(0);
-
-  const updateNavMetrics = useCallback(() => {
-    if (rafId.current !== null) return;
-
-    rafId.current = requestAnimationFrame(() => {
-      // Update nav height
-      const h = navRef.current?.getBoundingClientRect().height;
-      if (h) {
-        document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
-      }
-
-      // VisualViewport tracking for browser chrome and keyboard
-      const vv = window.visualViewport;
-      if (vv) {
-        // Store initial height on first run
-        if (initialHeightRef.current === 0) {
-          initialHeightRef.current = vv.height;
-        }
-
-        const currentHeight = vv.height;
-        const heightDiff = initialHeightRef.current - currentHeight;
-
-        // Detect keyboard (IME) - if viewport shrinks by > 120px, keyboard is likely open
-        const isKeyboardOpen = heightDiff > 120;
-
-        if (isKeyboardOpen) {
-          // Pin nav just above keyboard
-          const keyboardOffset = Math.max(0, window.innerHeight - currentHeight - vv.offsetTop);
-          document.documentElement.style.setProperty("--vv-bottom-offset", `${keyboardOffset}px`);
-        } else {
-          // Normal browser chrome show/hide
-          const offset = Math.max(0, vv.offsetTop);
-          document.documentElement.style.setProperty("--vv-bottom-offset", `${offset}px`);
-        }
-
-        // Update visual viewport height for other components
-        document.documentElement.style.setProperty("--vvh", `${currentHeight}px`);
-      }
-
-      rafId.current = null;
-    });
-  }, []);
-
   useEffect(() => {
-    updateNavMetrics();
-
-    let resizeObserver: ResizeObserver | null = null;
-    if (navRef.current && "ResizeObserver" in window) {
-      resizeObserver = new ResizeObserver(updateNavMetrics);
-      resizeObserver.observe(navRef.current);
-    }
-
-    window.addEventListener("resize", updateNavMetrics, { passive: true });
-    window.addEventListener("orientationchange", updateNavMetrics, { passive: true });
-
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", updateNavMetrics);
-    vv?.addEventListener("scroll", updateNavMetrics);
-
-    return () => {
-      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", updateNavMetrics);
-      window.removeEventListener("orientationchange", updateNavMetrics);
-      vv?.removeEventListener("resize", updateNavMetrics);
-      vv?.removeEventListener("scroll", updateNavMetrics);
-    };
-  }, [updateNavMetrics]);
-  // ✅ Strong adaptive nav bottom (handles Safari shrink/reappear)
-  useEffect(() => {
+    if (typeof window === "undefined") return;
     const nav = navRef.current;
-    if (!nav || typeof window === "undefined") return;
-
     const vv = window.visualViewport;
-    let raf: number | null = null;
+    if (!nav || !vv) return;
 
-    const updateNavBottom = () => {
+    let raf: number | null = null;
+    let baseHeight = vv.height;
+
+    const updateNavState = () => {
       if (!vv) return;
+      const h = nav.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
+
+      const keyboardOpen = baseHeight - vv.height > 120;
       const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
       const safeInset =
         Number(
           getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
         ) || 0;
-      const newBottom = Math.max(0, offsetBottom + safeInset);
-      document.documentElement.style.setProperty("--mobile-nav-bottom", `${newBottom}px`);
+
+      const finalBottom = keyboardOpen ? offsetBottom + safeInset : Math.max(0, offsetBottom + safeInset);
+      document.documentElement.style.setProperty("--mobile-nav-bottom", `${finalBottom}px`);
     };
 
     const schedule = () => {
       if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(updateNavBottom);
+      raf = requestAnimationFrame(updateNavState);
     };
 
-    updateNavBottom();
+    const syncLoop = setInterval(updateNavState, 500);
 
-    vv?.addEventListener("resize", schedule);
-    vv?.addEventListener("scroll", schedule);
-    vv?.addEventListener?.("geometrychange", schedule);
+    vv.addEventListener("resize", schedule);
+    vv.addEventListener("scroll", schedule);
+    vv.addEventListener?.("geometrychange", schedule);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("scroll", schedule, { passive: true });
 
-    // 🔄 keep Safari synced while bars animate silently
-    const syncLoop = setInterval(updateNavBottom, 500);
+    schedule();
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
       clearInterval(syncLoop);
-      vv?.removeEventListener("resize", schedule);
-      vv?.removeEventListener("scroll", schedule);
-      vv?.removeEventListener?.("geometrychange", schedule);
+      vv.removeEventListener("resize", schedule);
+      vv.removeEventListener("scroll", schedule);
+      vv.removeEventListener?.("geometrychange", schedule);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule);
     };
