@@ -191,61 +191,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   // Reduced motion
   const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const nav = navRef.current;
-    const vv = window.visualViewport;
-    if (!nav || !vv) return;
-
-    let raf: number | null = null;
-    let baseHeight = vv.height;
-
-    const updateNavState = () => {
-      if (!vv || !nav) return;
-
-      // ✅ Always reset baseHeight when viewport expands back
-      if (vv.height > baseHeight - 20) {
-        baseHeight = vv.height;
-      }
-
-      const navHeight = nav.getBoundingClientRect().height;
-      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(navHeight)}px`);
-
-      const keyboardOpen = baseHeight - vv.height > 120;
-      const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
-      const safeInset =
-        Number(
-          getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
-        ) || 0;
-
-      const newBottom = keyboardOpen ? offsetBottom + safeInset : Math.max(0, offsetBottom + safeInset);
-
-      document.documentElement.style.setProperty("--mobile-nav-bottom", `${newBottom}px`);
-    };
-
-    const schedule = () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(updateNavState);
-    };
-
-    const syncLoop = setInterval(updateNavState, 300);
-
-    vv.addEventListener("resize", schedule);
-    vv.addEventListener("scroll", schedule);
-    vv.addEventListener?.("geometrychange", schedule);
-    window.addEventListener("resize", schedule, { passive: true });
-
-    schedule();
-
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      clearInterval(syncLoop);
-      vv.removeEventListener("resize", schedule);
-      vv.removeEventListener("scroll", schedule);
-      vv.removeEventListener?.("geometrychange", schedule);
-      window.removeEventListener("resize", schedule);
-    };
-  }, []);
 
   // GR preset for category
   useEffect(() => {
