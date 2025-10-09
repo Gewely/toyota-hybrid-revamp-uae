@@ -382,6 +382,20 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       window.removeEventListener("focus", setViewportVars);
     };
   }, []);
+  // STEP 4 — Debug viewer for dynamic CSS variables
+  useEffect(() => {
+    const log = () => {
+      const styles = getComputedStyle(document.documentElement);
+      console.log({
+        vh: styles.getPropertyValue("--vh"),
+        navHeight: styles.getPropertyValue("--mobile-nav-height"),
+      });
+    };
+
+    log(); // initial check
+    window.visualViewport?.addEventListener("resize", log);
+    return () => window.visualViewport?.removeEventListener("resize", log);
+  }, []);
 
   const quickActionCards: Array<{
     id: string;
@@ -1442,13 +1456,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       {/* Bottom Nav with ATTRACT on Actions */}
       <motion.nav
         ref={navRef}
-        className={cn("fixed left-0 right-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
-        style={{
-          bottom: "env(safe-area-inset-bottom)",
-          height: "auto",
-          transform: "translateZ(0)",
-          willChange: "transform",
-        }}
+        className={cn(
+          "mobile-force-visible backdrop-blur-xl left-0 right-0 z-[100]",
+          "fixed transition-transform duration-300",
+        )}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={reduceMotion ? { duration: 0.1 } : spring}
