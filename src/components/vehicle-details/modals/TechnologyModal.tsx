@@ -81,7 +81,7 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
   const touchHandlers = useTouchGestures({
     onSwipeLeft: handleSwipeLeft,
     onSwipeRight: handleSwipeRight,
-    threshold: 50
+    threshold: 60
   });
 
   const currentFeature = techFeatures[currentIndex];
@@ -108,7 +108,7 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
         </div>
 
         {/* Mobile Swipeable Cards */}
-        <div className="lg:hidden" {...touchHandlers}>
+        <div className="lg:hidden touch-pan-y" {...touchHandlers}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -155,7 +155,7 @@ const TechnologyModal: React.FC<TechnologyModalProps> = ({ onClose }) => {
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-2 rounded-full transition-all ${
+                className={`h-2.5 rounded-full transition-all min-w-touch-target ${
                   idx === currentIndex
                     ? 'w-8 bg-foreground'
                     : 'w-2 bg-muted'

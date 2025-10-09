@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTouchGestures } from '@/hooks/use-touch-gestures';
 import ModalWrapper from './ModalWrapper';
 
 interface InteriorModalProps {
@@ -10,6 +11,7 @@ interface InteriorModalProps {
 
 const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
   const [step, setStep] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
   
   const steps = [
     {
@@ -59,22 +61,30 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
   const nextStep = () => setStep((prev) => (prev + 1) % steps.length);
   const prevStep = () => setStep((prev) => (prev - 1 + steps.length) % steps.length);
 
+  const touchHandlers = useTouchGestures({
+    onSwipeLeft: nextStep,
+    onSwipeRight: prevStep,
+    threshold: 60
+  });
+
   return (
     <ModalWrapper title="Interior Experience" onClose={onClose}>
       <div className="p-6 lg:p-12">
         {/* Mobile Layout - Stacked */}
-        <div className="lg:hidden space-y-6">
-          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
+        <div className="lg:hidden space-y-6" {...touchHandlers}>
+          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden touch-pan-y">
             <AnimatePresence mode="wait">
               <motion.img
                 key={step}
                 src={currentStep.image}
                 alt={currentStep.title}
                 className="w-full h-full object-cover"
-                initial={{ opacity: 0, x: 20 }}
+                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
+                exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
+                transition={{ duration: prefersReducedMotion ? 0.15 : 0.3 }}
+                loading="lazy"
+                decoding="async"
               />
             </AnimatePresence>
           </div>
@@ -103,7 +113,8 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
               variant="ghost"
               size="icon"
               onClick={prevStep}
-              className="rounded-full text-foreground"
+              className="rounded-full text-foreground min-w-touch-target min-h-touch-target"
+              aria-label="Previous interior feature"
             >
               <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
@@ -125,7 +136,8 @@ const InteriorModal: React.FC<InteriorModalProps> = ({ onClose }) => {
               variant="ghost"
               size="icon"
               onClick={nextStep}
-              className="rounded-full text-foreground"
+              className="rounded-full text-foreground min-w-touch-target min-h-touch-target"
+              aria-label="Next interior feature"
             >
               <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>

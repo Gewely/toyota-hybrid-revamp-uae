@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Shield, AlertTriangle, Eye, Navigation } from 'lucide-react';
 import ModalWrapper from './ModalWrapper';
 
@@ -9,6 +9,7 @@ interface SafetyModalProps {
 
 const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const safetyFeatures = [
     {
@@ -88,7 +89,9 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
             >
               <button
                 onClick={() => toggleExpand(feature.id)}
-                className="w-full p-6 flex items-start gap-4 text-left"
+                className="w-full p-6 flex items-start gap-4 text-left min-h-touch-target"
+                aria-expanded={expandedId === feature.id}
+                aria-label={`Toggle ${feature.title} details`}
               >
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                   expandedId === feature.id
@@ -111,7 +114,7 @@ const SafetyModal: React.FC<SafetyModalProps> = ({ onClose }) => {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: prefersReducedMotion ? 0.15 : 0.3 }}
                     className="px-6 pb-6"
                   >
                     <div className="pl-12 sm:pl-16">

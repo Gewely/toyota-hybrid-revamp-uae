@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Zap, Gauge, Timer, Cog } from 'lucide-react';
+import { useTouchGestures } from '@/hooks/use-touch-gestures';
 import ModalWrapper from './ModalWrapper';
 
 interface PerformanceModalProps {
@@ -11,6 +12,7 @@ type DriveMode = 'eco' | 'normal' | 'sport';
 
 const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
   const [mode, setMode] = useState<DriveMode>('sport');
+  const prefersReducedMotion = useReducedMotion();
 
   const stats = {
     eco: { 
@@ -38,16 +40,34 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
 
   const current = stats[mode];
 
+  const handleNextMode = () => {
+    const modes: DriveMode[] = ['eco', 'normal', 'sport'];
+    const currentIndex = modes.indexOf(mode);
+    setMode(modes[(currentIndex + 1) % modes.length]);
+  };
+
+  const handlePrevMode = () => {
+    const modes: DriveMode[] = ['eco', 'normal', 'sport'];
+    const currentIndex = modes.indexOf(mode);
+    setMode(modes[(currentIndex - 1 + modes.length) % modes.length]);
+  };
+
+  const touchHandlers = useTouchGestures({
+    onSwipeLeft: handleNextMode,
+    onSwipeRight: handlePrevMode,
+    threshold: 60
+  });
+
   return (
     <ModalWrapper title="Performance" onClose={onClose} background="bg-zinc-900">
-      <div className="p-6 lg:p-12">
+      <div className="p-6 lg:p-12" {...touchHandlers}>
         {/* Drive Mode Selector */}
-        <div className="flex justify-center gap-4 mb-12">
+        <div className="flex justify-center gap-4 mb-12 touch-pan-y">
           {(['eco', 'normal', 'sport'] as DriveMode[]).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 font-bold rounded-full text-xs sm:text-sm lg:text-base transition-all ${
+              className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 font-bold rounded-full text-xs sm:text-sm lg:text-base transition-all min-h-touch-target ${
                 mode === m
                   ? 'bg-foreground text-background shadow-lg scale-105'
                   : 'bg-accent text-muted-foreground hover:bg-accent/80'
@@ -85,7 +105,7 @@ const PerformanceModal: React.FC<PerformanceModalProps> = ({ onClose }) => {
                 strokeDashoffset={502 - (502 * current.speed) / 300}
                 initial={{ strokeDashoffset: 502 }}
                 animate={{ strokeDashoffset: 502 - (502 * current.speed) / 300 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={{ duration: prefersReducedMotion ? 0.2 : 0.8, ease: 'easeOut' }}
                 transform="rotate(-90 100 100)"
               />
               

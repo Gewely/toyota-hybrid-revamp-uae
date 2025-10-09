@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Lightbulb, Circle, Grip } from 'lucide-react';
+import { useTouchGestures } from '@/hooks/use-touch-gestures';
 import ModalWrapper from './ModalWrapper';
 
 interface ExteriorModalProps {
@@ -9,6 +10,7 @@ interface ExteriorModalProps {
 
 const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
   const [selectedColor, setSelectedColor] = useState('white');
+  const prefersReducedMotion = useReducedMotion();
 
   const colors = [
     { 
@@ -63,6 +65,24 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
 
   const currentColor = colors.find(c => c.id === selectedColor) || colors[0];
 
+  const handleNextColor = () => {
+    const currentIndex = colors.findIndex(c => c.id === selectedColor);
+    const nextIndex = (currentIndex + 1) % colors.length;
+    setSelectedColor(colors[nextIndex].id);
+  };
+
+  const handlePrevColor = () => {
+    const currentIndex = colors.findIndex(c => c.id === selectedColor);
+    const prevIndex = (currentIndex - 1 + colors.length) % colors.length;
+    setSelectedColor(colors[prevIndex].id);
+  };
+
+  const touchHandlers = useTouchGestures({
+    onSwipeLeft: handleNextColor,
+    onSwipeRight: handlePrevColor,
+    threshold: 60
+  });
+
   return (
     <ModalWrapper title="Exterior Design" onClose={onClose}>
       <div className="p-6 lg:p-12 space-y-8">
@@ -72,7 +92,7 @@ const ExteriorModal: React.FC<ExteriorModalProps> = ({ onClose }) => {
             <button
               key={color.id}
               onClick={() => setSelectedColor(color.id)}
-              className={`group flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full border-2 transition-all ${
+              className={`group flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-full border-2 transition-all min-h-touch-target ${
                 selectedColor === color.id
                   ? 'border-foreground bg-accent'
                   : 'border-border hover:border-foreground/50'
