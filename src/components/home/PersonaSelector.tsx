@@ -329,9 +329,10 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = ({ onSelect }) => {
                 style={{ 
                   borderColor: selectedPersona === persona.id || hoveredPersona === persona.id ? 
                     persona.colorScheme.primary : "transparent",
-                  background: `${selectedPersona === persona.id || hoveredPersona === persona.id ? 
-                    `linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85)), ${persona.backgroundPattern || ''}` : 
-                    `linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95)), ${persona.backgroundPattern || ''}`}`
+                  background: selectedPersona === persona.id || hoveredPersona === persona.id ? 
+                    `linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))` : 
+                    `linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95))`,
+                  backgroundImage: persona.backgroundPattern || undefined
                 }}
                 onClick={() => handlePersonaSelect(persona.id)}
               >

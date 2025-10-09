@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Info, Heart, RotateCw, Check, Sparkles, Fuel, Shield, Award } from "lucide-react";
+import { Info, RotateCw, Check, Sparkles, Fuel, Shield, Award } from "lucide-react";
 import { VehicleModel } from "@/types/vehicle";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,54 +27,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   delay = 0
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    setIsFavorite(favorites.includes(vehicle.name));
-    
-    const handleFavoritesUpdated = () => {
-      const updatedFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-      setIsFavorite(updatedFavorites.includes(vehicle.name));
-    };
-    
-    window.addEventListener('favorites-updated', handleFavoritesUpdated);
-    
-    return () => {
-      window.removeEventListener('favorites-updated', handleFavoritesUpdated);
-    };
-  }, [vehicle.name]);
-
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
-  };
-
-  const handleFavoriteToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    
-    if (isFavorite) {
-      const newFavorites = favorites.filter((name: string) => name !== vehicle.name);
-      localStorage.setItem('favorites', JSON.stringify(newFavorites));
-      toast({
-        title: "Removed from favorites",
-        description: `${vehicle.name} has been removed from your favorites.`,
-      });
-    } else {
-      favorites.push(vehicle.name);
-      localStorage.setItem('favorites', JSON.stringify(favorites));
-      toast({
-        title: "Added to favorites",
-        description: `${vehicle.name} has been added to your favorites.`,
-      });
-    }
-    
-    setIsFavorite(!isFavorite);
-    
-    window.dispatchEvent(new Event('favorites-updated'));
   };
 
   const cardVariants = {
@@ -135,21 +92,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             </Badge>
             
             {isBestSeller && (
-              <div className="absolute top-3 right-12 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
+              <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
                 <Award className="h-3 w-3 mr-1" />
                 Best Seller
               </div>
             )}
-
-            <motion.button
-              onClick={handleFavoriteToggle}
-              className={`absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm
-                ${isFavorite ? "text-red-500" : "text-gray-500"}`}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Heart className="h-5 w-5" fill={isFavorite ? "currentColor" : "none"} />
-            </motion.button>
           </div>
 
           <CardContent className="p-5">

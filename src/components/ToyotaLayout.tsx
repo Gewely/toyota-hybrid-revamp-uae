@@ -14,8 +14,6 @@ interface ToyotaLayoutProps {
   activeNavItem?: string;
   // Vehicle action props (optional, for vehicle detail pages)
   vehicle?: VehicleModel;
-  isFavorite?: boolean;
-  onToggleFavorite?: () => void;
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
   onFinanceCalculator?: () => void;
@@ -25,8 +23,6 @@ const ToyotaLayout: React.FC<ToyotaLayoutProps> = ({
   children, 
   activeNavItem,
   vehicle,
-  isFavorite,
-  onToggleFavorite,
   onBookTestDrive,
   onCarBuilder,
   onFinanceCalculator
@@ -168,8 +164,6 @@ useEffect(() => {
       <MobileStickyNav 
         activeItem={activeNavItem}
         vehicle={vehicle}
-        isFavorite={isFavorite}
-        onToggleFavorite={onToggleFavorite}
         onBookTestDrive={onBookTestDrive}
         onCarBuilder={onCarBuilder}
         onFinanceCalculator={onFinanceCalculator}

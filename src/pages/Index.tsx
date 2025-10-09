@@ -16,7 +16,7 @@ import LifestyleSection from "@/components/home/LifestyleSection";
 import PerformanceSection from "@/components/home/PerformanceSection";
 import PreOwnedSection from "@/components/home/PreOwnedSection";
 import OffersSection from "@/components/home/OffersSection";
-import FavoritesDrawer from "@/components/home/FavoritesDrawer";
+
 import VehicleRecommendations from "@/components/home/VehicleRecommendations";
 import LuxuryShowcase from "@/components/LuxuryShowcase";
 import CarBuilder from "@/components/builder/CarBuilder";
@@ -26,7 +26,7 @@ import { vehicles, preOwnedVehicles, heroSlides } from "@/data/vehicles";
 import { VehicleModel } from "@/types/vehicle";
 import { usePersona } from "@/contexts/PersonaContext";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,6 @@ const Index = () => {
   const [priceRange, setPriceRange] = useState<number[]>([0, 300000]);
   const [compareList, setCompareList] = useState<string[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleModel | null>(null);
-  const [favoriteCount, setFavoriteCount] = useState(0);
   const { toast } = useToast();
   const { personaData, selectedPersona: activePersona } = usePersona();
   const [personaFilteredVehicles, setPersonaFilteredVehicles] = useState<VehicleModel[] | null>(null);
@@ -132,20 +131,6 @@ const Index = () => {
     }
   }, [personaData]);
 
-  // Load favorite count from localStorage
-  useEffect(() => {
-    const handleFavoritesUpdated = () => {
-      const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-      setFavoriteCount(favorites.length);
-    };
-    
-    handleFavoritesUpdated();
-    window.addEventListener('favorites-updated', handleFavoritesUpdated);
-    
-    return () => {
-      window.removeEventListener('favorites-updated', handleFavoritesUpdated);
-    };
-  }, []);
 
   // Filter vehicles based on category, price, and persona recommendations
   const filteredVehicles = React.useMemo(() => {
@@ -290,35 +275,6 @@ const Index = () => {
               <Filter className="h-4 w-4 mr-2" />
               <span>Filter</span>
             </Button>
-            
-            <FavoritesDrawer 
-              triggerButton={
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="relative"
-                  style={personaData ? {
-                    borderColor: personaData.colorScheme.primary  
-                  } : {}}
-                >
-                  <Heart className="h-4 w-4 mr-2" style={personaData ? {
-                    color: personaData.colorScheme.primary
-                  } : {}} />
-                  <span>Favorites</span>
-                  {favoriteCount > 0 && (
-                    <motion.span 
-                      className="absolute -top-2 -right-2 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                      style={{ backgroundColor: personaData ? personaData.colorScheme.accent : 'var(--toyota-red)' }}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
-                      {favoriteCount}
-                    </motion.span>
-                  )}
-                </Button>
-              }
-            />
 
             {/* Quick access to new experiences so changes reflect immediately */}
             <Button 

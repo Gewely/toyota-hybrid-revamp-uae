@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Settings, Calendar, ChevronLeft, ChevronRight, Heart, Share2, Maximize2 } from "lucide-react";
+import { Settings, Calendar, ChevronLeft, ChevronRight, Share2, Maximize2 } from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
 import { useTouchGestures } from "@/hooks/use-touch-gestures";
 import { usePerformantIntersection } from "@/hooks/use-performant-intersection";
@@ -8,8 +8,6 @@ import { usePerformantIntersection } from "@/hooks/use-performant-intersection";
 export type MinimalHeroSectionProps = {
   vehicle?: VehicleModel & { tagline?: string };
   galleryImages: string[];
-  isFavorite?: boolean;
-  onToggleFavorite?: () => void;
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
 };
@@ -17,8 +15,6 @@ export type MinimalHeroSectionProps = {
 const MinimalHeroSection: React.FC<MinimalHeroSectionProps> = ({
   vehicle,
   galleryImages = [],
-  isFavorite = false,
-  onToggleFavorite,
   onBookTestDrive,
   onCarBuilder,
 }) => {
@@ -131,18 +127,6 @@ const MinimalHeroSection: React.FC<MinimalHeroSectionProps> = ({
           {/* Floating Controls */}
           <div className="absolute top-safe-area-inset-top top-4 left-4 right-4 flex justify-between items-start z-20">
             <div className="flex gap-2">
-              {onToggleFavorite && (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={onToggleFavorite}
-                  className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <Heart 
-                    className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} 
-                  />
-                </motion.button>
-              )}
               {navigator.share && (
                 <motion.button
                   whileTap={{ scale: 0.9 }}
@@ -320,14 +304,6 @@ const MinimalHeroSection: React.FC<MinimalHeroSectionProps> = ({
           >
             {/* Header Actions */}
             <div className="flex gap-3 mb-8">
-              {onToggleFavorite && (
-                <button
-                  onClick={onToggleFavorite}
-                  className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors"
-                >
-                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-white/70'}`} />
-                </button>
-              )}
               {navigator.share && (
                 <button
                   onClick={handleShare}

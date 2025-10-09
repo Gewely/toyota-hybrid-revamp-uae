@@ -78,8 +78,6 @@ interface MobileStickyNavProps {
   activeItem?: string;
   onMenuToggle?: () => void;
   vehicle?: VehicleModel;
-  isFavorite?: boolean;
-  onToggleFavorite?: () => void;
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
   onFinanceCalculator?: () => void;

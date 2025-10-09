@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Heart, Star, ArrowRight, Eye, Zap, Shield } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, ArrowRight, Eye, Shield } from 'lucide-react';
 import { vehicles } from '@/data/vehicles';
 import { VehicleModel } from '@/types/vehicle';
 import { useSwipeable } from '@/hooks/use-swipeable';
@@ -58,11 +58,6 @@ export default function CinematicRelatedVehicles({
   const handleQuickView = (vehicle: VehicleModel) => {
     console.log('Quick view for:', vehicle.name);
     // TODO: Open quick view modal
-  };
-
-  const handleAddToFavorites = (vehicle: VehicleModel) => {
-    console.log('Add to favorites:', vehicle.name);
-    // TODO: Add to favorites logic
   };
 
   const handleConfigureVehicle = (vehicle: VehicleModel) => {
@@ -241,19 +236,11 @@ export default function CinematicRelatedVehicles({
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="flex-1 bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm"
+                              className="w-full bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm"
                               onClick={() => handleQuickView(vehicle)}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Quick View
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm h-9 w-9 p-0"
-                              onClick={() => handleAddToFavorites(vehicle)}
-                            >
-                              <Heart className="h-4 w-4" />
                             </Button>
                           </motion.div>
                         )}

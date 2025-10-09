@@ -95,7 +95,7 @@ const VehicleDetails = () => {
   const { isMobile, deviceCategory } = useOptimizedDeviceInfo();
   const { addCleanup } = useCleanup();
   const { shouldPreloadContent, isSlowConnection, isFastConnection } = useNetworkAware();
-  const { vehicle, isFavorite, galleryImages, monthlyEMI, toggleFavorite, navigate, isLoading, error } = useVehicleData();
+  const { vehicle, galleryImages, monthlyEMI, navigate, isLoading, error } = useVehicleData();
   const { reportMetric } = useWebVitalsOptimized();
   const { isLowMemory } = useMemoryPressure();
   const { getMetricsSummary } = useCoreWebVitals();
@@ -167,7 +167,6 @@ const VehicleDetails = () => {
   const gesturesRef = useEnhancedGestures({
     onSwipeLeft: nextImage,
     onSwipeRight: previousImage,
-    onDoubleTap: toggleFavorite,
     hapticFeedback: isMobile && 'vibrate' in navigator
   });
 
@@ -225,8 +224,6 @@ const VehicleDetails = () => {
         <ToyotaLayout
           activeNavItem="models"
           vehicle={vehicle}
-          isFavorite={isFavorite}
-          onToggleFavorite={toggleFavorite}
           onBookTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
           onCarBuilder={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
           onFinanceCalculator={() => modalHandlers.updateModal('isFinanceOpen', true)}
@@ -254,8 +251,6 @@ const VehicleDetails = () => {
               <MinimalHeroSection
                 vehicle={vehicle}
                 galleryImages={galleryImages}
-                isFavorite={isFavorite}
-                onToggleFavorite={toggleFavorite}
                 onBookTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
                 onCarBuilder={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
               />
@@ -372,8 +367,6 @@ const VehicleDetails = () => {
 
           <ActionPanel
             vehicle={vehicle}
-            isFavorite={isFavorite}
-            onToggleFavorite={toggleFavorite}
             onBookTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
             onCarBuilder={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
             onFinanceCalculator={() => modalHandlers.updateModal('isFinanceOpen', true)}

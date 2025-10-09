@@ -8,7 +8,6 @@ import { VehicleModel } from "@/types/vehicle";
 export const useVehicleData = () => {
   const { vehicleName } = useParams<{ vehicleName: string }>();
   const [vehicle, setVehicle] = useState<VehicleModel | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -31,23 +30,6 @@ export const useVehicleData = () => {
 
   const monthlyEMI = useMemo(() => vehicle ? calculateEMI(vehicle.price) : 0, [vehicle, calculateEMI]);
 
-  const toggleFavorite = useCallback(() => {
-    if (!vehicle) return;
-    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-    if (isFavorite) {
-      const newFavorites = favorites.filter((fav: string) => fav !== vehicle.name);
-      localStorage.setItem("favorites", JSON.stringify(newFavorites));
-      setIsFavorite(false);
-      toast({ title: "Removed from favorites", description: `${vehicle.name} has been removed from your favorites.` });
-    } else {
-      favorites.push(vehicle.name);
-      localStorage.setItem("favorites", JSON.stringify(favorites));
-      setIsFavorite(true);
-      toast({ title: "Added to favorites", description: `${vehicle.name} has been added to your favorites.` });
-    }
-    window.dispatchEvent(new Event("favorites-updated"));
-  }, [vehicle, isFavorite, toast]);
-
   useEffect(() => {
     setIsLoading(true);
     setError(null);
@@ -64,9 +46,6 @@ export const useVehicleData = () => {
         if (foundVehicle) {
           setVehicle(foundVehicle);
           document.title = `${foundVehicle.name} | Toyota UAE`;
-          
-          const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-          setIsFavorite(favorites.some((fav: string) => fav === foundVehicle.name));
         } else {
           setError(`Vehicle "${vehicleName}" not found`);
         }
@@ -85,10 +64,8 @@ export const useVehicleData = () => {
 
   return {
     vehicle,
-    isFavorite,
     galleryImages,
     monthlyEMI,
-    toggleFavorite,
     navigate,
     isLoading,
     error

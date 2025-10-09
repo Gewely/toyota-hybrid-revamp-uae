@@ -55,8 +55,6 @@ interface ActionPanelProps {
   onBookTestDrive: () => void;
   onCarBuilder: () => void;
   onFinanceCalculator: () => void;
-  isFavorite?: boolean; // deprecated
-  onToggleFavorite?: () => void; // deprecated
 }
 
 const ActionPanel: React.FC<ActionPanelProps> = ({
