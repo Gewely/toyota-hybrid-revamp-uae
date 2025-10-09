@@ -394,7 +394,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     : { type: "spring", stiffness: 260, damping: 20 };
 
   const navRef = useRef<HTMLElement | null>(null);
-  // ✅ Final adaptive bottom behavior for Safari & Chrome
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const nav = navRef.current;
@@ -402,44 +402,34 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     if (!nav || !vv) return;
 
     let raf: number | null = null;
-    let lastHeight = vv.height;
+    let baseHeight = vv.height;
 
-    const updateNavBottom = () => {
+    const updateNavState = () => {
+      if (!vv) return;
+      const h = nav.getBoundingClientRect().height;
+      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
+
+      const keyboardOpen = baseHeight - vv.height > 120;
       const offsetBottom = vv.height + vv.offsetTop - window.innerHeight;
       const safeInset =
         Number(
           getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-bottom").replace("px", ""),
         ) || 0;
-      const finalBottom = Math.max(0, offsetBottom + safeInset);
+
+      const finalBottom = keyboardOpen ? offsetBottom + safeInset : Math.max(0, offsetBottom + safeInset);
       document.documentElement.style.setProperty("--mobile-nav-bottom", `${finalBottom}px`);
     };
 
     const schedule = () => {
       if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(updateNavBottom);
+      raf = requestAnimationFrame(updateNavState);
     };
 
-    const handleResize = () => {
-      schedule();
+    const syncLoop = setInterval(updateNavState, 500);
 
-      // 🧠 Safari toolbar reappears → move nav up
-      if (vv.height > lastHeight + 40) {
-        setTimeout(() => {
-          document.documentElement.style.setProperty("--mobile-nav-bottom", "0px");
-        }, 300);
-      }
-
-      // 🧠 Safari toolbar hides → move nav down
-      if (vv.height < lastHeight - 40) {
-        setTimeout(updateNavBottom, 150);
-      }
-
-      lastHeight = vv.height;
-    };
-
-    vv.addEventListener("resize", handleResize);
+    vv.addEventListener("resize", schedule);
     vv.addEventListener("scroll", schedule);
-    vv.addEventListener?.("geometrychange", handleResize);
+    vv.addEventListener?.("geometrychange", schedule);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("scroll", schedule, { passive: true });
 
@@ -447,9 +437,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      vv.removeEventListener("resize", handleResize);
+      clearInterval(syncLoop);
+      vv.removeEventListener("resize", schedule);
       vv.removeEventListener("scroll", schedule);
-      vv.removeEventListener?.("geometrychange", handleResize);
+      vv.removeEventListener?.("geometrychange", schedule);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule);
     };
