@@ -353,60 +353,49 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // Measure nav height to set CSS var for safe content padding
-  // PERF: Throttled with RAF to prevent layout thrashing
-  const navRef = useRef<HTMLElement | null>(null);
- 
-  
-  // Track both nav height and viewport offset in one go
-const rafId = useRef<number | null>(null);
-const initialHeightRef = useRef<number>(0);
+  // Measure nav height once and update on major viewport changes (stable)
+const navRef = useRef<HTMLElement | null>(null);
 
-const updateNavMetrics = useCallback(() => {
-  if (rafId.current !== null) return;
+useEffect(() => {
+  const nav = navRef.current;
+  if (!nav) return;
 
-  rafId.current = requestAnimationFrame(() => {
-    // Update nav height
-    const h = navRef.current?.getBoundingClientRect().height;
+  // Update nav height as a CSS variable for spacing
+  const updateNavHeight = () => {
+    const h = nav.getBoundingClientRect().height;
     if (h) {
       document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
     }
-    
-    // VisualViewport tracking for browser chrome and keyboard
-    const vv = window.visualViewport;
-    if (vv) {
-      // Store initial height on first run
-      if (initialHeightRef.current === 0) {
-        initialHeightRef.current = vv.height;
-      }
-      
-      const currentHeight = vv.height;
-      const heightDiff = initialHeightRef.current - currentHeight;
-      
-      // Detect keyboard (IME) - if viewport shrinks by > 120px, keyboard is likely open
-      const isKeyboardOpen = heightDiff > 120;
-      
-      if (isKeyboardOpen) {
-        // Pin nav just above keyboard
-        const keyboardOffset = Math.max(0, window.innerHeight - currentHeight - vv.offsetTop);
-        document.documentElement.style.setProperty("--vv-bottom-offset", `${keyboardOffset}px`);
-      } else {
-        // Normal browser chrome show/hide
-        const offset = Math.max(0, vv.offsetTop);
-        document.documentElement.style.setProperty("--vv-bottom-offset", `${offset}px`);
-      }
-      
-      // Update visual viewport height for other components
-      document.documentElement.style.setProperty("--vvh", `${currentHeight}px`);
-    }
+  };
 
-    rafId.current = null;
-  });
+  // Track viewport height changes (throttled)
+  let prevHeight = window.innerHeight;
+  let frame: number | null = null;
+  const onResize = () => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      const diff = Math.abs(window.innerHeight - prevHeight);
+      if (diff > 50) {
+        document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+        prevHeight = window.innerHeight;
+      }
+      updateNavHeight();
+    });
+  };
+
+  // Run once on mount
+  document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+  updateNavHeight();
+
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", onResize);
+
+  return () => {
+    if (frame) cancelAnimationFrame(frame);
+    window.removeEventListener("resize", onResize);
+    window.removeEventListener("orientationchange", onResize);
+  };
 }, []);
-
-
-useEffect(() => {
-  updateNavMetrics();
 
   let resizeObserver: ResizeObserver | null = null;
   if (navRef.current && "ResizeObserver" in window) {
@@ -1403,10 +1392,13 @@ useEffect(() => {
     "fixed left-0 right-0 z-[100]",
     "mobile-force-visible backdrop-blur-xl"
   )}
-  style={{ 
-    bottom: "max(env(safe-area-inset-bottom), var(--vv-bottom-offset, 0px))",
-    transform: "translateZ(0)"
-  }}
+  style={{
+  bottom: "env(safe-area-inset-bottom)",
+  height: "auto",
+  transform: "translateZ(0)",
+  willChange: "transform",
+}}
+
   initial={{ y: 100, opacity: 0 }}
   animate={{ y: 0, opacity: 1 }}
   transition={reduceMotion ? { duration: 0.1 } : spring}

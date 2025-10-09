@@ -570,3 +570,16 @@
     transition-duration: 0.01ms !important;
   }
 }
+:root {
+  --vh: 1vh;
+  --mobile-nav-height: 64px;
+}
+
+body.has-mobile-nav {
+  padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+}
+
+.mobile-force-visible {
+  height: auto;
+  bottom: env(safe-area-inset-bottom);
+}
