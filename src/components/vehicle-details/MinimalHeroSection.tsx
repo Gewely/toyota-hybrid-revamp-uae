@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Settings, Calendar, ChevronLeft, ChevronRight, Share2, Maximize2 } from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
 import { useTouchGestures } from "@/hooks/use-touch-gestures";
 import { usePerformantIntersection } from "@/hooks/use-performant-intersection";
 
+/* ============================================================
+   Types
+============================================================ */
 export type MinimalHeroSectionProps = {
   vehicle?: VehicleModel & { tagline?: string };
   galleryImages: string[];
@@ -12,375 +15,410 @@ export type MinimalHeroSectionProps = {
   onCarBuilder?: () => void;
 };
 
+/* ============================================================
+   Theme
+============================================================ */
+const ACCENT = "#EB0A1E"; // Toyota red
+const EASE = [0.22, 0.61, 0.36, 1] as const;
+
+/* ============================================================
+   Component
+============================================================ */
 const MinimalHeroSection: React.FC<MinimalHeroSectionProps> = ({
   vehicle,
   galleryImages = [],
   onBookTestDrive,
   onCarBuilder,
 }) => {
+  const prefersReducedMotion = useReducedMotion();
+
+  // gallery state
   const [current, setCurrent] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [isZoomed, setIsZoomed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
-  const prefersReducedMotion = useReducedMotion();
-  const { targetRef, isIntersecting } = usePerformantIntersection({ threshold: 0.3 });
 
-  // Preload first 3 images
+  // pause autoplay off-screen
+  const { targetRef, isIntersecting } = usePerformantIntersection({ threshold: 0.35 });
+
+  // preload first few images
   useEffect(() => {
-    galleryImages.slice(0, 3).forEach((src, idx) => {
+    galleryImages.slice(0, 4).forEach((src, idx) => {
       const img = new Image();
       img.src = src;
-      img.onload = () => {
-        setImageLoaded(prev => ({ ...prev, [idx]: true }));
-      };
+      img.onload = () => setImageLoaded((p) => ({ ...p, [idx]: true }));
     });
   }, [galleryImages]);
 
-  // Auto-play with intersection observer optimization
+  // autoplay
   useEffect(() => {
     if (!autoPlay || !galleryImages.length || !isIntersecting) return;
-    const id = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % galleryImages.length);
-    }, 4500);
+    const id = setInterval(() => setCurrent((p) => (p + 1) % galleryImages.length), 4200);
     return () => clearInterval(id);
   }, [autoPlay, galleryImages.length, isIntersecting]);
 
   const handlePrevious = useCallback(() => {
     setAutoPlay(false);
-    setCurrent((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+    setCurrent((p) => (p - 1 + galleryImages.length) % galleryImages.length);
   }, [galleryImages.length]);
 
   const handleNext = useCallback(() => {
     setAutoPlay(false);
-    setCurrent((prev) => (prev + 1) % galleryImages.length);
+    setCurrent((p) => (p + 1) % galleryImages.length);
   }, [galleryImages.length]);
 
+  // swipe gestures (your hook)
   const touchHandlers = useTouchGestures({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
-    threshold: 60
+    threshold: 56,
   });
 
+  // share
   const handleShare = useCallback(async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${vehicle?.year} ${vehicle?.name}`,
-          text: vehicle?.tagline || "Check out this amazing vehicle",
-          url: window.location.href
-        });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
+    if (!navigator.share) return;
+    try {
+      await navigator.share({
+        title: `${vehicle?.year ?? ""} ${vehicle?.name ?? "Vehicle"}`.trim(),
+        text: vehicle?.tagline || "Check out this vehicle",
+        url: typeof window !== "undefined" ? window.location.href : undefined,
+      });
+    } catch {
+      /* cancelled */
     }
   }, [vehicle]);
 
-  const TOYOTA_RED = "hsl(0, 86%, 55%)";
+  // computed
+  const title = `${vehicle?.year ? vehicle.year + " " : ""}${vehicle?.name ?? "Toyota"}`;
+  const tagline = vehicle?.tagline ?? "Electrified performance. Everyday mastery.";
 
-  // Specs data
-  const specs = [
-    { label: "0–100 km/h", value: "3.2s" },
-    { label: "Range", value: "650 km" },
-    { label: "Power", value: "Dual Motor AWD" }
-  ];
+  // simple count-up for a single highlight spec (0–100)
+  const [countUp, setCountUp] = useState(0);
+  const [countDone, setCountDone] = useState(false);
+  useEffect(() => {
+    if (!isIntersecting || countDone) return;
+    let raf = 0;
+    const start = performance.now();
+    const duration = 1100; // ms
+    const target = 3.2; // seconds to 100 km/h
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / duration);
+      setCountUp(Number((p * target).toFixed(1)));
+      if (p < 1) raf = requestAnimationFrame(step);
+      else setCountDone(true);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [isIntersecting, countDone]);
+
+  // desktop parallax tilt
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!stageRef.current) return;
+    if (window.innerWidth < 1024) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    stageRef.current.style.transform = `perspective(1200px) rotateY(${x * 4}deg) rotateX(${-(y * 3)}deg)`;
+  };
+  const onMouseLeave = () => {
+    if (stageRef.current) stageRef.current.style.transform = "";
+  };
+
+  const specs = useMemo(
+    () => [
+      { label: "Range", value: "650 km" },
+      { label: "Drive", value: "Dual Motor AWD" },
+    ],
+    [],
+  );
 
   return (
-    <section 
-      ref={targetRef}
-      className="relative w-full bg-neutral-900 text-white overflow-hidden"
+    <section
+      ref={targetRef as React.RefObject<HTMLElement>}
+      className="relative w-full overflow-hidden"
+      style={{
+        // light, premium pastel backdrop (very subtle)
+        backgroundImage:
+          "radial-gradient(1200px 800px at 90% -10%, rgba(235,10,30,0.10), transparent), radial-gradient(900px 600px at 10% -20%, rgba(0,0,0,0.05), transparent)",
+        backgroundColor: "#fafafa",
+      }}
     >
-      {/* Mobile Layout */}
+      {/* ───────────────────────── MOBILE ───────────────────────── */}
       <div className="lg:hidden">
-        {/* Full-Screen Gallery */}
-        <div 
-          className="relative h-[75vh] overflow-hidden touch-pan-y"
-          {...touchHandlers}
-        >
-          <AnimatePresence mode="wait">
-            {galleryImages.length > 0 && (
-              <motion.div
-                key={current}
-                className="absolute inset-0"
-                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.08 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-                transition={{ duration: prefersReducedMotion ? 0.2 : 0.6, ease: [0.43, 0.13, 0.23, 0.96] }}
-              >
-                {/* Skeleton Loader */}
-                {!imageLoaded[current] && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900 animate-pulse" />
-                )}
-                <img
-                  src={galleryImages[current]}
-                  alt={`${vehicle?.name} - View ${current + 1}`}
-                  className="w-full h-full object-cover"
-                  loading={current < 3 ? "eager" : "lazy"}
-                  decoding="async"
-                  onLoad={() => setImageLoaded(prev => ({ ...prev, [current]: true }))}
-                />
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Floating Controls */}
-          <div className="absolute top-safe-area-inset-top top-4 left-4 right-4 flex justify-between items-start z-20">
-            <div className="flex gap-2">
-              {navigator.share && (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={handleShare}
-                  className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center"
-                  aria-label="Share"
-                >
-                  <Share2 className="w-5 h-5 text-white" />
-                </motion.button>
-              )}
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsZoomed(!isZoomed)}
-              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center"
-              aria-label="Toggle fullscreen"
-            >
-              <Maximize2 className="w-5 h-5 text-white" />
-            </motion.button>
-          </div>
-
-          {/* Navigation Arrows */}
-          <button
-            onClick={handlePrevious}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center z-20 active:scale-95 transition-transform"
-            aria-label="Previous image"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button
-            onClick={handleNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center z-20 active:scale-95 transition-transform"
-            aria-label="Next image"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-
-          {/* Animated Progress Bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20">
+        {/* Top bar */}
+        <div className="relative z-20 px-4 pt-4" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
+          <div className="flex items-center justify-between">
             <motion.div
-              className="h-full bg-white"
-              initial={{ width: 0 }}
-              animate={{ width: `${((current + 1) / galleryImages.length) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
+              whileTap={{ scale: 0.96 }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-black/10 text-[11px] font-semibold text-neutral-800 shadow-sm"
+            >
+              New
+            </motion.div>
+            <div className="flex items-center gap-2">
+              {"share" in navigator && (
+                <button
+                  onClick={handleShare}
+                  aria-label="Share"
+                  className="w-10 h-10 rounded-full bg-white/80 border border-black/10 grid place-items-center shadow-sm active:scale-95"
+                >
+                  <Share2 className="w-5 h-5 text-neutral-800" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsZoomed((s) => !s)}
+                aria-label="Fullscreen"
+                className="w-10 h-10 rounded-full bg-white/80 border border-black/10 grid place-items-center shadow-sm active:scale-95"
+              >
+                <Maximize2 className="w-5 h-5 text-neutral-800" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Content Panel with Gradient */}
-        <div className="relative px-5 py-6 bg-gradient-to-b from-black via-neutral-900 to-black">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+        {/* Stage */}
+        <div className="relative z-10 px-4 mt-3">
+          <div
+            ref={stageRef}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+            className={`relative w-full ${
+              isZoomed ? "h-[78vh]" : "h-[66vh]"
+            } rounded-3xl overflow-hidden border border-black/10 bg-white shadow-[0_20px_80px_-30px_rgba(0,0,0,0.35)]`}
+            {...touchHandlers}
           >
-            <h1 className="text-3xl sm:text-4xl font-bold leading-tight">
-              {vehicle?.year} {vehicle?.name || "Toyota GR Carbon"}
-            </h1>
-            <p className="mt-2 text-white/70 text-base leading-relaxed">
-              {vehicle?.tagline || "Electrified performance meets everyday usability"}
-            </p>
+            <AnimatePresence mode="wait">
+              {galleryImages.length ? (
+                <motion.img
+                  key={current}
+                  src={galleryImages[current]}
+                  alt={`${vehicle?.name ?? "Vehicle"} — ${current + 1}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1.02 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.0 }}
+                  transition={{ duration: prefersReducedMotion ? 0.2 : 0.9, ease: EASE }}
+                  onLoad={() => setImageLoaded((p) => ({ ...p, [current]: true }))}
+                  loading={current < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+              ) : (
+                <div className="absolute inset-0 grid place-items-center text-neutral-500">No images</div>
+              )}
+            </AnimatePresence>
 
-            {/* Spec Chips */}
-            <div className="flex gap-2 mt-5 flex-wrap">
-              {specs.map((spec, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm"
+            {/* bottom glow for depth */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0.0))]" />
+
+            {/* Arrows */}
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevious}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/85 border border-black/10 grid place-items-center shadow-sm active:scale-95"
+                  aria-label="Previous"
                 >
-                  <div className="text-xs text-white/60">{spec.label}</div>
-                  <div className="text-sm font-semibold">{spec.value}</div>
-                </motion.div>
+                  <ChevronLeft className="w-6 h-6 text-neutral-800" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/85 border border-black/10 grid place-items-center shadow-sm active:scale-95"
+                  aria-label="Next"
+                >
+                  <ChevronRight className="w-6 h-6 text-neutral-800" />
+                </button>
+              </>
+            )}
+
+            {/* Dots (fill style) */}
+            {galleryImages.length > 1 && (
+              <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-2">
+                {galleryImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setAutoPlay(false);
+                      setCurrent(i);
+                    }}
+                    aria-label={`Go to ${i + 1}`}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === current ? "w-8 bg-neutral-900" : "w-2.5 bg-neutral-300 hover:bg-neutral-400"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Info (title/tagline + single stat) */}
+        <div className="relative z-10 px-4 mt-5">
+          <div className="rounded-2xl border border-black/10 bg-white/85 backdrop-blur-md p-4 shadow-[0_15px_60px_-28px_rgba(0,0,0,0.35)]">
+            <h1 className="text-[32px] leading-[1.1] font-semibold text-neutral-900">{title}</h1>
+            <p className="mt-1 text-[15px] text-neutral-600">{tagline}</p>
+
+            {/* single highlight chip with count-up */}
+            <div className="mt-4 inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-neutral-200 bg-white text-neutral-800">
+              <span className="text-[11px] uppercase tracking-wide text-neutral-500">0–100 km/h</span>
+              <span className="text-sm font-semibold">{countUp.toFixed(1)}s</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Sticky CTA (safe-area aware) */}
+        <div
+          className="fixed left-0 right-0 bottom-0 z-30"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0px)" }}
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(255,255,255,0.96),rgba(255,255,255,0.65),transparent)]" />
+          <div className="relative mx-4 mb-4 mt-6 grid grid-cols-2 gap-2">
+            {onCarBuilder && (
+              <motion.button
+                whileHover={{ scale: 1.02, boxShadow: "0 18px 40px -18px rgba(235,10,30,0.6)" }}
+                whileTap={{ scale: 0.99 }}
+                onClick={onCarBuilder}
+                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white"
+                style={{ backgroundColor: ACCENT }}
+              >
+                <Settings className="w-5 h-5" />
+                Configure
+              </motion.button>
+            )}
+            <button
+              className="col-span-2 text-sm text-neutral-700 underline underline-offset-4 decoration-neutral-300 hover:decoration-neutral-500"
+              onClick={() => {
+                // anchor to specs section if you have one
+                const el = document.getElementById("specs");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              See specs →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ───────────────────────── DESKTOP ───────────────────────── */}
+      <div className="hidden lg:grid lg:grid-cols-[62%_38%] min-h-[92vh] items-stretch">
+        {/* Stage */}
+        <div className="relative p-10">
+          <div
+            ref={stageRef}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+            className={`relative rounded-3xl overflow-hidden border border-black/10 bg-white shadow-[0_40px_140px_-40px_rgba(0,0,0,0.35)] ${
+              isZoomed ? "h-[76vh]" : "h-[68vh]"
+            }`}
+            style={{ transformStyle: "preserve-3d", perspective: 1400 }}
+          >
+            <AnimatePresence mode="wait">
+              {galleryImages.length ? (
+                <motion.img
+                  key={current}
+                  src={galleryImages[current]}
+                  alt={`${vehicle?.name ?? "Vehicle"} — ${current + 1}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1.02 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.0 }}
+                  transition={{ duration: prefersReducedMotion ? 0.2 : 1.1, ease: EASE }}
+                  loading={current < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+              ) : (
+                <div className="absolute inset-0 grid place-items-center text-neutral-500">No images</div>
+              )}
+            </AnimatePresence>
+
+            {/* gradient lift */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0))]" />
+
+            {/* Arrows */}
+            {galleryImages.length > 1 && (
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-4">
+                <button
+                  onClick={handlePrevious}
+                  className="w-12 h-12 rounded-full bg-white/85 hover:bg-white/95 border border-black/10 grid place-items-center shadow-sm"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft className="w-6 h-6 text-neutral-800" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="w-12 h-12 rounded-full bg-white/85 hover:bg-white/95 border border-black/10 grid place-items-center shadow-sm"
+                  aria-label="Next"
+                >
+                  <ChevronRight className="w-6 h-6 text-neutral-800" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Dots */}
+          {galleryImages.length > 1 && (
+            <div className="mt-4 flex items-center gap-2">
+              {galleryImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setAutoPlay(false);
+                    setCurrent(i);
+                  }}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === current ? "w-10 bg-neutral-900" : "w-3 bg-neutral-300 hover:bg-neutral-400"
+                  }`}
+                  aria-label={`Go to ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right content */}
+        <div className="relative flex flex-col justify-center p-14 bg-[linear-gradient(180deg,#ffffff_0%,#fafafa_60%,#ffffff_100%)] border-l border-neutral-200">
+          <div className="max-w-md">
+            <h1 className="text-5xl font-semibold leading-[1.05] text-neutral-900">{title}</h1>
+            <p className="mt-3 text-lg text-neutral-600">{tagline}</p>
+
+            <div id="specs" className="mt-8 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4">
+                <div className="text-[11px] uppercase tracking-wide text-neutral-500">0–100 km/h</div>
+                <div className="mt-1 text-lg font-semibold text-neutral-900">{countUp.toFixed(1)}s</div>
+              </div>
+              {specs.map((s, i) => (
+                <div key={i} className="rounded-xl border border-neutral-200 bg-white p-4">
+                  <div className="text-[11px] uppercase tracking-wide text-neutral-500">{s.label}</div>
+                  <div className="mt-1 text-lg font-semibold text-neutral-900">{s.value}</div>
+                </div>
               ))}
             </div>
 
-            {/* CTAs */}
-            <div className="flex gap-3 mt-6">
+            <div className="mt-8 grid grid-cols-2 gap-3">
               {onCarBuilder && (
                 <motion.button
+                  whileHover={{ scale: 1.01, boxShadow: "0 22px 45px -22px rgba(235,10,30,0.6)" }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={onCarBuilder}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex-1 px-6 py-3.5 rounded-xl font-semibold text-sm shadow-lg active:shadow-md transition-shadow touch-manipulation"
-                  style={{ backgroundColor: TOYOTA_RED }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-4 font-semibold text-white"
+                  style={{ backgroundColor: ACCENT }}
                 >
-                  <Settings className="inline w-4 h-4 mr-2" />
-                  Configure
+                  <Settings className="w-5 h-5" />
+                  Build
                 </motion.button>
               )}
               {onBookTestDrive && (
                 <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                   onClick={onBookTestDrive}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex-1 px-6 py-3.5 rounded-xl bg-white/10 font-semibold text-sm border border-white/20 backdrop-blur-sm active:bg-white/15 transition-colors touch-manipulation"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-4 font-semibold border border-neutral-200 bg-white text-neutral-900"
                 >
-                  <Calendar className="inline w-4 h-4 mr-2" />
+                  <Calendar className="w-5 h-5" />
                   Test Drive
                 </motion.button>
               )}
             </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden lg:grid lg:grid-cols-[65%_35%] min-h-[90vh]">
-        {/* Image Gallery */}
-        <div className="relative overflow-hidden bg-neutral-950">
-          <AnimatePresence mode="wait">
-            {galleryImages.length > 0 && (
-              <motion.div
-                key={current}
-                className="absolute inset-0"
-                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.02 }}
-                transition={{ duration: prefersReducedMotion ? 0.2 : 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
-              >
-                <img
-                  src={galleryImages[current]}
-                  alt={`${vehicle?.name} - View ${current + 1}`}
-                  className="w-full h-full object-cover"
-                  loading={current < 3 ? "eager" : "lazy"}
-                  decoding="async"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-black/40" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Thumbnail Strip */}
-          <div className="absolute bottom-8 left-8 right-8 flex gap-3 overflow-x-auto scrollbar-hide">
-            {galleryImages.slice(0, 6).map((img, idx) => (
-              <motion.button
-                key={idx}
-                onClick={() => {
-                  setAutoPlay(false);
-                  setCurrent(idx);
-                }}
-                whileHover={{ scale: 1.05 }}
-                className={`flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                  current === idx ? 'border-white' : 'border-white/30 opacity-60 hover:opacity-100'
-                }`}
-              >
-                <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-              </motion.button>
-            ))}
           </div>
-
-          {/* Navigation */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-6 right-6 flex justify-between pointer-events-none">
-            <button
-              onClick={handlePrevious}
-              className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-black/70 transition-colors pointer-events-auto"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-black/70 transition-colors pointer-events-auto"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content Panel */}
-        <div className="flex flex-col justify-center px-16 py-20 bg-gradient-to-br from-black via-neutral-900 to-neutral-950">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            {/* Header Actions */}
-            <div className="flex gap-3 mb-8">
-              {navigator.share && (
-                <button
-                  onClick={handleShare}
-                  className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors"
-                >
-                  <Share2 className="w-5 h-5 text-white/70" />
-                </button>
-              )}
-            </div>
-
-            <h1 className="text-5xl font-bold leading-tight mb-4">
-              {vehicle?.year} {vehicle?.name || "Toyota GR Carbon"}
-            </h1>
-            <p className="text-xl text-white/70 leading-relaxed mb-8">
-              {vehicle?.tagline || "Electrified performance meets everyday usability"}
-            </p>
-
-            {/* Animated Spec Cards */}
-            <div className="space-y-3 mb-10">
-              {specs.map((spec, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + i * 0.1 }}
-                  className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  <span className="text-sm text-white/60">{spec.label}</span>
-                  <span className="text-lg font-semibold">{spec.value}</span>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* CTAs */}
-            <div className="flex flex-col gap-3">
-              {onCarBuilder && (
-                <motion.button
-                  onClick={onCarBuilder}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full px-8 py-4 rounded-xl font-semibold shadow-2xl hover:shadow-3xl transition-shadow"
-                  style={{ backgroundColor: TOYOTA_RED }}
-                >
-                  <Settings className="inline w-5 h-5 mr-2" />
-                  Configure Your Vehicle
-                </motion.button>
-              )}
-              {onBookTestDrive && (
-                <motion.button
-                  onClick={onBookTestDrive}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full px-8 py-4 rounded-xl bg-white/10 font-semibold border border-white/20 backdrop-blur-sm hover:bg-white/15 transition-colors"
-                >
-                  <Calendar className="inline w-5 h-5 mr-2" />
-                  Book a Test Drive
-                </motion.button>
-              )}
-            </div>
-
-            {/* Progress Indicator */}
-            <div className="flex items-center gap-2 mt-10">
-              {galleryImages.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setAutoPlay(false);
-                    setCurrent(idx);
-                  }}
-                  className={`h-1 rounded-full transition-all ${
-                    idx === current ? 'w-10 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'
-                  }`}
-                  aria-label={`Go to image ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </motion.div>
         </div>
       </div>
     </section>
