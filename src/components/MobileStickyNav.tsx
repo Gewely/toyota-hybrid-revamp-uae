@@ -371,6 +371,7 @@ useEffect(() => {
   // Track viewport height changes (throttled)
   let prevHeight = window.innerHeight;
   let frame: number | null = null;
+
   const onResize = () => {
     if (frame) cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
