@@ -41,8 +41,7 @@ const GR_TEXT = "#E6E7E9";
 const GR_MUTED = "#9DA2A6";
 
 const carbonMatte: React.CSSProperties = {
-  backgroundImage:
-    "url('/lovable-uploads/5dc5accb-0a25-49ca-a064-30844fa8836a.png')",
+  backgroundImage: "url('/lovable-uploads/5dc5accb-0a25-49ca-a064-30844fa8836a.png')",
   backgroundSize: "280px 280px",
   backgroundRepeat: "repeat",
   backgroundPosition: "center",
@@ -181,9 +180,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   useEffect(() => {
     const shouldShowNav = deviceInfo.isInitialized && (deviceInfo.isMobile || window.innerWidth <= 500);
     if (shouldShowNav) {
-      document.body.classList.add('has-mobile-nav');
+      document.body.classList.add("has-mobile-nav");
       return () => {
-        document.body.classList.remove('has-mobile-nav');
+        document.body.classList.remove("has-mobile-nav");
       };
     }
   }, [deviceInfo.isInitialized, deviceInfo.isMobile]);
@@ -204,13 +203,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     if (isGR && !userTouchedCategory) setSelectedCategory("performance");
   }, [isGR, userTouchedCategory]);
 
-  const fmt = useMemo(
-    () =>
-      new Intl.NumberFormat(
-        typeof navigator !== "undefined" ? navigator.language : "en-AE"
-      ),
-    []
-  );
+  const fmt = useMemo(() => new Intl.NumberFormat(typeof navigator !== "undefined" ? navigator.language : "en-AE"), []);
 
   // Scroll shrink
   useEffect(() => {
@@ -239,16 +232,13 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   const filteredVehicles = useMemo(
     () =>
-      vehicles
-        .filter((v) => selectedCategory === "all" || v.category.toLowerCase() === selectedCategory)
-        .slice(0, 12),
-    [selectedCategory]
+      vehicles.filter((v) => selectedCategory === "all" || v.category.toLowerCase() === selectedCategory).slice(0, 12),
+    [selectedCategory],
   );
 
   const searchResults = useMemo(
-    () =>
-      vehicles.filter((v) => v.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8),
-    [searchQuery]
+    () => vehicles.filter((v) => v.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8),
+    [searchQuery],
   );
 
   const filteredPreOwnedVehicles = useMemo(
@@ -258,17 +248,20 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         const priceMatch = v.price >= priceRange[0] && v.price <= priceRange[1];
         return categoryMatch && priceMatch;
       }),
-    [selectedCategory, priceRange]
+    [selectedCategory, priceRange],
   );
 
-  const handleSectionToggle = useCallback((section: string) => {
-    contextualHaptic.stepProgress();
-    if (navigationState.activeSection === section) {
-      navigationState.resetNavigation();
-    } else {
-      navigationState.setActiveSection(section);
-    }
-  }, [navigationState]);
+  const handleSectionToggle = useCallback(
+    (section: string) => {
+      contextualHaptic.stepProgress();
+      if (navigationState.activeSection === section) {
+        navigationState.resetNavigation();
+      } else {
+        navigationState.setActiveSection(section);
+      }
+    },
+    [navigationState],
+  );
 
   const handleCategoryClick = useCallback((id: string) => {
     contextualHaptic.buttonPress();
@@ -318,9 +311,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       if (navigator.share) {
         await navigator.share({
           title: `${vehicle.name} - Toyota UAE`,
-          text: `Check out this amazing ${vehicle.name} starting from AED ${fmt.format(
-            vehicle.price
-          )}`,
+          text: `Check out this amazing ${vehicle.name} starting from AED ${fmt.format(vehicle.price)}`,
           url: window.location.href,
         });
       } else {
@@ -354,77 +345,49 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     : { type: "spring", stiffness: 260, damping: 20 };
 
   // Measure nav height once and update on major viewport changes (stable)
-const navRef = useRef<HTMLElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
 
-useEffect(() => {
-  const nav = navRef.current;
-  if (!nav) return;
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
 
-  // Update nav height as a CSS variable for spacing
-  const updateNavHeight = () => {
-    const h = nav.getBoundingClientRect().height;
-    if (h) {
-      document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
-    }
-  };
-
-  // Track viewport height changes (throttled)
-  let prevHeight = window.innerHeight;
-  let frame: number | null = null;
-
-  const onResize = () => {
-    if (frame) cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(() => {
-      const diff = Math.abs(window.innerHeight - prevHeight);
-      if (diff > 50) {
-        document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
-        prevHeight = window.innerHeight;
+    // Update nav height as a CSS variable for spacing
+    const updateNavHeight = () => {
+      const h = nav.getBoundingClientRect().height;
+      if (h) {
+        document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(h)}px`);
       }
-      updateNavHeight();
-    });
-  };
+    };
 
-  // Run once on mount
-  document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
-  updateNavHeight();
+    // Track viewport height changes (throttled)
+    let prevHeight = window.innerHeight;
+    let frame: number | null = null;
 
-  window.addEventListener("resize", onResize);
-  window.addEventListener("orientationchange", onResize);
+    const onResize = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const diff = Math.abs(window.innerHeight - prevHeight);
+        if (diff > 50) {
+          document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+          prevHeight = window.innerHeight;
+        }
+        updateNavHeight();
+      });
+    };
 
-  return () => {
-    if (frame) cancelAnimationFrame(frame);
-    window.removeEventListener("resize", onResize);
-    window.removeEventListener("orientationchange", onResize);
-  };
-}, []);
+    // Run once on mount
+    document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+    updateNavHeight();
 
-  let resizeObserver: ResizeObserver | null = null;
-  if (navRef.current && "ResizeObserver" in window) {
-    resizeObserver = new ResizeObserver(updateNavMetrics);
-    resizeObserver.observe(navRef.current);
-  }
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
 
-  window.addEventListener("resize", updateNavMetrics, { passive: true });
-  window.addEventListener("orientationchange", updateNavMetrics, { passive: true });
-
-  const vv = window.visualViewport;
-  vv?.addEventListener("resize", updateNavMetrics);
-  vv?.addEventListener("scroll", updateNavMetrics);
-
-  return () => {
-    if (rafId.current !== null) cancelAnimationFrame(rafId.current);
-    resizeObserver?.disconnect();
-    window.removeEventListener("resize", updateNavMetrics);
-    window.removeEventListener("orientationchange", updateNavMetrics);
-    vv?.removeEventListener("resize", updateNavMetrics);
-    vv?.removeEventListener("scroll", updateNavMetrics);
-  };
-}, [updateNavMetrics]);
-
-
-
-
-
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
 
   const quickActionCards: Array<{
     id: string;
@@ -433,10 +396,34 @@ useEffect(() => {
     link: string;
     description: string;
   }> = [
-    { id: "test-drive", title: "Book Test Drive", icon: <Car className="h-7 w-7" />, link: "/test-drive", description: "Experience Toyota firsthand" },
-    { id: "offers", title: "Latest Offers", icon: <ShoppingBag className="h-7 w-7" />, link: "/offers", description: "Exclusive deals available" },
-    { id: "configure", title: "Build & Price", icon: <Settings className="h-7 w-7" />, link: "/configure", description: "Customize your Toyota" },
-    { id: "service", title: "Service Booking", icon: <Phone className="h-7 w-7" />, link: "/service", description: "Professional maintenance" },
+    {
+      id: "test-drive",
+      title: "Book Test Drive",
+      icon: <Car className="h-7 w-7" />,
+      link: "/test-drive",
+      description: "Experience Toyota firsthand",
+    },
+    {
+      id: "offers",
+      title: "Latest Offers",
+      icon: <ShoppingBag className="h-7 w-7" />,
+      link: "/offers",
+      description: "Exclusive deals available",
+    },
+    {
+      id: "configure",
+      title: "Build & Price",
+      icon: <Settings className="h-7 w-7" />,
+      link: "/configure",
+      description: "Customize your Toyota",
+    },
+    {
+      id: "service",
+      title: "Service Booking",
+      icon: <Phone className="h-7 w-7" />,
+      link: "/service",
+      description: "Professional maintenance",
+    },
   ];
 
   /**
@@ -539,10 +526,10 @@ useEffect(() => {
             "drop-shadow(0 6px 12px rgba(235,10,30,.35))",
             "drop-shadow(0 0 0 rgba(235,10,30,0))",
           ],
-          transition: { 
-            duration: 0.9, 
+          transition: {
+            duration: 0.9,
             times: [0, 0.5, 1],
-            ease: "easeInOut"
+            ease: "easeInOut",
           },
         },
   };
@@ -554,10 +541,10 @@ useEffect(() => {
       : {
           opacity: [0, 0.8, 0],
           scale: [1, 1.6, 2],
-          transition: { 
+          transition: {
             duration: 1.2,
             times: [0, 0.5, 1],
-            ease: "easeInOut"
+            ease: "easeInOut",
           },
         },
   };
@@ -592,7 +579,7 @@ useEffect(() => {
             className={cn(
               "fixed left-4 right-4 bottom-24 z-50 rounded-2xl shadow-2xl border",
               deviceInfo.deviceCategory === "smallMobile" ? "p-3" : "p-4",
-              isGR ? "" : "bg-white/95 backdrop-blur-xl border-gray-200/50"
+              isGR ? "" : "bg-white/95 backdrop-blur-xl border-gray-200/50",
             )}
             style={isGR ? carbonMatte : undefined}
             role="dialog"
@@ -601,9 +588,7 @@ useEffect(() => {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className={cn("font-bold", isGR ? "text-white" : "text-gray-900")}>
-                  {vehicle.name}
-                </h3>
+                <h3 className={cn("font-bold", isGR ? "text-white" : "text-gray-900")}>{vehicle.name}</h3>
                 <span className={cn("text-lg font-bold", isGR ? "text-red-400" : "text-gray-900 dark:text-gray-100")}>
                   AED {fmt.format(vehicle.price)}
                 </span>
@@ -615,7 +600,7 @@ useEffect(() => {
                 className={cn(
                   "p-2 rounded-full",
                   getTouchTargetSize(),
-                  isGR ? "border-neutral-700 text-neutral-200 hover:bg-neutral-800" : ""
+                  isGR ? "border-neutral-700 text-neutral-200 hover:bg-neutral-800" : "",
                 )}
                 aria-label="Collapse actions"
               >
@@ -634,7 +619,7 @@ useEffect(() => {
                   getTouchTargetSize(),
                   isGR
                     ? GR_BTN_PRIMARY
-                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
+                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
                 )}
               >
                 <Car className="h-4 w-4 mr-2" />
@@ -651,7 +636,7 @@ useEffect(() => {
                   getTouchTargetSize(),
                   isGR
                     ? GR_BTN_SURFACE
-                    : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-white/70"
+                    : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-white/70",
                 )}
               >
                 <Settings className="h-4 w-4 mr-2" />
@@ -669,7 +654,7 @@ useEffect(() => {
                 className={cn(
                   "w-full py-2 rounded-lg text-xs",
                   getTouchTargetSize(),
-                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70"
+                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70",
                 )}
               >
                 <Calculator className="h-4 w-4 mb-1" />
@@ -685,7 +670,7 @@ useEffect(() => {
                 className={cn(
                   "w-full py-2 rounded-lg text-xs",
                   getTouchTargetSize(),
-                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70"
+                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70",
                 )}
               >
                 <Download className="h-4 w-4 mb-1" />
@@ -701,7 +686,7 @@ useEffect(() => {
                 className={cn(
                   "w-full py-2 rounded-lg text-xs",
                   getTouchTargetSize(),
-                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70"
+                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70",
                 )}
               >
                 <Share2 className="h-4 w-4 mb-1" />
@@ -729,14 +714,12 @@ useEffect(() => {
             className={cn(
               "fixed bottom-16 left-0 right-0 rounded-t-3xl shadow-2xl z-50 overflow-hidden border-t",
               deviceInfo.deviceCategory === "smallMobile" ? "max-h-[70vh]" : "max-h-[80vh]",
-              isGR ? "border-[1px]" : "border-t-4"
+              isGR ? "border-[1px]" : "border-t-4",
             )}
             role="dialog"
             aria-modal="true"
             aria-label="Toyota Connect menu"
-            style={
-              isGR ? carbonMatte : { backgroundColor: "white", border: '1px solid #e5e7eb' }
-            }
+            style={isGR ? carbonMatte : { backgroundColor: "white", border: "1px solid #e5e7eb" }}
           >
             <div
               className="flex items-center justify-between p-4 border-b"
@@ -766,7 +749,7 @@ useEffect(() => {
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0B0C]",
                     isGR
                       ? "bg-[#1a1c1f] text-[#E6E7E9] hover:bg-[#16181A]"
-                      : "bg-gray-200/70 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                      : "bg-gray-200/70 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
                   )}
                   title="GR Mode"
                 >
@@ -780,7 +763,9 @@ useEffect(() => {
                   className={cn(
                     "rounded-full h-8 w-8 p-0",
                     getTouchTargetSize(),
-                    isGR ? "text-[#E6E7E9] hover:bg-[#16181A]" : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                    isGR
+                      ? "text-[#E6E7E9] hover:bg-[#16181A]"
+                      : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
                   )}
                   aria-label="Close menu"
                 >
@@ -800,7 +785,7 @@ useEffect(() => {
                   <h4
                     className={cn(
                       "text-lg font-semibold mb-4",
-                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200"
+                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200",
                     )}
                   >
                     Quick Actions
@@ -840,9 +825,7 @@ useEffect(() => {
                                   </div>
                                 </div>
                               ) : (
-                                <Card
-                                  className="h-32 overflow-hidden shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700"
-                                >
+                                <Card className="h-32 overflow-hidden shadow-lg hover:shadow-2xl transition-shadow bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
                                   <CardContent className="flex flex-col justify-between h-full p-4 text-white">
                                     <div className="flex items-start justify-between">
                                       <div className="space-y-1">
@@ -894,7 +877,7 @@ useEffect(() => {
                   <h4
                     className={cn(
                       "text-lg font-semibold mb-4",
-                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200"
+                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200",
                     )}
                   >
                     Browse Models
@@ -915,10 +898,10 @@ useEffect(() => {
                                   ? isGR
                                     ? "shadow-[0_0_0_1px_rgba(235,10,30,.5)]"
                                     : "text-white shadow-lg scale-105"
-                                   : isGR
-                                   ? "hover:bg-[#121416]"
-                                   : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
-                               )}
+                                  : isGR
+                                    ? "hover:bg-[#121416]"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700",
+                              )}
                               style={
                                 isGR
                                   ? {
@@ -927,8 +910,8 @@ useEffect(() => {
                                       border: `1px solid ${GR_EDGE}`,
                                     }
                                   : selectedCategory === category.id
-                                  ? { background: 'linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)' }
-                                  : undefined
+                                    ? { background: "linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)" }
+                                    : undefined
                               }
                               whileHover={reduceMotion ? {} : { scale: 1.05 }}
                               whileTap={reduceMotion ? {} : { scale: 0.95 }}
@@ -959,7 +942,10 @@ useEffect(() => {
                               whileTap={reduceMotion ? {} : { scale: 0.98 }}
                             >
                               {isGR ? (
-                                <div className="overflow-hidden rounded-2xl border" style={{ ...carbonMatte, borderColor: GR_EDGE }}>
+                                <div
+                                  className="overflow-hidden rounded-2xl border"
+                                  style={{ ...carbonMatte, borderColor: GR_EDGE }}
+                                >
                                   <div className="aspect-[16/10] w-full relative" style={carbonMatte}>
                                     {v.image && (
                                       <img
@@ -981,11 +967,18 @@ useEffect(() => {
                                     <div className="flex justify-between items-center">
                                       <span
                                         className="text-xs px-2 py-1 rounded-full font-medium"
-                                        style={{ backgroundColor: "#15171A", border: `1px solid ${GR_EDGE}`, color: GR_MUTED }}
+                                        style={{
+                                          backgroundColor: "#15171A",
+                                          border: `1px solid ${GR_EDGE}`,
+                                          color: GR_MUTED,
+                                        }}
                                       >
                                         {v.category}
                                       </span>
-                                      <span className="text-sm font-semibold flex items-center" style={{ color: GR_RED }}>
+                                      <span
+                                        className="text-sm font-semibold flex items-center"
+                                        style={{ color: GR_RED }}
+                                      >
                                         View <ChevronRight className="h-3 w-3 ml-1" />
                                       </span>
                                     </div>
@@ -995,12 +988,22 @@ useEffect(() => {
                                 <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl">
                                   <div className="aspect-[16/10] w-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
                                     {v.image && (
-                                      <img src={v.image} alt={v.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                      <img
+                                        src={v.image}
+                                        alt={v.name}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                      />
                                     )}
                                   </div>
                                   <CardContent className="p-4">
-                                    <h3 className="font-semibold text-base mb-1 text-gray-900 dark:text-gray-100">{v.name}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">From AED {fmt.format(v.price)}</p>
+                                    <h3 className="font-semibold text-base mb-1 text-gray-900 dark:text-gray-100">
+                                      {v.name}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                                      From AED {fmt.format(v.price)}
+                                    </p>
                                     <div className="flex justify-between items-center">
                                       <span className="text-xs bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded-full font-medium">
                                         {v.category}
@@ -1024,14 +1027,14 @@ useEffect(() => {
                       to={`/new-cars${selectedCategory !== "all" ? `?category=${selectedCategory}` : ""}`}
                       className={cn(
                         "font-semibold flex items-center justify-center rounded-lg",
-                        isGR ? "text-red-400 hover:text-red-300" : "text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300"
+                        isGR
+                          ? "text-red-400 hover:text-red-300"
+                          : "text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300",
                       )}
                       onClick={navigationState.resetNavigation}
                     >
                       View All{" "}
-                      {selectedCategory !== "all"
-                        ? vehicleCategories.find((c) => c.id === selectedCategory)?.name
-                        : ""}{" "}
+                      {selectedCategory !== "all" ? vehicleCategories.find((c) => c.id === selectedCategory)?.name : ""}{" "}
                       Models
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
@@ -1049,7 +1052,7 @@ useEffect(() => {
                   <h4
                     className={cn(
                       "text-lg font-semibold mb-4",
-                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200"
+                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200",
                     )}
                   >
                     Find Your Toyota
@@ -1059,7 +1062,7 @@ useEffect(() => {
                     <Search
                       className={cn(
                         "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4",
-                        isGR ? "text-neutral-400" : "text-gray-400"
+                        isGR ? "text-neutral-400" : "text-gray-400",
                       )}
                     />
                     <input
@@ -1071,7 +1074,7 @@ useEffect(() => {
                         "w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent",
                         isGR
                           ? "border-neutral-800 bg-neutral-950 text-white placeholder:text-neutral-500 focus:ring-red-700"
-                          : "border-gray-200 focus:ring-toyota-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          : "border-gray-200 focus:ring-toyota-red dark:bg-gray-800 dark:border-gray-700 dark:text-white",
                       )}
                       aria-label="Search vehicles"
                     />
@@ -1079,7 +1082,12 @@ useEffect(() => {
 
                   {searchQuery ? (
                     <div className="space-y-3">
-                      <h5 className={cn("text-sm font-medium", isGR ? "text-neutral-400" : "text-gray-600 dark:text-gray-400")}>
+                      <h5
+                        className={cn(
+                          "text-sm font-medium",
+                          isGR ? "text-neutral-400" : "text-gray-600 dark:text-gray-400",
+                        )}
+                      >
                         Search Results
                       </h5>
                       <Carousel opts={{ align: "start" }} className="w-full">
@@ -1093,9 +1101,15 @@ useEffect(() => {
                                 aria-label={`View ${v.name}`}
                               >
                                 {isGR ? (
-                                  <div className="h-24 overflow-hidden rounded-2xl border" style={{ ...carbonMatte, borderColor: GR_EDGE }}>
+                                  <div
+                                    className="h-24 overflow-hidden rounded-2xl border"
+                                    style={{ ...carbonMatte, borderColor: GR_EDGE }}
+                                  >
                                     <div className="flex items-center h-full p-4">
-                                      <div className="w-16 h-12 rounded-lg mr-3 flex-shrink-0 overflow-hidden" style={carbonMatte}>
+                                      <div
+                                        className="w-16 h-12 rounded-lg mr-3 flex-shrink-0 overflow-hidden"
+                                        style={carbonMatte}
+                                      >
                                         {v.image && (
                                           <img
                                             src={v.image}
@@ -1151,7 +1165,12 @@ useEffect(() => {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <h5 className={cn("text-sm font-medium", isGR ? "text-neutral-400" : "text-gray-600 dark:text-gray-400")}>
+                      <h5
+                        className={cn(
+                          "text-sm font-medium",
+                          isGR ? "text-neutral-400" : "text-gray-600 dark:text-gray-400",
+                        )}
+                      >
                         Popular Searches
                       </h5>
                       <Carousel opts={{ align: "start" }} className="w-full">
@@ -1164,7 +1183,7 @@ useEffect(() => {
                                   "flex items-center space-x-2 px-4 py-2 rounded-full transition-colors whitespace-nowrap",
                                   isGR
                                     ? "border border-neutral-800 bg-neutral-950 text-neutral-100 hover:bg-neutral-900"
-                                    : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                    : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700",
                                 )}
                                 aria-label={`Search ${s.term}`}
                               >
@@ -1190,7 +1209,7 @@ useEffect(() => {
                   <h4
                     className={cn(
                       "text-lg font-semibold mb-4",
-                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200"
+                      isGR ? "text-neutral-200" : "text-gray-800 dark:text-gray-200",
                     )}
                   >
                     Pre-Owned Vehicles
@@ -1210,8 +1229,8 @@ useEffect(() => {
                                     ? "shadow-[0_0_0_1px_rgba(235,10,30,.5)]"
                                     : "text-white shadow-lg scale-105"
                                   : isGR
-                                  ? "hover:bg-[#121416]"
-                                  : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                    ? "hover:bg-[#121416]"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700",
                               )}
                               style={
                                 isGR
@@ -1221,8 +1240,8 @@ useEffect(() => {
                                       border: `1px solid ${GR_EDGE}`,
                                     }
                                   : selectedCategory === category.id
-                                  ? { background: 'linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)' }
-                                  : undefined
+                                    ? { background: "linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)" }
+                                    : undefined
                               }
                               whileHover={{ scale: reduceMotion ? 1 : 1.05 }}
                               whileTap={{ scale: reduceMotion ? 1 : 0.95 }}
@@ -1243,7 +1262,12 @@ useEffect(() => {
                     style={isGR ? { ...carbonMatte, borderColor: GR_EDGE } : undefined}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h5 className={cn("text-sm font-medium", isGR ? "text-neutral-200" : "text-gray-700 dark:text-gray-300")}>
+                      <h5
+                        className={cn(
+                          "text-sm font-medium",
+                          isGR ? "text-neutral-200" : "text-gray-700 dark:text-gray-300",
+                        )}
+                      >
                         Price Range
                       </h5>
                       <span className={cn("text-sm", isGR ? "text-neutral-400" : "text-gray-500 dark:text-gray-400")}>
@@ -1261,7 +1285,10 @@ useEffect(() => {
                         onChange={(e) =>
                           setPriceRange([Math.min(parseInt(e.target.value, 10), priceRange[1]), priceRange[1]])
                         }
-                        className={cn("flex-1 h-2 rounded-lg appearance-none cursor-pointer", isGR ? "bg-neutral-800" : "bg-gray-200")}
+                        className={cn(
+                          "flex-1 h-2 rounded-lg appearance-none cursor-pointer",
+                          isGR ? "bg-neutral-800" : "bg-gray-200",
+                        )}
                         aria-label="Minimum price"
                       />
                       <input
@@ -1273,7 +1300,10 @@ useEffect(() => {
                         onChange={(e) =>
                           setPriceRange([priceRange[0], Math.max(parseInt(e.target.value, 10), priceRange[0])])
                         }
-                        className={cn("flex-1 h-2 rounded-lg appearance-none cursor-pointer", isGR ? "bg-neutral-800" : "bg-gray-200")}
+                        className={cn(
+                          "flex-1 h-2 rounded-lg appearance-none cursor-pointer",
+                          isGR ? "bg-neutral-800" : "bg-gray-200",
+                        )}
                         aria-label="Maximum price"
                       />
                     </div>
@@ -1289,11 +1319,23 @@ useEffect(() => {
                             aria-label={`View ${v.name}`}
                             className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-700 rounded-xl"
                           >
-                            <motion.div whileHover={{ scale: reduceMotion ? 1 : 1.02 }} whileTap={{ scale: reduceMotion ? 1 : 0.98 }}>
+                            <motion.div
+                              whileHover={{ scale: reduceMotion ? 1 : 1.02 }}
+                              whileTap={{ scale: reduceMotion ? 1 : 0.98 }}
+                            >
                               {isGR ? (
-                                <div className="overflow-hidden rounded-2xl border" style={{ ...carbonMatte, borderColor: GR_EDGE }}>
+                                <div
+                                  className="overflow-hidden rounded-2xl border"
+                                  style={{ ...carbonMatte, borderColor: GR_EDGE }}
+                                >
                                   <div className="aspect-[16/10] w-full relative" style={carbonMatte}>
-                                    <img src={v.image} alt={v.name} className="w-full h-full object-cover mix-blend-screen opacity-90" loading="lazy" decoding="async" />
+                                    <img
+                                      src={v.image}
+                                      alt={v.name}
+                                      className="w-full h-full object-cover mix-blend-screen opacity-90"
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
                                     <div className="absolute top-2 right-2">
                                       <span
                                         className="text-white px-2 py-1 rounded-full text-xs font-medium shadow-md"
@@ -1318,11 +1360,18 @@ useEffect(() => {
                                     <div className="flex justify-between items-center">
                                       <span
                                         className="text-xs px-2 py-1 rounded-full font-medium"
-                                        style={{ backgroundColor: "#15171A", border: `1px solid ${GR_EDGE}`, color: GR_MUTED }}
+                                        style={{
+                                          backgroundColor: "#15171A",
+                                          border: `1px solid ${GR_EDGE}`,
+                                          color: GR_MUTED,
+                                        }}
                                       >
                                         Certified Pre-Owned
                                       </span>
-                                      <span className="text-sm font-semibold flex items-center" style={{ color: GR_RED }}>
+                                      <span
+                                        className="text-sm font-semibold flex items-center"
+                                        style={{ color: GR_RED }}
+                                      >
                                         View <ChevronRight className="h-3 w-3 ml-1" />
                                       </span>
                                     </div>
@@ -1331,17 +1380,27 @@ useEffect(() => {
                               ) : (
                                 <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl">
                                   <div className="aspect-[16/10] w-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 relative">
-                                    <img src={v.image} alt={v.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                                     <div className="absolute top-2 right-2">
+                                    <img
+                                      src={v.image}
+                                      alt={v.name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                    <div className="absolute top-2 right-2">
                                       <span className="bg-gray-900 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
                                         {v.year}
                                       </span>
                                     </div>
                                   </div>
                                   <CardContent className="p-4">
-                                    <h3 className="font-semibold text-base mb-1 text-gray-900 dark:text-gray-100">{v.name}</h3>
+                                    <h3 className="font-semibold text-base mb-1 text-gray-900 dark:text-gray-100">
+                                      {v.name}
+                                    </h3>
                                     <div className="flex justify-between items-center mb-2">
-                                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">AED {fmt.format(v.price)}</p>
+                                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                                        AED {fmt.format(v.price)}
+                                      </p>
                                       <p className="text-xs text-gray-500 dark:text-gray-400">{v.mileage}</p>
                                     </div>
                                     <div className="flex justify-between items-center">
@@ -1367,14 +1426,14 @@ useEffect(() => {
                       to={`/pre-owned${selectedCategory !== "all" ? `?category=${selectedCategory}` : ""}`}
                       className={cn(
                         "font-semibold flex items-center justify-center rounded-lg",
-                        isGR ? "text-red-400 hover:text-red-300" : "text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300"
+                        isGR
+                          ? "text-red-400 hover:text-red-300"
+                          : "text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300",
                       )}
                       onClick={navigationState.resetNavigation}
                     >
                       View All Pre-Owned{" "}
-                      {selectedCategory !== "all"
-                        ? vehicleCategories.find((c) => c.id === selectedCategory)?.name
-                        : ""}{" "}
+                      {selectedCategory !== "all" ? vehicleCategories.find((c) => c.id === selectedCategory)?.name : ""}{" "}
                       Models
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Link>
@@ -1387,178 +1446,175 @@ useEffect(() => {
       </AnimatePresence>
 
       {/* Bottom Nav with ATTRACT on Actions */}
-     <motion.nav
-  ref={navRef}
-  className={cn(
-    "fixed left-0 right-0 z-[100]",
-    "mobile-force-visible backdrop-blur-xl"
-  )}
-  style={{
-  bottom: "env(safe-area-inset-bottom)",
-  height: "auto",
-  transform: "translateZ(0)",
-  willChange: "transform",
-}}
-
-  initial={{ y: 100, opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
-  transition={reduceMotion ? { duration: 0.1 } : spring}
->
-
-
+      <motion.nav
+        ref={navRef}
+        className={cn("fixed left-0 right-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
+        style={{
+          bottom: "env(safe-area-inset-bottom)",
+          height: "auto",
+          transform: "translateZ(0)",
+          willChange: "transform",
+        }}
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={reduceMotion ? { duration: 0.1 } : spring}
+      >
         <div
-        className={cn(
-          "rounded-t-2xl",
-          "py-0.5 sm:py-1"
-        )}
-  style={{
-    ...(isGR
-      ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
-      : { 
-          background: 'linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)',
-          boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)',
-          border: '1px solid rgba(200, 200, 200, 0.3)',
-          borderBottom: 'none'
-        })
-  }}
->
+          className={cn("rounded-t-2xl", "py-0.5 sm:py-1")}
+          style={{
+            ...(isGR
+              ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
+              : {
+                  background: "linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)",
+                  boxShadow: "0 -8px 32px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)",
+                  border: "1px solid rgba(200, 200, 200, 0.3)",
+                  borderBottom: "none",
+                }),
+          }}
+        >
+          <div
+            className={cn(
+              "grid items-center transition-all duration-500",
+              vehicle ? "grid-cols-5" : "grid-cols-4",
+              "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4",
+            )}
+          >
+            <NavItem
+              icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-4 w-4")} />}
+              label="Models"
+              to="#"
+              onClick={() => handleSectionToggle("models")}
+              isActive={activeItem === "models" || navigationState.activeSection === "models"}
+              isScrolled={isScrolled}
+              grMode={isGR}
+              deviceCategory={deviceInfo.deviceCategory}
+            />
+            <NavItem
+              icon={
+                <ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />
+              }
+              label="Pre-Owned"
+              to="#"
+              onClick={() => handleSectionToggle("pre-owned")}
+              isActive={activeItem === "pre-owned" || navigationState.activeSection === "pre-owned"}
+              isScrolled={isScrolled}
+              grMode={isGR}
+              deviceCategory={deviceInfo.deviceCategory}
+            />
 
-        <div
-  className={cn(
-    "grid items-center transition-all duration-500",
-    vehicle ? "grid-cols-5" : "grid-cols-4",
-    "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4"
-  )}
->
-          <NavItem
-            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-4 w-4")} />}
-            label="Models"
-            to="#"
-            onClick={() => handleSectionToggle("models")}
-            isActive={activeItem === "models" || navigationState.activeSection === "models"}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-          <NavItem
-            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
-            label="Pre-Owned"
-            to="#"
-            onClick={() => handleSectionToggle("pre-owned")}
-            isActive={activeItem === "pre-owned" || navigationState.activeSection === "pre-owned"}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-
-          {/* ACTIONS with attract animation + coachmark */}
-          {vehicle && (
-            <div className="relative">
-              {/* Coachmark bubble */}
-              <AnimatePresence>
-                {showCoachmark && !navigationState.isActionsExpanded && (
-                  <motion.div
-                    className={cn(
-                      "absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold shadow-lg",
-                      isGR ? "bg-[#16181A] text-neutral-100 border border-[#212428]" : "bg-white text-gray-900 border border-gray-200"
-                    )}
-                    variants={coachVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                  >
-                    Try Actions
-                    <div
+            {/* ACTIONS with attract animation + coachmark */}
+            {vehicle && (
+              <div className="relative">
+                {/* Coachmark bubble */}
+                <AnimatePresence>
+                  {showCoachmark && !navigationState.isActionsExpanded && (
+                    <motion.div
                       className={cn(
-                        "absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8",
-                        isGR ? "border-t-[#16181A] border-l-transparent border-r-transparent" : "border-t-white border-l-transparent border-r-transparent"
+                        "absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold shadow-lg",
+                        isGR
+                          ? "bg-[#16181A] text-neutral-100 border border-[#212428]"
+                          : "bg-white text-gray-900 border border-gray-200",
                       )}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      variants={coachVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                    >
+                      Try Actions
+                      <div
+                        className={cn(
+                          "absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8",
+                          isGR
+                            ? "border-t-[#16181A] border-l-transparent border-r-transparent"
+                            : "border-t-white border-l-transparent border-r-transparent",
+                        )}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-              <NavItem
-                icon={
-                  <motion.div
-                    className="relative"
-                    variants={attractVariants}
-                    animate={attractOn ? "attract" : "rest"}
-                  >
-                    {/* soft pulse halo */}
-                    <AnimatePresence>
-                      {attractOn && !reduceMotion && (
-                        <motion.span
-                          className="absolute inset-0 rounded-full"
-                          variants={pulseVariants}
-                          initial="hidden"
-                          animate="show"
-                          exit="hidden"
-                          style={{ background: "radial-gradient(closest-side, rgba(235,10,30,.25), rgba(235,10,30,0))" }}
-                        />
-                      )}
-                    </AnimatePresence>
+                <NavItem
+                  icon={
+                    <motion.div
+                      className="relative"
+                      variants={attractVariants}
+                      animate={attractOn ? "attract" : "rest"}
+                    >
+                      {/* soft pulse halo */}
+                      <AnimatePresence>
+                        {attractOn && !reduceMotion && (
+                          <motion.span
+                            className="absolute inset-0 rounded-full"
+                            variants={pulseVariants}
+                            initial="hidden"
+                            animate="show"
+                            exit="hidden"
+                            style={{
+                              background: "radial-gradient(closest-side, rgba(235,10,30,.25), rgba(235,10,30,0))",
+                            }}
+                          />
+                        )}
+                      </AnimatePresence>
 
-                    {/* Icon pill */}
-                   <div
-  className={cn(
-    "flex items-center justify-center rounded-full transition-transform",
-    "w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11"
-  )}
-  style={{ 
-    background: 'linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)',
-    boxShadow: `
+                      {/* Icon pill */}
+                      <div
+                        className={cn(
+                          "flex items-center justify-center rounded-full transition-transform",
+                          "w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11",
+                        )}
+                        style={{
+                          background: "linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)",
+                          boxShadow: `
       0 6px 20px rgba(235, 10, 30, 0.4),
       0 2px 8px rgba(0, 0, 0, 0.2),
       inset 0 2px 4px rgba(255, 255, 255, 0.3),
       inset 0 -2px 4px rgba(0, 0, 0, 0.2)
-    `
-  }}
->
-  <Bolt className="text-white w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-</div>
-
-                  </motion.div>
-                }
-                label=""
-                to="#"
-                onClick={() => {
-                  navigationState.setActionsExpanded(!navigationState.isActionsExpanded);
-                  // dismiss attract once opened
-                  if (!navigationState.isActionsExpanded) {
-                    setAttractOn(false);
-                    setShowCoachmark(false);
+    `,
+                        }}
+                      >
+                        <Bolt className="text-white w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                      </div>
+                    </motion.div>
                   }
-                }}
-                isActive={navigationState.isActionsExpanded}
-                isScrolled={isScrolled}
-                grMode={isGR}
-                deviceCategory={deviceInfo.deviceCategory}
-              />
-            </div>
-          )}
+                  label=""
+                  to="#"
+                  onClick={() => {
+                    navigationState.setActionsExpanded(!navigationState.isActionsExpanded);
+                    // dismiss attract once opened
+                    if (!navigationState.isActionsExpanded) {
+                      setAttractOn(false);
+                      setShowCoachmark(false);
+                    }
+                  }}
+                  isActive={navigationState.isActionsExpanded}
+                  isScrolled={isScrolled}
+                  grMode={isGR}
+                  deviceCategory={deviceInfo.deviceCategory}
+                />
+              </div>
+            )}
 
-          <NavItem
-            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
-            label="Search"
-            to="#"
-            onClick={() => handleSectionToggle("search")}
-            isActive={activeItem === "search" || navigationState.activeSection === "search"}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-          <NavItem
-            icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-4 w-4")} />}
-            label="Menu"
-            to="#"
-            onClick={toggleMenu}
-            isActive={navigationState.isMenuOpen}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-         </div>
+            <NavItem
+              icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
+              label="Search"
+              to="#"
+              onClick={() => handleSectionToggle("search")}
+              isActive={activeItem === "search" || navigationState.activeSection === "search"}
+              isScrolled={isScrolled}
+              grMode={isGR}
+              deviceCategory={deviceInfo.deviceCategory}
+            />
+            <NavItem
+              icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-4 w-4")} />}
+              label="Menu"
+              to="#"
+              onClick={toggleMenu}
+              isActive={navigationState.isMenuOpen}
+              isScrolled={isScrolled}
+              grMode={isGR}
+              deviceCategory={deviceInfo.deviceCategory}
+            />
+          </div>
         </div>
       </motion.nav>
     </>
@@ -1633,8 +1689,8 @@ const NavItem: React.FC<NavItemProps> = ({
                 ? "bg-[#141618] text-[#E6E7E9] scale-110 shadow-[inset_0_0_0_1px_#17191B]"
                 : "text-gray-900 bg-gray-100 dark:bg-gray-800 scale-110"
               : grMode
-              ? "text-[#E6E7E9] bg-[#101214] hover:bg-[#121416] shadow-[inset_0_0_0_1px_#17191B]"
-              : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                ? "text-[#E6E7E9] bg-[#101214] hover:bg-[#121416] shadow-[inset_0_0_0_1px_#17191B]"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300",
           )}
           animate={{
             minWidth: getIconSize(),
@@ -1647,19 +1703,19 @@ const NavItem: React.FC<NavItemProps> = ({
           aria-current={isActive ? "page" : undefined}
           style={{ WebkitTapHighlightColor: "transparent", minHeight: "44px", minWidth: "44px" }}
         >
-         {React.cloneElement(icon as React.ReactElement, {
-  className: cn(
-    "transition-transform duration-300",
-    "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
-  ),
-})}
+          {React.cloneElement(icon as React.ReactElement, {
+            className: cn("transition-transform duration-300", "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"),
+          })}
           {typeof badge === "number" && (
             <motion.div
               className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              style={{ background: grMode ? "#1F2124" : "linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)", border: grMode ? `1px solid ${GR_EDGE}` : undefined }}
+              style={{
+                background: grMode ? "#1F2124" : "linear-gradient(145deg, #2d2d2d 0%, #1a1a1a 100%)",
+                border: grMode ? `1px solid ${GR_EDGE}` : undefined,
+              }}
             >
               {badge > 9 ? "9+" : badge}
             </motion.div>
@@ -1668,15 +1724,14 @@ const NavItem: React.FC<NavItemProps> = ({
 
         {!isScrolled && label && (
           <span
-  className={cn(
-    "text-center font-medium mt-0.5 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
-    grMode ? (isActive ? "text-red-300" : "text-neutral-300") : "text-gray-900",
-    "text-[8px] sm:text-[9px] md:text-[10px]"
-  )}
->
-  {label}
-</span>
-        
+            className={cn(
+              "text-center font-medium mt-0.5 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+              grMode ? (isActive ? "text-red-300" : "text-neutral-300") : "text-gray-900",
+              "text-[8px] sm:text-[9px] md:text-[10px]",
+            )}
+          >
+            {label}
+          </span>
         )}
       </div>
     </>
