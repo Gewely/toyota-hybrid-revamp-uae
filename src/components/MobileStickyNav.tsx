@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Search,
@@ -236,7 +236,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   // Reset section on route change
   useEffect(() => {
     navigationState.resetNavigation();
-  }, [location.pathname]); // ✅ proper dependency
+  }, [location.pathname]);
 
   const filteredVehicles = useMemo(
     () =>
@@ -356,44 +356,63 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // VisualViewport-based height tracking
+  // VisualViewport-based height tracking (refresh-proof)
   const navRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
+
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const nav = navRef.current;
-    if (!nav) return;
 
     const setViewportVars = () => {
-      const vh = window.visualViewport ? window.visualViewport.height * 0.01 : window.innerHeight * 0.01;
+      const vv = window.visualViewport;
+      const vh = vv ? vv.height * 0.01 : window.innerHeight * 0.01;
       document.documentElement.style.setProperty("--vh", `${vh}px`);
-      document.documentElement.style.setProperty("--mobile-nav-height", `${nav.offsetHeight}px`);
 
-      const visualBottom = window.visualViewport
-        ? window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop
-        : 0;
+      const navHeight = nav?.offsetHeight ?? 0;
+      if (navHeight > 0) {
+        document.documentElement.style.setProperty("--mobile-nav-height", `${navHeight}px`);
+      }
+      const visualBottom = vv ? window.innerHeight - vv.height - vv.offsetTop : 0;
       document.documentElement.style.setProperty("--nav-offset", `${visualBottom}px`);
     };
 
-    setViewportVars();
-    const t1 = window.setTimeout(setViewportVars, 300);
-    const t2 = window.setTimeout(setViewportVars, 1000);
+    // Retry until nav reports a non-zero height (covers first-paint races on refresh)
+    let tries = 0;
+    const retryUntilStable = () => {
+      setViewportVars();
+      const navHeight = nav?.offsetHeight ?? 0;
+      if (navHeight === 0 && tries < 20) {
+        tries += 1;
+        requestAnimationFrame(retryUntilStable);
+      }
+    };
 
-    const handleUpdate = () => requestAnimationFrame(setViewportVars);
+    retryUntilStable();
 
-    window.visualViewport?.addEventListener("resize", handleUpdate);
-    window.visualViewport?.addEventListener("scroll", handleUpdate);
-    window.addEventListener("orientationchange", handleUpdate);
+    const onVVUpdate = () => requestAnimationFrame(setViewportVars);
+    const onLoadLike = () => requestAnimationFrame(retryUntilStable);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") onLoadLike();
+    };
+
+    window.visualViewport?.addEventListener("resize", onVVUpdate);
+    window.visualViewport?.addEventListener("scroll", onVVUpdate);
+    window.addEventListener("orientationchange", onVVUpdate);
+    window.addEventListener("load", onLoadLike);
+    window.addEventListener("pageshow", onLoadLike); // BFCache restore
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.visualViewport?.removeEventListener("resize", handleUpdate);
-      window.visualViewport?.removeEventListener("scroll", handleUpdate);
-      window.removeEventListener("orientationchange", handleUpdate);
+      window.visualViewport?.removeEventListener("resize", onVVUpdate);
+      window.visualViewport?.removeEventListener("scroll", onVVUpdate);
+      window.removeEventListener("orientationchange", onVVUpdate);
+      window.removeEventListener("load", onLoadLike);
+      window.removeEventListener("pageshow", onLoadLike);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
-  // Debug viewer for dynamic CSS variables (kept lightweight)
+  // Debug viewer for dynamic CSS variables (optional but handy)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const log = () => {
@@ -550,7 +569,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             )}
             style={{
               ...(isGR ? carbonMatte : undefined),
-              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px) + 8px)", // ✅ sits above nav
+              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px) + 8px)", // sits above nav
             }}
             role="dialog"
             aria-modal="true"
@@ -704,7 +723,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             aria-label="Toyota Connect menu"
             style={{
               ...(isGR ? carbonMatte : { backgroundColor: "white", border: "1px solid #e5e7eb" }),
-              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px))", // ✅ sits above nav
+              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px))",
             }}
           >
             <div
@@ -1289,7 +1308,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   </div>
 
                   <div
-                    className={cn("mb-6 p-4 rounded-xl", isGR ? "border" : "bg-gray-50 dark:bg-gray-800")}
+                    className={cn("mb-6 p-4 rounded-xl", isGR ? "border" : "bg-gray-50 dark:bg-gray-8 00")}
                     style={isGR ? { ...carbonMatte, borderColor: GR_EDGE } : undefined}
                   >
                     <div className="flex items-center justify-between mb-3">
@@ -1490,7 +1509,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       <motion.nav
         ref={navRef}
         className={cn("backdrop-blur-xl left-0 right-0 z-[200]", "fixed transition-transform duration-300")}
-        style={{ bottom: "calc(var(--nav-offset,0px))" }} // ✅ uses dynamic offset
+        style={{ bottom: "calc(var(--nav-offset,0px))" }} // uses dynamic offset
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={reduceMotion ? { duration: 0.1 } : spring}
