@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Search,
   Car,
@@ -31,10 +31,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
 
-const TOYOTA_RED = "#CC0000";
-const TOYOTA_GRADIENT = "linear-gradient(90deg, #EB0A1E, #CC0000, #8B0000)";
 const GR_RED = "#EB0A1E";
-const GR_SURFACE = "#0B0B0C";
 const GR_EDGE = "#17191B";
 const GR_TEXT = "#E6E7E9";
 const GR_MUTED = "#9DA2A6";
@@ -48,9 +45,9 @@ const carbonMatte: React.CSSProperties = {
 };
 
 const GR_BTN_PRIMARY =
-  "bg-gradient-to-b from-[#EB0A1E] to-[#B10D19] text-white shadow-[0_6px_18px_rgba(235,10,30,.25)] hover:from-[#FF2A3C] hover:to-[#D21320] focus-visible:ring-2 focus-visible:ring-red-600";
+  "bg-gradient-to-b from-[#EB0A1E] to-[#B10D19] text-white shadow-[0_6px_18px_rgba(235,10,30,.25)] hover:from-[#FF2A3C] hover:to-[#D21320] focus-visible:ring-2 focus-visible:ring-[#EB0A1E]";
 const GR_BTN_SURFACE =
-  "bg-[#111315] border border-[#17191B] text-[#E6E7E9] hover:bg-[#141618] focus-visible:ring-2 focus-visible:ring-red-700";
+  "bg-[#111315] border border-[#17191B] text-[#E6E7E9] hover:bg-[#141618] focus-visible:ring-2 focus-visible:ring-[#EB0A1E]";
 
 function useGRMode() {
   const initial = () => {
@@ -166,6 +163,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const deviceInfo = useOptimizedDeviceInfo();
   const { toast } = useToast();
   const navigationState = useNavigationState();
+  const location = useLocation();
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -177,6 +175,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   // Add body class when mobile nav is shown
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const shouldShowNav = deviceInfo.isInitialized && (deviceInfo.isMobile || window.innerWidth <= 500);
     if (shouldShowNav) {
       document.body.classList.add("has-mobile-nav");
@@ -194,7 +193,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     const apply = () => setReduceMotion(!!mq.matches);
     apply();
     mq.addEventListener?.("change", apply);
-    return () => mq.removeEventListener?.("change", apply);
+    mq.addListener?.(apply);
+    return () => {
+      mq.removeEventListener?.("change", apply);
+      mq.removeListener?.(apply);
+    };
   }, []);
 
   // GR preset for category
@@ -202,10 +205,17 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     if (isGR && !userTouchedCategory) setSelectedCategory("performance");
   }, [isGR, userTouchedCategory]);
 
-  const fmt = useMemo(() => new Intl.NumberFormat(typeof navigator !== "undefined" ? navigator.language : "en-AE"), []);
+  const fmt = useMemo(
+    () =>
+      new Intl.NumberFormat(typeof navigator !== "undefined" ? navigator.language : "en-AE", {
+        maximumFractionDigits: 0,
+      }),
+    [],
+  );
 
   // Scroll shrink
   useEffect(() => {
+    if (typeof window === "undefined") return;
     let ticking = false;
     const update = () => {
       const y = window.scrollY;
@@ -226,17 +236,18 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   // Reset section on route change
   useEffect(() => {
     navigationState.resetNavigation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [window.location.pathname]);
+  }, [location.pathname]); // ✅ proper dependency
 
   const filteredVehicles = useMemo(
     () =>
-      vehicles.filter((v) => selectedCategory === "all" || v.category.toLowerCase() === selectedCategory).slice(0, 12),
+      vehicles
+        .filter((v) => selectedCategory === "all" || (v.category ?? "").toLowerCase() === selectedCategory)
+        .slice(0, 12),
     [selectedCategory],
   );
 
   const searchResults = useMemo(
-    () => vehicles.filter((v) => v.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8),
+    () => vehicles.filter((v) => (v.name ?? "").toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8),
     [searchQuery],
   );
 
@@ -274,28 +285,30 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       navigationState.resetNavigation();
     } else {
       navigationState.setActiveSection("quick-actions");
+      navigationState.setMenuOpen(true);
     }
   }, [navigationState]);
 
-  const getCardBasis = () => {
+  // Helper: inline flex-basis (avoids Tailwind purge)
+  const getCardBasisStyle = (): React.CSSProperties => {
     switch (deviceInfo.deviceCategory) {
       case "smallMobile":
-        return "basis-4/5";
+        return { flexBasis: "80%" }; // 4/5
       case "standardMobile":
-        return "basis-2/3";
+        return { flexBasis: "66.6667%" }; // 2/3
       case "largeMobile":
       case "extraLargeMobile":
       case "tablet":
-        return "basis-1/2";
+        return { flexBasis: "50%" }; // 1/2
       default:
-        return "basis-2/3";
+        return { flexBasis: "66.6667%" };
     }
   };
 
   const getTouchTargetSize = () => {
     switch (deviceInfo.deviceCategory) {
       case "smallMobile":
-        return "min-h-[44px] min-w-[44px] p-2"; // Enhanced touch targets
+        return "min-h-[44px] min-w-[44px] p-2";
       case "standardMobile":
         return "min-h-[48px] min-w-[48px] p-2.5";
       default:
@@ -304,13 +317,13 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   };
 
   const handleShare = useCallback(async () => {
-    if (!vehicle) return;
+    if (!vehicle || typeof window === "undefined") return;
     contextualHaptic.buttonPress();
     try {
       if (navigator.share) {
         await navigator.share({
           title: `${vehicle.name} - Toyota UAE`,
-          text: `Check out this amazing ${vehicle.name} starting from AED ${fmt.format(vehicle.price)}`,
+          text: `Check out this ${vehicle.name} starting from AED ${fmt.format(vehicle.price)}`,
           url: window.location.href,
         });
       } else {
@@ -343,18 +356,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // ✅ FIXED: Robust visualViewport-based height tracking
+  // VisualViewport-based height tracking
   const navRef = useRef<HTMLElement | null>(null);
-  // ✅ Move nav to root (prevent parent overflow clipping)
   useEffect(() => {
-    const nav = navRef.current;
-    if (nav && nav.parentElement !== document.body) {
-      document.body.appendChild(nav);
-    }
-  }, []);
-
-  // ✅ FINAL SAFARI-PROOF VISUAL VIEWPORT FIX
-  useEffect(() => {
+    if (typeof window === "undefined") return;
     const nav = navRef.current;
     if (!nav) return;
 
@@ -363,97 +368,54 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       document.documentElement.style.setProperty("--vh", `${vh}px`);
       document.documentElement.style.setProperty("--mobile-nav-height", `${nav.offsetHeight}px`);
 
-      // dynamic offset when browser controls collapse
       const visualBottom = window.visualViewport
         ? window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop
         : 0;
       document.documentElement.style.setProperty("--nav-offset", `${visualBottom}px`);
     };
 
-    // 🔹 Run immediately + twice (to handle Safari delayed viewport paint)
     setViewportVars();
-    const t1 = setTimeout(setViewportVars, 300);
-    const t2 = setTimeout(setViewportVars, 1000);
+    const t1 = window.setTimeout(setViewportVars, 300);
+    const t2 = window.setTimeout(setViewportVars, 1000);
 
     const handleUpdate = () => requestAnimationFrame(setViewportVars);
 
     window.visualViewport?.addEventListener("resize", handleUpdate);
     window.visualViewport?.addEventListener("scroll", handleUpdate);
     window.addEventListener("orientationchange", handleUpdate);
-    window.addEventListener("focus", handleUpdate);
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
       window.visualViewport?.removeEventListener("resize", handleUpdate);
       window.visualViewport?.removeEventListener("scroll", handleUpdate);
       window.removeEventListener("orientationchange", handleUpdate);
-      window.removeEventListener("focus", handleUpdate);
     };
   }, []);
 
-  // STEP 4 — Debug viewer for dynamic CSS variables
+  // Debug viewer for dynamic CSS variables (kept lightweight)
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const log = () => {
       const styles = getComputedStyle(document.documentElement);
+      // eslint-disable-next-line no-console
       console.log({
         vh: styles.getPropertyValue("--vh"),
         navHeight: styles.getPropertyValue("--mobile-nav-height"),
+        navOffset: styles.getPropertyValue("--nav-offset"),
       });
     };
-
-    log(); // initial check
-    window.visualViewport?.addEventListener("resize", log);
-    return () => window.visualViewport?.removeEventListener("resize", log);
+    log();
+    const onResize = () => log();
+    window.visualViewport?.addEventListener("resize", onResize);
+    return () => window.visualViewport?.removeEventListener("resize", onResize);
   }, []);
 
-  const quickActionCards: Array<{
-    id: string;
-    title: string;
-    icon: React.ReactNode;
-    link: string;
-    description: string;
-  }> = [
-    {
-      id: "test-drive",
-      title: "Book Test Drive",
-      icon: <Car className="h-7 w-7" />,
-      link: "/test-drive",
-      description: "Experience Toyota firsthand",
-    },
-    {
-      id: "offers",
-      title: "Latest Offers",
-      icon: <ShoppingBag className="h-7 w-7" />,
-      link: "/offers",
-      description: "Exclusive deals available",
-    },
-    {
-      id: "configure",
-      title: "Build & Price",
-      icon: <Settings className="h-7 w-7" />,
-      link: "/configure",
-      description: "Customize your Toyota",
-    },
-    {
-      id: "service",
-      title: "Service Booking",
-      icon: <Phone className="h-7 w-7" />,
-      link: "/service",
-      description: "Professional maintenance",
-    },
-  ];
-
   /**
-   * --- ATTRACT ANIMATION FOR ACTIONS ---
-   * - idle-based trigger after 6s
-   * - up to 3 soft cycles, ~4s apart
-   * - cancels on any interaction or when actions/menu open
-   * - respects prefers-reduced-motion
+   * ATTRACT ANIMATION
    */
   const [attractOn, setAttractOn] = useState(false);
   const [showCoachmark, setShowCoachmark] = useState(false);
-  const [attractCycles, setAttractCycles] = useState(0);
 
   useEffect(() => {
     if (!deviceInfo.isInitialized || !deviceInfo.isMobile) return;
@@ -463,12 +425,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     let idleTimer: number | null = null;
     let cycleTimer: number | null = null;
     let interacted = false;
+    let cycles = 0;
 
     const reset = () => {
       interacted = true;
       setAttractOn(false);
       setShowCoachmark(false);
-      setAttractCycles(0);
       if (idleTimer) window.clearTimeout(idleTimer);
       if (cycleTimer) window.clearInterval(cycleTimer);
     };
@@ -477,21 +439,18 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       if (interacted) return;
       setShowCoachmark(true);
       setAttractOn(true);
-      setAttractCycles(1);
+      cycles = 1;
 
       cycleTimer = window.setInterval(() => {
-        setAttractCycles((c) => {
-          const next = c + 1;
-          if (next >= 3) {
-            if (cycleTimer) window.clearInterval(cycleTimer);
-            setAttractOn(false);
-            setShowCoachmark(false);
-          } else {
-            setAttractOn(false);
-            requestAnimationFrame(() => setAttractOn(true)); // retrigger
-          }
-          return next;
-        });
+        cycles += 1;
+        if (cycles >= 3) {
+          if (cycleTimer) window.clearInterval(cycleTimer);
+          setAttractOn(false);
+          setShowCoachmark(false);
+        } else {
+          setAttractOn(false);
+          requestAnimationFrame(() => setAttractOn(true));
+        }
       }, 4000);
     };
 
@@ -524,14 +483,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     navigationState.isMenuOpen,
   ]);
 
-  // Coachmark bubble variants
   const coachVariants = {
     hidden: { opacity: 0, y: 8, scale: 0.98 },
     visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 18 } },
     exit: { opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.15 } },
   };
 
-  // Attract nudge variants for the Actions icon button
   const attractVariants = {
     rest: { scale: 1, rotate: 0, filter: "drop-shadow(0 0 0 rgba(235,10,30,0))" },
     attract: reduceMotion
@@ -544,11 +501,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             "drop-shadow(0 6px 12px rgba(235,10,30,.35))",
             "drop-shadow(0 0 0 rgba(235,10,30,0))",
           ],
-          transition: {
-            duration: 0.9,
-            times: [0, 0.5, 1],
-            ease: "easeInOut",
-          },
+          transition: { duration: 0.9, times: [0, 0.5, 1], ease: "easeInOut" },
         },
   };
 
@@ -559,15 +512,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       : {
           opacity: [0, 0.8, 0],
           scale: [1, 1.6, 2],
-          transition: {
-            duration: 1.2,
-            times: [0, 0.5, 1],
-            ease: "easeInOut",
-          },
+          transition: { duration: 1.2, times: [0, 0.5, 1], ease: "easeInOut" },
         },
   };
 
-  // Early return AFTER all hooks have been called
   if (!shouldShowNav) return null;
 
   return (
@@ -582,6 +530,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             className="fixed inset-0 bg-black/60 z-40"
             onClick={navigationState.resetNavigation}
             style={{ WebkitTapHighlightColor: "transparent" }}
+            aria-hidden="true"
           />
         )}
       </AnimatePresence>
@@ -595,11 +544,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             exit={{ y: 300, opacity: 0 }}
             transition={reduceMotion ? { duration: 0.1 } : spring}
             className={cn(
-              "fixed left-4 right-4 bottom-24 z-50 rounded-2xl shadow-2xl border",
+              "fixed left-4 right-4 z-50 rounded-2xl shadow-2xl border",
               deviceInfo.deviceCategory === "smallMobile" ? "p-3" : "p-4",
               isGR ? "" : "bg-white/95 backdrop-blur-xl border-gray-200/50",
             )}
-            style={isGR ? carbonMatte : undefined}
+            style={{
+              ...(isGR ? carbonMatte : undefined),
+              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px) + 8px)", // ✅ sits above nav
+            }}
             role="dialog"
             aria-modal="true"
             aria-label="Vehicle quick actions"
@@ -612,6 +564,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 </span>
               </div>
               <Button
+                type="button"
                 onClick={() => navigationState.setActionsExpanded(false)}
                 variant="outline"
                 size="sm"
@@ -628,6 +581,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Button
+                type="button"
                 onClick={() => {
                   onBookTestDrive?.();
                   navigationState.setActionsExpanded(false);
@@ -637,7 +591,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   getTouchTargetSize(),
                   isGR
                     ? GR_BTN_PRIMARY
-                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground",
+                    : "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                 )}
               >
                 <Car className="h-4 w-4 mr-2" />
@@ -645,6 +599,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               </Button>
 
               <Button
+                type="button"
                 onClick={() => {
                   onCarBuilder?.();
                   navigationState.setActionsExpanded(false);
@@ -654,7 +609,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   getTouchTargetSize(),
                   isGR
                     ? GR_BTN_SURFACE
-                    : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-white/70",
+                    : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-white/70 focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                 )}
               >
                 <Settings className="h-4 w-4 mr-2" />
@@ -664,6 +619,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
             <div className="grid grid-cols-3 gap-2">
               <Button
+                type="button"
                 onClick={() => {
                   onFinanceCalculator?.();
                   navigationState.setActionsExpanded(false);
@@ -672,7 +628,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 className={cn(
                   "w-full py-2 rounded-lg text-xs",
                   getTouchTargetSize(),
-                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70",
+                  isGR
+                    ? GR_BTN_SURFACE
+                    : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70 focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                 )}
               >
                 <Calculator className="h-4 w-4 mb-1" />
@@ -680,6 +638,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               </Button>
 
               <Button
+                type="button"
                 onClick={() => {
                   handleBrochureDownload();
                   navigationState.setActionsExpanded(false);
@@ -688,7 +647,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 className={cn(
                   "w-full py-2 rounded-lg text-xs",
                   getTouchTargetSize(),
-                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70",
+                  isGR
+                    ? GR_BTN_SURFACE
+                    : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70 focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                 )}
               >
                 <Download className="h-4 w-4 mb-1" />
@@ -696,6 +657,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               </Button>
 
               <Button
+                type="button"
                 onClick={() => {
                   handleShare();
                   navigationState.setActionsExpanded(false);
@@ -704,8 +666,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 className={cn(
                   "w-full py-2 rounded-lg text-xs",
                   getTouchTargetSize(),
-                  isGR ? GR_BTN_SURFACE : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70",
+                  isGR
+                    ? GR_BTN_SURFACE
+                    : "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white/70 focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                 )}
+                aria-label="Share vehicle"
               >
                 <Share2 className="h-4 w-4 mb-1" />
                 Share
@@ -730,14 +695,17 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             exit={{ y: "100%" }}
             transition={reduceMotion ? { duration: 0.2 } : spring}
             className={cn(
-              "fixed bottom-16 left-0 right-0 rounded-t-3xl shadow-2xl z-50 overflow-hidden border-t",
+              "fixed left-0 right-0 rounded-t-3xl shadow-2xl z-50 overflow-hidden border-t",
               deviceInfo.deviceCategory === "smallMobile" ? "max-h-[70vh]" : "max-h-[80vh]",
               isGR ? "border-[1px]" : "border-t-4",
             )}
             role="dialog"
             aria-modal="true"
             aria-label="Toyota Connect menu"
-            style={isGR ? carbonMatte : { backgroundColor: "white", border: "1px solid #e5e7eb" }}
+            style={{
+              ...(isGR ? carbonMatte : { backgroundColor: "white", border: "1px solid #e5e7eb" }),
+              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px))", // ✅ sits above nav
+            }}
           >
             <div
               className="flex items-center justify-between p-4 border-b"
@@ -764,7 +732,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   className={cn(
                     "inline-flex items-center h-8 rounded-full px-3 text-xs font-semibold transition-colors",
                     getTouchTargetSize(),
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0B0C]",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                     isGR
                       ? "bg-[#1a1c1f] text-[#E6E7E9] hover:bg-[#16181A]"
                       : "bg-gray-200/70 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
@@ -775,6 +743,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 </button>
 
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={navigationState.resetNavigation}
@@ -792,7 +761,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               </div>
             </div>
 
-            <div className="overflow-y-auto max-h-[calc(75vh-100px)] scrollbar-hide">
+            <div className="overflow-y-auto">
               {navigationState.activeSection === "quick-actions" && (
                 <motion.div
                   className={cn("p-6", deviceInfo.deviceCategory === "smallMobile" && "p-4")}
@@ -811,13 +780,42 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
                   <Carousel opts={{ align: "start" }} className="w-full mb-6">
                     <CarouselContent>
-                      {quickActionCards.map((card) => (
-                        <CarouselItem key={card.id} className={cn("pl-4", getCardBasis())}>
+                      {[
+                        {
+                          id: "test-drive",
+                          title: "Book Test Drive",
+                          icon: <Car className="h-7 w-7" />,
+                          link: "/test-drive",
+                          description: "Experience Toyota firsthand",
+                        },
+                        {
+                          id: "offers",
+                          title: "Latest Offers",
+                          icon: <ShoppingBag className="h-7 w-7" />,
+                          link: "/offers",
+                          description: "Exclusive deals available",
+                        },
+                        {
+                          id: "configure",
+                          title: "Build & Price",
+                          icon: <Settings className="h-7 w-7" />,
+                          link: "/configure",
+                          description: "Customize your Toyota",
+                        },
+                        {
+                          id: "service",
+                          title: "Service Booking",
+                          icon: <Phone className="h-7 w-7" />,
+                          link: "/service",
+                          description: "Professional maintenance",
+                        },
+                      ].map((card) => (
+                        <CarouselItem key={card.id} className="pl-4" style={getCardBasisStyle()}>
                           <Link
                             to={card.link}
                             onClick={navigationState.resetNavigation}
                             aria-label={card.title}
-                            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-xl block"
+                            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EB0A1E] rounded-xl block"
                           >
                             <motion.div
                               whileHover={reduceMotion ? {} : { scale: 1.02 }}
@@ -867,7 +865,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
                   <div className="grid grid-cols-2 gap-3">
                     <Button
-                      className={cn("h-12 text-left justify-start", getTouchTargetSize(), isGR ? GR_BTN_SURFACE : "")}
+                      type="button"
+                      className={cn(
+                        "h-12 text-left justify-start",
+                        getTouchTargetSize(),
+                        isGR ? GR_BTN_SURFACE : "focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
+                      )}
                       onClick={() => handleSectionToggle("models")}
                     >
                       <Car className="h-4 w-4 mr-2" />
@@ -875,7 +878,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     </Button>
 
                     <Button
-                      className={cn("h-12 text-left justify-start", getTouchTargetSize(), isGR ? GR_BTN_SURFACE : "")}
+                      type="button"
+                      className={cn(
+                        "h-12 text-left justify-start",
+                        getTouchTargetSize(),
+                        isGR ? GR_BTN_SURFACE : "focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
+                      )}
                       onClick={() => handleSectionToggle("search")}
                     >
                       <Search className="h-4 w-4 mr-2" />
@@ -905,8 +913,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     <Carousel opts={{ align: "start" }} className="w-full">
                       <CarouselContent>
                         {vehicleCategories.map((category) => (
-                          <CarouselItem key={category.id} className="basis-auto pl-3">
+                          <CarouselItem key={category.id} className="pl-3" style={{ flexBasis: "auto" }}>
                             <motion.button
+                              type="button"
                               onClick={() => handleCategoryClick(category.id)}
                               className={cn(
                                 "flex flex-col items-center justify-center p-4 rounded-xl transition-all",
@@ -948,12 +957,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   <Carousel opts={{ align: "start" }} className="w-full">
                     <CarouselContent>
                       {filteredVehicles.map((v) => (
-                        <CarouselItem key={v.name} className={cn("pl-4", getCardBasis())}>
+                        <CarouselItem key={v.name} className="pl-4" style={getCardBasisStyle()}>
                           <Link
-                            to={`/vehicle/${encodeURIComponent(v.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                            to={`/vehicle/${encodeURIComponent((v.name ?? "").toLowerCase().replace(/\s+/g, "-"))}`}
                             onClick={navigationState.resetNavigation}
                             aria-label={`View ${v.name}`}
-                            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-xl block"
+                            className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EB0A1E] rounded-xl block"
                           >
                             <motion.div
                               whileHover={reduceMotion ? {} : { scale: 1.02 }}
@@ -972,6 +981,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                         className="w-full h-full object-cover mix-blend-screen opacity-90"
                                         loading="lazy"
                                         decoding="async"
+                                        sizes="(max-width: 640px) 66vw, (max-width: 768px) 50vw, 33vw"
                                       />
                                     )}
                                   </div>
@@ -1012,6 +1022,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                         decoding="async"
+                                        sizes="(max-width: 640px) 66vw, (max-width: 768px) 50vw, 33vw"
                                       />
                                     )}
                                   </div>
@@ -1076,7 +1087,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     Find Your Toyota
                   </h4>
 
-                  <div className="relative mb-6">
+                  <div className="relative mb-6" role="search">
                     <Search
                       className={cn(
                         "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4",
@@ -1089,10 +1100,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className={cn(
-                        "w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent",
+                        "w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent focus:ring-[#EB0A1E]",
                         isGR
-                          ? "border-neutral-800 bg-neutral-950 text-white placeholder:text-neutral-500 focus:ring-red-700"
-                          : "border-gray-200 focus:ring-toyota-red dark:bg-gray-800 dark:border-gray-700 dark:text-white",
+                          ? "border-neutral-800 bg-neutral-950 text-white placeholder:text-neutral-500"
+                          : "border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white",
                       )}
                       aria-label="Search vehicles"
                     />
@@ -1111,11 +1122,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       <Carousel opts={{ align: "start" }} className="w-full">
                         <CarouselContent>
                           {searchResults.map((v) => (
-                            <CarouselItem key={v.name} className="basis-2/3 pl-4">
+                            <CarouselItem key={v.name} className="pl-4" style={{ flexBasis: "66.6667%" }}>
                               <Link
-                                to={`/vehicle/${encodeURIComponent(v.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                                to={`/vehicle/${encodeURIComponent((v.name ?? "").toLowerCase().replace(/\s+/g, "-"))}`}
                                 onClick={navigationState.resetNavigation}
-                                className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-xl"
+                                className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EB0A1E] rounded-xl"
                                 aria-label={`View ${v.name}`}
                               >
                                 {isGR ? (
@@ -1194,11 +1205,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       <Carousel opts={{ align: "start" }} className="w-full">
                         <CarouselContent>
                           {searchSuggestions.map((s) => (
-                            <CarouselItem key={s.term} className="basis-auto pl-3">
+                            <CarouselItem key={s.term} className="pl-3" style={{ flexBasis: "auto" }}>
                               <button
+                                type="button"
                                 onClick={() => setSearchQuery(s.term)}
                                 className={cn(
-                                  "flex items-center space-x-2 px-4 py-2 rounded-full transition-colors whitespace-nowrap",
+                                  "flex items-center space-x-2 px-4 py-2 rounded-full transition-colors whitespace-nowrap focus-visible:ring-2 focus-visible:ring-[#EB0A1E]",
                                   isGR
                                     ? "border border-neutral-800 bg-neutral-950 text-neutral-100 hover:bg-neutral-900"
                                     : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700",
@@ -1237,8 +1249,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     <Carousel opts={{ align: "start" }} className="w-full">
                       <CarouselContent>
                         {vehicleCategories.map((category) => (
-                          <CarouselItem key={category.id} className="basis-auto pl-3">
+                          <CarouselItem key={category.id} className="pl-3" style={{ flexBasis: "auto" }}>
                             <motion.button
+                              type="button"
                               onClick={() => handleCategoryClick(category.id)}
                               className={cn(
                                 "flex flex-col items-center justify-center p-4 rounded-xl transition-all min-w-[80px]",
@@ -1293,8 +1306,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       </span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Sliders className="h-5 w-5" style={{ color: isGR ? GR_RED : TOYOTA_RED }} />
+                      <Sliders className="h-5 w-5" style={{ color: isGR ? GR_RED : "#CC0000" }} />
+                      <label className="sr-only" htmlFor="minPrice">
+                        Minimum price
+                      </label>
                       <input
+                        id="minPrice"
                         type="range"
                         min={30000}
                         max={300000}
@@ -1309,7 +1326,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                         )}
                         aria-label="Minimum price"
                       />
+                      <label className="sr-only" htmlFor="maxPrice">
+                        Maximum price
+                      </label>
                       <input
+                        id="maxPrice"
                         type="range"
                         min={30000}
                         max={300000}
@@ -1330,9 +1351,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   <Carousel opts={{ align: "start" }} className="w-full">
                     <CarouselContent>
                       {filteredPreOwnedVehicles.map((v) => (
-                        <CarouselItem key={v.name} className="basis-2/3 pl-4">
+                        <CarouselItem key={v.name} className="pl-4" style={{ flexBasis: "66.6667%" }}>
                           <Link
-                            to={`/pre-owned/${encodeURIComponent(v.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                            to={`/pre-owned/${encodeURIComponent((v.name ?? "").toLowerCase().replace(/\s+/g, "-"))}`}
                             onClick={navigationState.resetNavigation}
                             aria-label={`View ${v.name}`}
                             className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-700 rounded-xl"
@@ -1353,6 +1374,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                       className="w-full h-full object-cover mix-blend-screen opacity-90"
                                       loading="lazy"
                                       decoding="async"
+                                      sizes="(max-width: 640px) 66vw, (max-width: 768px) 50vw, 33vw"
                                     />
                                     <div className="absolute top-2 right-2">
                                       <span
@@ -1404,6 +1426,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                                       className="w-full h-full object-cover"
                                       loading="lazy"
                                       decoding="async"
+                                      sizes="(max-width: 640px) 66vw, (max-width: 768px) 50vw, 33vw"
                                     />
                                     <div className="absolute top-2 right-2">
                                       <span className="bg-gray-900 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
@@ -1463,16 +1486,15 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Bottom Nav with ATTRACT on Actions */}
+      {/* Bottom Nav */}
       <motion.nav
         ref={navRef}
-        className={cn(
-          "mobile-force-visible backdrop-blur-xl left-0 right-0 z-[200]",
-          "fixed transition-transform duration-300",
-        )}
+        className={cn("backdrop-blur-xl left-0 right-0 z-[200]", "fixed transition-transform duration-300")}
+        style={{ bottom: "calc(var(--nav-offset,0px))" }} // ✅ uses dynamic offset
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={reduceMotion ? { duration: 0.1 } : spring}
+        aria-label="Bottom navigation"
       >
         <div
           className={cn("rounded-t-2xl", "py-0.5 sm:py-1")}
@@ -1494,10 +1516,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4",
             )}
           >
+            {/* Use buttons for toggles (no fake links) */}
             <NavItem
+              asButton
               icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-4 w-4")} />}
               label="Models"
-              to="#"
               onClick={() => handleSectionToggle("models")}
               isActive={activeItem === "models" || navigationState.activeSection === "models"}
               isScrolled={isScrolled}
@@ -1505,11 +1528,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               deviceCategory={deviceInfo.deviceCategory}
             />
             <NavItem
+              asButton
               icon={
                 <ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />
               }
               label="Pre-Owned"
-              to="#"
               onClick={() => handleSectionToggle("pre-owned")}
               isActive={activeItem === "pre-owned" || navigationState.activeSection === "pre-owned"}
               isScrolled={isScrolled}
@@ -1543,12 +1566,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                             ? "border-t-[#16181A] border-l-transparent border-r-transparent"
                             : "border-t-white border-l-transparent border-r-transparent",
                         )}
+                        aria-hidden="true"
                       />
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <NavItem
+                  asButton
                   icon={
                     <motion.div
                       className="relative"
@@ -1567,11 +1592,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                             style={{
                               background: "radial-gradient(closest-side, rgba(235,10,30,.25), rgba(235,10,30,0))",
                             }}
+                            aria-hidden="true"
                           />
                         )}
                       </AnimatePresence>
-
-                      {/* Icon pill */}
                       <div
                         className={cn(
                           "flex items-center justify-center rounded-full transition-transform",
@@ -1579,23 +1603,17 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                         )}
                         style={{
                           background: "linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)",
-                          boxShadow: `
-      0 6px 20px rgba(235, 10, 30, 0.4),
-      0 2px 8px rgba(0, 0, 0, 0.2),
-      inset 0 2px 4px rgba(255, 255, 255, 0.3),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.2)
-    `,
+                          boxShadow:
+                            "0 6px 20px rgba(235, 10, 30, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.2)",
                         }}
                       >
                         <Bolt className="text-white w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                       </div>
                     </motion.div>
                   }
-                  label=""
-                  to="#"
+                  ariaLabel="Quick actions"
                   onClick={() => {
                     navigationState.setActionsExpanded(!navigationState.isActionsExpanded);
-                    // dismiss attract once opened
                     if (!navigationState.isActionsExpanded) {
                       setAttractOn(false);
                       setShowCoachmark(false);
@@ -1610,9 +1628,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             )}
 
             <NavItem
+              asButton
               icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
               label="Search"
-              to="#"
               onClick={() => handleSectionToggle("search")}
               isActive={activeItem === "search" || navigationState.activeSection === "search"}
               isScrolled={isScrolled}
@@ -1620,9 +1638,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               deviceCategory={deviceInfo.deviceCategory}
             />
             <NavItem
+              asButton
               icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-4 w-4")} />}
               label="Menu"
-              to="#"
               onClick={toggleMenu}
               isActive={navigationState.isMenuOpen}
               isScrolled={isScrolled}
@@ -1638,26 +1656,30 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
 interface NavItemProps {
   icon: React.ReactNode;
-  label: string;
-  to: string;
+  label?: string;
+  to?: string;
   isActive?: boolean;
   onClick?: () => void;
   badge?: number;
   isScrolled?: boolean;
   grMode?: boolean;
   deviceCategory?: string;
+  asButton?: boolean;
+  ariaLabel?: string;
 }
 
 const NavItem: React.FC<NavItemProps> = ({
   icon,
-  label,
-  to,
+  label = "",
+  to = "#",
   isActive = false,
   onClick,
   badge,
   isScrolled = false,
   grMode = false,
   deviceCategory = "standardMobile",
+  asButton = false,
+  ariaLabel,
 }) => {
   const getNavItemHeight = () => {
     if (isScrolled) {
@@ -1697,8 +1719,8 @@ const NavItem: React.FC<NavItemProps> = ({
       >
         <motion.div
           className={cn(
-            "p-2 rounded-xl transition-all relative touch-target duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center",
-            "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0B0C]",
+            "p-2 rounded-xl transition-all relative duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center",
+            "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EB0A1E]",
             isActive
               ? grMode
                 ? "bg-[#141618] text-[#E6E7E9] scale-110 shadow-[inset_0_0_0_1px_#17191B]"
@@ -1707,16 +1729,12 @@ const NavItem: React.FC<NavItemProps> = ({
                 ? "text-[#E6E7E9] bg-[#101214] hover:bg-[#121416] shadow-[inset_0_0_0_1px_#17191B]"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300",
           )}
-          animate={{
-            minWidth: getIconSize(),
-            minHeight: getIconSize(),
-            padding: isScrolled ? "6px" : "8px",
-          }}
+          animate={{ minWidth: getIconSize(), minHeight: getIconSize(), padding: isScrolled ? "6px" : "8px" }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           whileHover={{ scale: isActive ? 1.1 : 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-current={isActive ? "page" : undefined}
-          style={{ WebkitTapHighlightColor: "transparent", minHeight: "44px", minWidth: "44px" }}
+          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           {React.cloneElement(icon as React.ReactElement, {
             className: cn("transition-transform duration-300", "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"),
@@ -1752,12 +1770,14 @@ const NavItem: React.FC<NavItemProps> = ({
     </>
   );
 
-  if (onClick) {
+  if (asButton) {
     return (
       <button
+        type="button"
         onClick={onClick}
-        className="relative flex items-center justify-center px-1 py-1 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
+        className="relative flex items-center justify-center px-1 py-1 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg"
         style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
+        aria-label={ariaLabel || label || undefined}
       >
         {content}
       </button>
@@ -1767,9 +1787,10 @@ const NavItem: React.FC<NavItemProps> = ({
   return (
     <Link
       to={to}
-      className="relative flex items-center justify-center px-1 py-1 touch-target transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-700 rounded-lg"
+      className="relative flex items-center justify-center px-1 py-1 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg"
       style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
       aria-current={isActive ? "page" : undefined}
+      aria-label={ariaLabel || label || undefined}
     >
       {content}
     </Link>
