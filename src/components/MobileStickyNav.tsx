@@ -565,6 +565,80 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   // Early return AFTER all hooks have been called
   if (!shouldShowNav) return null;
+// ✅ FIXED VERSION — Portalized Bottom Nav (safe & stable)
+const navPortal = useMemo(() => {
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <motion.nav
+      ref={navRef}
+      className={cn(
+        "mobile-force-visible backdrop-blur-xl left-0 right-0 z-[200]",
+        "fixed transition-transform duration-300"
+      )}
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={reduceMotion ? { duration: 0.1 } : spring}
+    >
+      <div
+        className={cn("rounded-t-2xl", "py-0.5 sm:py-1")}
+        style={{
+          ...(isGR
+            ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
+            : {
+                background: "linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)",
+                boxShadow:
+                  "0 -8px 32px rgba(0,0,0,0.12), 0 -2px 8px rgba(0,0,0,0.08)",
+                border: "1px solid rgba(200,200,200,0.3)",
+                borderBottom: "none",
+              }),
+        }}
+      >
+        <div
+          className={cn(
+            "grid items-center transition-all duration-500",
+            vehicle ? "grid-cols-5" : "grid-cols-4",
+            "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4"
+          )}
+        >
+          <NavItem
+            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "h-4 w-4")} />}
+            label="Models"
+            onClick={() => handleSectionToggle("models")}
+            isActive={activeItem === "models" || navigationState.activeSection === "models"}
+            grMode={isGR}
+            deviceCategory={deviceInfo.deviceCategory}
+          />
+          <NavItem
+            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
+            label="Pre-Owned"
+            onClick={() => handleSectionToggle("pre-owned")}
+            isActive={activeItem === "pre-owned" || navigationState.activeSection === "pre-owned"}
+            grMode={isGR}
+            deviceCategory={deviceInfo.deviceCategory}
+          />
+          <NavItem
+            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
+            label="Search"
+            onClick={() => handleSectionToggle("search")}
+            isActive={activeItem === "search" || navigationState.activeSection === "search"}
+            grMode={isGR}
+            deviceCategory={deviceInfo.deviceCategory}
+          />
+          <NavItem
+            icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "h-4 w-4")} />}
+            label="Menu"
+            onClick={toggleMenu}
+            isActive={navigationState.isMenuOpen}
+            grMode={isGR}
+            deviceCategory={deviceInfo.deviceCategory}
+          />
+        </div>
+      </div>
+    </motion.nav>,
+    document.body
+  );
+}, [isGR, isScrolled, reduceMotion, vehicle, activeItem, navigationState.isMenuOpen, deviceInfo.deviceCategory]);
 
   return (
     <>
@@ -1459,92 +1533,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         )}
       </AnimatePresence>
 
-{/* ✅ Memoized Portalized Bottom Nav */}
-const navPortal = useMemo(() => {
-  return createPortal(
-    <motion.nav
-      ref={navRef}
-      className={cn(
-        "mobile-force-visible backdrop-blur-xl left-0 right-0 z-[200]",
-        "fixed transition-transform duration-300"
-      )}
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={reduceMotion ? { duration: 0.1 } : spring}
-    >
-      <div
-        className={cn("rounded-t-2xl", "py-0.5 sm:py-1")}
-        style={{
-          ...(isGR
-            ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
-            : {
-                background: "linear-gradient(180deg, #f8f8f8 0%, #ececec 100%)",
-                boxShadow: "0 -8px 32px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)",
-                border: "1px solid rgba(200, 200, 200, 0.3)",
-                borderBottom: "none",
-              }),
-        }}
-      >
-        <div
-          className={cn(
-            "grid items-center transition-all duration-500",
-            vehicle ? "grid-cols-5" : "grid-cols-4",
-            "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4"
-          )}
-        >
-          <NavItem
-            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-4 w-4")} />}
-            label="Models"
-            to="#"
-            onClick={() => handleSectionToggle("models")}
-            isActive={activeItem === "models" || navigationState.activeSection === "models"}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-          <NavItem
-            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
-            label="Pre-Owned"
-            to="#"
-            onClick={() => handleSectionToggle("pre-owned")}
-            isActive={activeItem === "pre-owned" || navigationState.activeSection === "pre-owned"}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-          <NavItem
-            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
-            label="Search"
-            to="#"
-            onClick={() => handleSectionToggle("search")}
-            isActive={activeItem === "search" || navigationState.activeSection === "search"}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-          <NavItem
-            icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-4 w-4")} />}
-            label="Menu"
-            to="#"
-            onClick={toggleMenu}
-            isActive={navigationState.isMenuOpen}
-            isScrolled={isScrolled}
-            grMode={isGR}
-            deviceCategory={deviceInfo.deviceCategory}
-          />
-        </div>
-      </div>
-    </motion.nav>,
-    document.body
-  );
-}, [isGR, isScrolled, reduceMotion, vehicle, activeItem, navigationState.isMenuOpen, deviceInfo.deviceCategory]);
 
-// 👇 finally render it
-return (
-  <>
-    {navPortal}
-  </>
-);
 
 
                 </AnimatePresence>
