@@ -571,15 +571,24 @@
   }
 }
 :root {
+  /* Dynamic viewport height for mobile browsers */
   --vh: 1vh;
   --mobile-nav-height: 64px;
 }
 
+/* Ensures main content never hides under nav, even when browser controls change */
 body.has-mobile-nav {
-  padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--mobile-nav-height, 80px) + env(safe-area-inset-bottom, 0px)) !important;
 }
 
+/* Force nav to respect safe area and stick correctly */
 .mobile-force-visible {
-  height: auto;
-  bottom: env(safe-area-inset-bottom);
+  position: fixed !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 0px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 100 !important;
+  height: auto !important;
+  transform: translateZ(0);
+  will-change: transform;
 }
