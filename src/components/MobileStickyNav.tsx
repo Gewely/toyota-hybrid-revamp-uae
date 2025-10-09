@@ -353,6 +353,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     }
   }, []);
 
+  // ✅ FINAL SAFARI-PROOF VISUAL VIEWPORT FIX
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
@@ -360,34 +361,37 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     const setViewportVars = () => {
       const vh = window.visualViewport ? window.visualViewport.height * 0.01 : window.innerHeight * 0.01;
       document.documentElement.style.setProperty("--vh", `${vh}px`);
+      document.documentElement.style.setProperty("--mobile-nav-height", `${nav.offsetHeight}px`);
 
-      const navHeight = nav.getBoundingClientRect().height;
-      if (navHeight) {
-        document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(navHeight)}px`);
-      }
+      // dynamic offset when browser controls collapse
+      const visualBottom = window.visualViewport
+        ? window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop
+        : 0;
+      document.documentElement.style.setProperty("--nav-offset", `${visualBottom}px`);
     };
 
-    // 🔹 Run immediately
+    // 🔹 Run immediately + twice (to handle Safari delayed viewport paint)
     setViewportVars();
+    const t1 = setTimeout(setViewportVars, 300);
+    const t2 = setTimeout(setViewportVars, 1000);
 
-    // 🔹 Run again after 400ms to fix delayed visualViewport hydration on Safari
-    const timeout = setTimeout(setViewportVars, 400);
+    const handleUpdate = () => requestAnimationFrame(setViewportVars);
 
-    // 🔹 Watch all relevant viewport events
-    const handleResize = () => requestAnimationFrame(setViewportVars);
-    window.visualViewport?.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
-    window.addEventListener("scroll", handleResize, { passive: true });
-    window.addEventListener("focus", setViewportVars);
+    window.visualViewport?.addEventListener("resize", handleUpdate);
+    window.visualViewport?.addEventListener("scroll", handleUpdate);
+    window.addEventListener("orientationchange", handleUpdate);
+    window.addEventListener("focus", handleUpdate);
 
     return () => {
-      clearTimeout(timeout);
-      window.visualViewport?.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleResize);
-      window.removeEventListener("scroll", handleResize);
-      window.removeEventListener("focus", setViewportVars);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.visualViewport?.removeEventListener("resize", handleUpdate);
+      window.visualViewport?.removeEventListener("scroll", handleUpdate);
+      window.removeEventListener("orientationchange", handleUpdate);
+      window.removeEventListener("focus", handleUpdate);
     };
   }, []);
+
   // STEP 4 — Debug viewer for dynamic CSS variables
   useEffect(() => {
     const log = () => {
