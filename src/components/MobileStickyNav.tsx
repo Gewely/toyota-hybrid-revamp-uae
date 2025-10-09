@@ -344,14 +344,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // Measure nav height once and update on major viewport changes (stable)
+  // ✅ FIXED: Robust visualViewport-based height tracking
   const navRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
 
-    const setHeights = () => {
+    const setViewportVars = () => {
       const vh = window.visualViewport ? window.visualViewport.height * 0.01 : window.innerHeight * 0.01;
       document.documentElement.style.setProperty("--vh", `${vh}px`);
 
@@ -361,28 +361,25 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       }
     };
 
-    setHeights();
+    // 🔹 Run immediately
+    setViewportVars();
 
-    let timeout: number | null = null;
-    const handleResize = () => {
-      if (timeout) window.clearTimeout(timeout);
-      timeout = window.setTimeout(setHeights, 150);
-    };
+    // 🔹 Run again after 400ms to fix delayed visualViewport hydration on Safari
+    const timeout = setTimeout(setViewportVars, 400);
 
-    // Use visualViewport instead of window for more accurate height tracking
+    // 🔹 Watch all relevant viewport events
+    const handleResize = () => requestAnimationFrame(setViewportVars);
     window.visualViewport?.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", setHeights);
-    window.addEventListener("scroll", setHeights);
-
-    // Fix for mobile browsers refreshing at wrong scroll position
-    window.addEventListener("focus", setHeights);
+    window.addEventListener("orientationchange", handleResize);
+    window.addEventListener("scroll", handleResize, { passive: true });
+    window.addEventListener("focus", setViewportVars);
 
     return () => {
-      if (timeout) window.clearTimeout(timeout);
+      clearTimeout(timeout);
       window.visualViewport?.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", setHeights);
-      window.removeEventListener("scroll", setHeights);
-      window.removeEventListener("focus", setHeights);
+      window.removeEventListener("orientationchange", handleResize);
+      window.removeEventListener("scroll", handleResize);
+      window.removeEventListener("focus", setViewportVars);
     };
   }, []);
 
@@ -1447,7 +1444,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         ref={navRef}
         className={cn("fixed left-0 right-0 z-[100]", "mobile-force-visible backdrop-blur-xl")}
         style={{
-          bottom: "calc(env(safe-area-inset-bottom) + 0px)",
+          bottom: "env(safe-area-inset-bottom)",
+          height: "auto",
           transform: "translateZ(0)",
           willChange: "transform",
         }}
