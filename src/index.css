@@ -588,7 +588,7 @@ body.has-mobile-nav {
   left: 0 !important;
   right: 0 !important;
   z-index: 100 !important;
-  height: auto !important;
+  height: fixed !important;
   transform: translateZ(0);
   will-change: transform;
 }
