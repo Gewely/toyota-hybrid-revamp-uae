@@ -30,6 +30,12 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
+useEffect(() => {
+  const nav = navRef.current;
+  if (nav && nav.parentElement !== document.body) {
+    document.body.appendChild(nav); // moves it directly under <body>
+  }
+}, []);
 
 const TOYOTA_RED = "#CC0000";
 const TOYOTA_GRADIENT = "linear-gradient(90deg, #EB0A1E, #CC0000, #8B0000)";
@@ -1457,7 +1463,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       <motion.nav
         ref={navRef}
         className={cn(
-          "mobile-force-visible backdrop-blur-xl left-0 right-0 z-[100]",
+          "mobile-force-visible backdrop-blur-xl left-0 right-0 z-[200]",
           "fixed transition-transform duration-300",
         )}
         initial={{ y: 100, opacity: 0 }}
