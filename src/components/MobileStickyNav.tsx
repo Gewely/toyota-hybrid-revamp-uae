@@ -30,16 +30,9 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
-useEffect(() => {
-  const nav = navRef.current;
-  if (nav && nav.parentElement !== document.body) {
-    document.body.appendChild(nav); // moves it directly under <body>
-  }
-}, []);
 
 const TOYOTA_RED = "#CC0000";
 const TOYOTA_GRADIENT = "linear-gradient(90deg, #EB0A1E, #CC0000, #8B0000)";
-
 const GR_RED = "#EB0A1E";
 const GR_SURFACE = "#0B0B0C";
 const GR_EDGE = "#17191B";
@@ -352,6 +345,13 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   // ✅ FIXED: Robust visualViewport-based height tracking
   const navRef = useRef<HTMLElement | null>(null);
+  // ✅ Move nav to root (prevent parent overflow clipping)
+  useEffect(() => {
+    const nav = navRef.current;
+    if (nav && nav.parentElement !== document.body) {
+      document.body.appendChild(nav);
+    }
+  }, []);
 
   useEffect(() => {
     const nav = navRef.current;
