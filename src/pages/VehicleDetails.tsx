@@ -7,7 +7,7 @@ import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonMo
 
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
-import MinimalHeroSection from "@/components/vehicle-details/MinimalHeroSection";
+import PremiumHeroSection from "@/components/vehicle-details/PremiumHeroSection";
 import EngineGradeSelection from "@/components/vehicle-details/EngineGradeSelection";
 import VehicleModals from "@/components/vehicle-details/VehicleModals";
 // import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation"; // Removed
@@ -248,7 +248,7 @@ const VehicleDetails = () => {
         <div id="main-content">
           <PerformanceErrorBoundary fallback={<HeroSkeleton />}>
             <section id="hero">
-              <MinimalHeroSection
+              <PremiumHeroSection
                 vehicle={vehicle}
                 galleryImages={galleryImages}
                 onBookTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
