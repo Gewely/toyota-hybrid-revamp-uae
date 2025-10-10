@@ -58,12 +58,16 @@ const SeamlessCinematicShowroom = createLazyComponent(
   () => import("@/components/vehicle-details/SeamlessCinematicShowroom")
 );
 
-const VirtualShowroom = createLazyComponent(
-  () => import("@/components/vehicle-details/VirtualShowroom")
+const PremiumVirtualShowroom = createLazyComponent(
+  () => import("@/components/vehicle-details/PremiumVirtualShowroom")
 );
 
 const PreOwnedSimilar = createLazyComponent(
   () => import("@/components/vehicle-details/PreOwnedSimilar")
+);
+
+const SectionNavPanel = createLazyComponent(
+  () => import("@/components/nav/SectionNavPanel")
 );
 
 // Remove PremiumGallery as it's replaced by Spiral3DGallery
@@ -288,7 +292,7 @@ const VehicleDetails = () => {
 
                   {/* Virtual Showroom - Under Storytelling */}
                   <section id="virtual-showroom">
-                    <VirtualShowroom vehicleName={vehicle.name} />
+                    <PremiumVirtualShowroom vehicleName={vehicle.name} />
                   </section>
 
                   <section id="offers">
@@ -313,7 +317,7 @@ const VehicleDetails = () => {
 
                   {/* Virtual Showroom - Under Storytelling */}
                   <section id="virtual-showroom">
-                    <VirtualShowroom vehicleName={vehicle.name} />
+                    <PremiumVirtualShowroom vehicleName={vehicle.name} />
                   </section>
                 </Suspense>
 
@@ -365,12 +369,10 @@ const VehicleDetails = () => {
             </Suspense>
           )}
 
-          <ActionPanel
-            vehicle={vehicle}
-            onBookTestDrive={() => modalHandlers.updateModal('isBookingOpen', true)}
-            onCarBuilder={() => modalHandlers.updateModal('isCarBuilderOpen', true)}
-            onFinanceCalculator={() => modalHandlers.updateModal('isFinanceOpen', true)}
-          />
+          {/* Section Navigation Panel - replaces ActionPanel */}
+          <Suspense fallback={null}>
+            <SectionNavPanel />
+          </Suspense>
         </div>
 
         {/* ModernSectionNavigation temporarily disabled */}

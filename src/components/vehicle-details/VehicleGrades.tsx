@@ -260,19 +260,26 @@ const VehicleGrades: React.FC<VehicleGradesProps> = ({ vehicle, onCarBuilder }) 
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                       <Button 
                         size="lg" 
-                        className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => handleConfigureGrade(grades[i].name)}
+                        className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 hover:shadow-xl hover:shadow-red-600/30 transition-all"
+                        onClick={() => {
+                          if (onCarBuilder) {
+                            onCarBuilder(grades[i].name);
+                          }
+                        }}
                       >
-                        Configure {grades[i].name}
+                        Select {grades[i].name}
                       </Button>
                       <Button 
                         variant="outline" 
                         size="lg" 
                         className="flex-1 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
-                        onClick={() => {/* Handle test drive */}
-                        }
+                        onClick={() => {
+                          if (onCarBuilder) {
+                            onCarBuilder(grades[i].name);
+                          }
+                        }}
                       >
-                        Test Drive
+                        Configure
                       </Button>
                     </div>
                   </motion.div>
