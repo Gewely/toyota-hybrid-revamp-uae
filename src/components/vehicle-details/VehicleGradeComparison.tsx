@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeviceInfo } from "@/hooks/use-device-info";
-import PremiumComparisonSection from "./PremiumComparisonSection";
+import CollapsibleComparisonSection from "./CollapsibleComparisonSection";
 
 interface Grade {
   name: string;
@@ -325,10 +325,10 @@ const VehicleGradeComparison: React.FC<VehicleGradeComparisonProps> = ({
             ))}
           </div>
 
-          {/* Premium Comparison Sections - Using visible grades */}
-          <div className="space-y-4">
+          {/* Collapsible Comparison Sections - Using visible grades */}
+          <div className="space-y-2">
             {comparisonSpecs.map((section, index) => (
-              <PremiumComparisonSection
+              <CollapsibleComparisonSection
                 key={section.title}
                 title={section.title}
                 items={section.items}

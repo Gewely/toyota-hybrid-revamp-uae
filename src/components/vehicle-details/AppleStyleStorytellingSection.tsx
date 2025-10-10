@@ -207,25 +207,25 @@ const StorytellingSection: React.FC<Props> = ({
           },
         ],
       },
-        {
-          id: "exterior",
-          title: "Sculpted for Performance",
-          subtitle:
-            "Every curve designed with purpose, every line crafted for excellence.",
-          backgroundImage:
-            "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
-          cta: {
-            label: "Explore Exterior",
-            action: () => navigate("#seamless-showroom"),
-            variant: "secondary",
-          },
-          features: [
-            "LED Matrix Headlights",
-            "Active Aero",
-            "Carbon Fiber Accents",
-            "Sport Wheels",
-          ],
+      {
+        id: "exterior",
+        title: "Sculpted for Performance",
+        subtitle:
+          "Every curve designed with purpose, every line crafted for excellence.",
+        backgroundImage:
+          "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
+        cta: {
+          label: "Explore Design",
+          action: () => navigate("/design"),
+          variant: "secondary",
         },
+        features: [
+          "LED Matrix Headlights",
+          "Active Aero",
+          "Carbon Fiber Accents",
+          "Sport Wheels",
+        ],
+      },
       {
         id: "interior",
         title: "Luxury Redefined",
@@ -353,11 +353,18 @@ const StorytellingSection: React.FC<Props> = ({
       if (!isLocked || !touchStartY.current) return;
       
       const currentY = e.touches[0].clientY;
-      const deltaY = touchStartY.current - currentY;
+      const deltaY = Math.abs(touchStartY.current - currentY);
       
-      // Better threshold for swipe detection
-      if (Math.abs(deltaY) > 30) {
-        e.preventDefault();
+      // Only prevent if this is a clear vertical swipe within our section
+      // Don't prevent horizontal scrolling or small movements
+      if (deltaY > 10) {
+        const target = e.target as Element;
+        const isInSection = sectionRef.current?.contains(target);
+        
+        // Only preventDefault if we're in the section and it's vertical movement
+        if (isInSection) {
+          e.preventDefault();
+        }
       }
     },
     [isLocked]
@@ -460,8 +467,7 @@ const StorytellingSection: React.FC<Props> = ({
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100svh] bg-black text-white overflow-hidden"
-      style={{ scrollSnapAlign: "start", touchAction: "pan-y" }}
+      className="relative min-h-[100svh] bg-black text-white overflow-hidden touch-pan-y"
       aria-label="Cinematic automotive storytelling"
     >
       {/* MEDIA LAYER */}
