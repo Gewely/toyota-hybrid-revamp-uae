@@ -46,7 +46,7 @@ type Grade = {
   description: string;
   price: number;
   monthlyFrom: number;
-  badge?: "Value" | "Most Popular" | "Luxury";
+  badge: "Value" | "Most Popular" | "Luxury";
   badgeColor: string;
   image: string;
   features: string[];
