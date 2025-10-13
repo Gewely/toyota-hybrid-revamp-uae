@@ -1,21 +1,30 @@
-import React, { useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
-import { Star, ArrowRight, Wrench, Car, Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { ArrowRight, Car as CarIcon, Check, Star, Wrench } from "lucide-react";
 
-interface EngineGradeSelectionProps {
+/* =========================================================
+   Luxury Light v3 — "Porcelain" theme (no dark mode)
+   - Softer radii, airy spacing, premium shadows
+   - Clear hierarchy; sticky mobile summary; proper engine selector
+========================================================= */
+
+type EngineOption = {
+  name: string;
+  power: string;
+  torque: string;
+  type: string;
+  efficiency: string;
+};
+
+export interface EngineGradeSelectionProps {
   vehicle: VehicleModel;
   onCarBuilder: (gradeName?: string) => void;
   onTestDrive: () => void;
@@ -23,415 +32,441 @@ interface EngineGradeSelectionProps {
   onGradeComparison?: () => void;
 }
 
+type GradeSpec = {
+  engine: string;
+  power: string;
+  torque: string;
+  transmission: string;
+  acceleration: string;
+  fuelEconomy: string;
+};
+
+type Grade = {
+  name: string;
+  description: string;
+  price: number;
+  monthlyFrom: number;
+  badge?: "Value" | "Most Popular" | "Luxury";
+  image: string;
+  features: string[];
+  specs: GradeSpec;
+};
+
+const AEDFmt = new Intl.NumberFormat("en-AE", {
+  style: "currency",
+  currency: "AED",
+  maximumFractionDigits: 0,
+});
+
+function monthlyPayment(
+  price: number,
+  opts: { downPaymentPct?: number; annualRate?: number; termMonths?: number } = {},
+): number {
+  const { downPaymentPct = 0.2, annualRate = 0.035, termMonths = 60 } = opts;
+  const principal = price * (1 - downPaymentPct);
+  const r = annualRate / 12;
+  if (r <= 0) return Math.round(principal / termMonths);
+  const factor = Math.pow(1 + r, termMonths);
+  return Math.round((principal * r * factor) / (factor - 1));
+}
+
+/* =============================
+   Reusable UI
+============================= */
+const Segmented: React.FC<{
+  options: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+  ariaLabel?: string;
+}> = ({ options, value, onChange, ariaLabel }) => {
+  const id = useId();
+  return (
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      id={id}
+      className="relative inline-flex items-center rounded-3xl border bg-white p-1 shadow-sm ring-1 ring-black/5"
+    >
+      {options.map((opt) => {
+        const selected = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(opt.id)}
+            className={[
+              "relative z-10 px-4 py-2 text-sm font-medium transition-all",
+              "rounded-2xl",
+              selected ? "text-white" : "text-foreground hover:bg-muted",
+            ].join(" ")}
+            style={selected ? { background: "#EB0A1E" } : undefined}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const GradeHero: React.FC<{ vehicleName: string; grade: Grade }> = ({ vehicleName, grade }) => (
+  <Card className="overflow-hidden rounded-3xl border-0 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+    <CardContent className="p-0">
+      <div className="relative aspect-[16/9] overflow-hidden">
+        <img
+          src={grade.image}
+          alt={`${vehicleName} ${grade.name}`}
+          className="h-full w-full object-cover transition-transform duration-500 will-change-transform hover:scale-[1.02]"
+          loading="lazy"
+          decoding="async"
+          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+        />
+        {grade.badge && (
+          <div className="absolute left-4 top-4">
+            <Badge
+              className={
+                grade.badge === "Most Popular"
+                  ? "bg-orange-100 text-orange-700"
+                  : grade.badge === "Luxury"
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-blue-100 text-blue-700"
+              }
+            >
+              {grade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />} {grade.badge}
+            </Badge>
+          </div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const SpecRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex items-center justify-between text-sm">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="font-medium">{value}</span>
+  </div>
+);
+
+/* =============================
+   Main
+============================= */
 const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   vehicle,
   onCarBuilder,
   onTestDrive,
   onGradeSelect,
-  onGradeComparison
 }) => {
-  const [selectedEngine, setSelectedEngine] = useState("3.5L");
-  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const isMobile = useIsMobile();
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [term, setTerm] = useState<36 | 48 | 60>(60);
 
-  // Engine options
-  const engines = [
-    { 
-      name: "3.5L", 
-      power: "295 HP", 
-      torque: "263 lb-ft",
-      type: "V6 Dynamic Force",
-      efficiency: "9.2L/100km"
-    },
-    { 
-      name: "4.0L", 
-      power: "270 HP", 
-      torque: "278 lb-ft",
-      type: "V6 1GR-FE",
-      efficiency: "11.8L/100km"
-    }
-  ];
+  const engines = useMemo<EngineOption[]>(
+    () => [
+      { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
+      { name: "4.0L", power: "270 HP", torque: "278 lb-ft", type: "V6 1GR-FE", efficiency: "11.8L/100km" },
+    ],
+    [],
+  );
 
-  // Dynamic grade data based on selected engine
-  const getGradesForEngine = (engine: string) => {
-    if (engine === "4.0L") {
+  const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
+  const [activeGradeName, setActiveGradeName] = useState<string>("XLE");
+
+  const grades: Grade[] = useMemo(() => {
+    const baseImage = vehicle.image;
+    const basePrice = vehicle.price ?? 0;
+
+    if (selectedEngine === "4.0L") {
       return [
         {
           name: "TRD Off-Road",
-          description: "Built for adventure with enhanced off-road capability",
-          price: vehicle.price + 20000,
-          monthlyFrom: Math.round((vehicle.price + 20000) * 0.8 * 0.035 / 12),
+          description: "Adventure-focused capability with TRD hardware.",
+          price: basePrice + 20000,
+          monthlyFrom: monthlyPayment(basePrice + 20000, { termMonths: term }),
           badge: "Value",
-          badgeColor: "bg-blue-100 text-blue-700",
-          image: vehicle.image,
-          features: ["TRD Off-Road Package", "Crawl Control", "Multi-Terrain Select", "Skid Plates"],
+          image: baseImage,
+          features: ["Crawl Control", "Multi-Terrain Select", "Skid Plates", "TRD Wheels"],
           specs: {
             engine: "4.0L V6 1GR-FE",
             power: "270 HP",
             torque: "278 lb-ft",
-            transmission: "5-Speed Automatic",
+            transmission: "5AT",
             acceleration: "8.1s",
-            fuelEconomy: "11.8L/100km"
-          }
+            fuelEconomy: "11.8L/100km",
+          },
         },
         {
           name: "TRD Pro",
-          description: "Ultimate off-road performance with premium features",
-          price: vehicle.price + 50000,
-          monthlyFrom: Math.round((vehicle.price + 50000) * 0.8 * 0.035 / 12),
+          description: "Ultimate off-road performance with premium finish.",
+          price: basePrice + 50000,
+          monthlyFrom: monthlyPayment(basePrice + 50000, { termMonths: term }),
           badge: "Most Popular",
-          badgeColor: "bg-orange-100 text-orange-700",
-          image: vehicle.image,
-          features: ["TRD Pro Package", "Fox Racing Shocks", "TRD Pro Wheels", "Premium Interior"],
+          image: baseImage,
+          features: ["Fox Racing Shocks", "TRD Pro Wheels", "Premium Interior", "LED Light Bar"],
           specs: {
             engine: "4.0L V6 1GR-FE",
             power: "270 HP",
             torque: "278 lb-ft",
-            transmission: "5-Speed Automatic",
+            transmission: "5AT",
             acceleration: "8.1s",
-            fuelEconomy: "11.8L/100km"
-          }
-        }
+            fuelEconomy: "11.8L/100km",
+          },
+        },
       ];
     }
-    
-    // Default 3.5L grades
+
     return [
       {
         name: "SE",
-        description: "Essential features for everyday driving",
-        price: vehicle.price,
-        monthlyFrom: Math.round(vehicle.price * 0.8 * 0.035 / 12),
+        description: "Essential features for everyday driving.",
+        price: basePrice,
+        monthlyFrom: monthlyPayment(basePrice, { termMonths: term }),
         badge: "Value",
-        badgeColor: "bg-blue-100 text-blue-700",
-        image: vehicle.image,
-        features: ["LED Headlights", "Smart Key", "8-inch Display", "Toyota Safety Sense"],
+        image: baseImage,
+        features: ["LED Headlights", "Smart Key", '8" Display', "Toyota Safety Sense"],
         specs: {
           engine: "3.5L V6 Dynamic Force",
           power: "295 HP",
           torque: "263 lb-ft",
-          transmission: "8-Speed Automatic",
+          transmission: "8AT",
           acceleration: "7.2s",
-          fuelEconomy: "9.2L/100km"
-        }
+          fuelEconomy: "9.2L/100km",
+        },
       },
       {
         name: "XLE",
-        description: "Enhanced comfort and technology features",
-        price: vehicle.price + 20000,
-        monthlyFrom: Math.round((vehicle.price + 20000) * 0.8 * 0.035 / 12),
+        description: "Comfort + technology sweet spot.",
+        price: basePrice + 20000,
+        monthlyFrom: monthlyPayment(basePrice + 20000, { termMonths: term }),
         badge: "Most Popular",
-        badgeColor: "bg-orange-100 text-orange-700",
-        image: vehicle.image,
+        image: baseImage,
         features: ["Sunroof", "Premium Audio", "Heated Seats", "Wireless Charging", "360° Camera"],
         specs: {
           engine: "3.5L V6 Dynamic Force",
           power: "295 HP",
           torque: "263 lb-ft",
-          transmission: "8-Speed Automatic",
+          transmission: "8AT",
           acceleration: "7.2s",
-          fuelEconomy: "9.2L/100km"
-        }
+          fuelEconomy: "9.2L/100km",
+        },
       },
       {
         name: "Limited",
-        description: "Luxury features with advanced technology",
-        price: vehicle.price + 40000,
-        monthlyFrom: Math.round((vehicle.price + 40000) * 0.8 * 0.035 / 12),
+        description: "Luxury features with advanced technology.",
+        price: basePrice + 40000,
+        monthlyFrom: monthlyPayment(basePrice + 40000, { termMonths: term }),
         badge: "Luxury",
-        badgeColor: "bg-purple-100 text-purple-700",
-        image: vehicle.image,
-        features: ["Leather Interior", "JBL Audio", "Head-up Display", "Adaptive Cruise", "Premium Paint"],
+        image: baseImage,
+        features: ["Leather Interior", "JBL", "Head-up Display", "Adaptive Cruise", "Premium Paint"],
         specs: {
           engine: "3.5L V6 Dynamic Force",
           power: "295 HP",
           torque: "263 lb-ft",
-          transmission: "8-Speed Automatic",
+          transmission: "8AT",
           acceleration: "7.2s",
-          fuelEconomy: "9.2L/100km"
-        }
-      }
+          fuelEconomy: "9.2L/100km",
+        },
+      },
     ];
-  };
+  }, [selectedEngine, term, vehicle.image, vehicle.price]);
 
-  const grades = getGradesForEngine(selectedEngine);
+  const activeGrade = grades.find((g) => g.name === activeGradeName) ?? grades[0];
 
-  const handleEngineChange = (engine: string) => {
-    setSelectedEngine(engine);
-  };
-
-  const handleGradeSelect = (gradeName: string) => {
-    onGradeSelect(gradeName);
-  };
-
-  const handleCarBuilder = (gradeName: string) => {
-    onCarBuilder(gradeName);
-  };
-
-  const handleTestDrive = (gradeName: string) => {
-    onTestDrive();
-  };
+  React.useEffect(() => {
+    if (!grades.some((g) => g.name === activeGradeName)) setActiveGradeName(grades[0]?.name);
+  }, [grades, activeGradeName]);
 
   return (
-    <section className="py-16 lg:py-24 bg-gradient-to-b from-background to-muted/30">
+    <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-12 lg:py-20">
       <div className="toyota-container">
+        {/* Title */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.5 }}
+          className="mb-8 text-center"
         >
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            Choose Your {vehicle.name}
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Select your engine and grade to build the perfect vehicle
+          <h2 className="text-4xl font-bold tracking-tight">Configure Your {vehicle.name}</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+            Pick an engine, compare grades, and tailor the perfect setup. Finance shown is an estimate.*
           </p>
         </motion.div>
 
-        {/* Engine Selection - Side by Side on Mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="mb-12"
-        >
-          <h3 className="text-xl font-bold mb-6 text-center">Select Engine</h3>
-          <div className={`gap-4 max-w-4xl mx-auto ${isMobile ? 'grid grid-cols-2' : 'grid grid-cols-1 md:grid-cols-2'}`}>
-            {engines.map((engine) => (
-              <motion.div
-                key={engine.name}
-                whileHover={{ scale: isMobile ? 1 : 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`${isMobile ? 'p-4' : 'p-6'} rounded-xl cursor-pointer transition-all duration-200 border-2 ${
-                  selectedEngine === engine.name 
-                    ? 'bg-primary/10 border-primary shadow-lg' 
-                    : 'bg-card border-border hover:border-primary/50'
-                }`}
-                onClick={() => handleEngineChange(engine.name)}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className={`font-bold ${isMobile ? 'text-sm' : 'text-lg'}`}>
-                      {engine.name} {isMobile ? '' : engine.type}
-                    </h4>
-                    <p className={`text-primary font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                      {engine.power} • {engine.torque}
-                    </p>
-                  </div>
-                  {selectedEngine === engine.name && (
-                    <Check className={`text-primary ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-                  )}
-                </div>
-                <div className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                  {isMobile ? engine.efficiency : `Fuel Economy: ${engine.efficiency}`}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+        <div className="grid items-start gap-6 lg:grid-cols-12">
+          {/* Visual / Gallery */}
+          <div className="lg:col-span-7">
+            {/* Engine segmented control */}
+            <div className="mb-4 flex items-center justify-center lg:justify-start">
+              <Segmented
+                ariaLabel="Select engine"
+                options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
+                value={selectedEngine}
+                onChange={(id) => setSelectedEngine(id)}
+              />
+            </div>
 
-        {/* Grades - Carousel on Mobile, Grid on Desktop */}
-        {isMobile ? (
-          <Carousel className="w-full mb-12">
-            <CarouselContent>
-              {grades.map((grade, index) => (
-                <CarouselItem key={`${selectedEngine}-${grade.name}`}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <Card className="overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className="relative aspect-[4/3] overflow-hidden">
-                          <img
-                            src={grade.image}
-                            alt={`${vehicle.name} ${grade.name} Grade`}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-4 right-4">
-                            <Badge className={grade.badgeColor}>
-                              {grade.badge === "Most Popular" && <Star className="w-3 h-3 mr-1" />}
-                              {grade.badge}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="p-6">
-                          <div className="mb-4">
-                            <h3 className="text-xl font-bold mb-2">{grade.name} Grade</h3>
-                            <p className="text-sm text-muted-foreground">{grade.description}</p>
-                          </div>
-                          <div className="mb-6">
-                            <div className="text-2xl font-bold">AED {grade.price.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">
-                              From AED {grade.monthlyFrom}/month
-                            </div>
-                          </div>
-                          <div className="mb-6">
-                            <h4 className="font-semibold mb-2">Key Features:</h4>
-                            <ul className="text-sm text-muted-foreground space-y-1">
-                              {grade.features.slice(0, 3).map((feature, idx) => (
-                                <li key={idx} className="flex items-center">
-                                  <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2" />
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="space-y-3">
-                            <Button
-                              className="w-full"
-                              onClick={() => handleGradeSelect(grade.name)}
-                            >
-                              Select {grade.name}
-                              <ArrowRight className="w-4 h-4 ml-2" />
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => handleCarBuilder(grade.name)}
-                              >
-                                <Wrench className="w-4 h-4 mr-1" />
-                                Build
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => handleTestDrive(grade.name)}
-                              >
-                                <Car className="w-4 h-4 mr-1" />
-                                Drive
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
-          </Carousel>
-        ) : (
-          <div className="grid gap-6 mb-12 grid-cols-3">
-            {grades.map((grade, index) => (
-              <motion.div
-                key={`${selectedEngine}-${grade.name}`}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                  <CardContent className="p-0">
-                    <div className="relative aspect-[4/3] overflow-hidden">
-                      <img
-                        src={grade.image}
-                        alt={`${vehicle.name} ${grade.name} Grade`}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-4 right-4">
-                        <Badge className={grade.badgeColor}>
-                          {grade.badge === "Most Popular" && <Star className="w-3 h-3 mr-1" />}
-                          {grade.badge}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <h3 className="text-xl font-bold mb-2">{grade.name} Grade</h3>
-                        <p className="text-sm text-muted-foreground">{grade.description}</p>
-                      </div>
-                      <div className="mb-6">
-                        <div className="text-2xl font-bold">AED {grade.price.toLocaleString()}</div>
-                        <div className="text-sm text-muted-foreground">
-                          From AED {grade.monthlyFrom}/month
-                        </div>
-                      </div>
-                      <div className="mb-6">
-                        <h4 className="font-semibold mb-2">Key Features:</h4>
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                          {grade.features.slice(0, 3).map((feature, idx) => (
-                            <li key={idx} className="flex items-center">
-                              <div className="w-1.5 h-1.5 bg-primary rounded-full mr-2" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="space-y-3">
-                        <Button
-                          className="w-full"
-                          onClick={() => handleGradeSelect(grade.name)}
+            {/* Grade visual */}
+            {isMobile ? (
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {grades.map((g) => (
+                    <CarouselItem key={g.name}>
+                      <GradeHero vehicleName={vehicle.name} grade={g} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </Carousel>
+            ) : (
+              <GradeHero vehicleName={vehicle.name} grade={activeGrade} />
+            )}
+          </div>
+
+          {/* Decision Panel */}
+          <div className="lg:col-span-5">
+            <Card className="sticky top-20 rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
+              <CardContent className="p-6">
+                {/* Grade chips */}
+                <div className="mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {grades.map((g) => (
+                    <button
+                      key={g.name}
+                      onClick={() => setActiveGradeName(g.name)}
+                      className={[
+                        "flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition",
+                        g.name === activeGrade.name ? "border-primary bg-primary/10" : "hover:bg-muted",
+                      ].join(" ")}
+                    >
+                      <span className="font-medium">{g.name}</span>
+                      {g.badge && (
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-[10px]",
+                            g.badge === "Most Popular"
+                              ? "bg-orange-100 text-orange-700"
+                              : g.badge === "Luxury"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700",
+                          ].join(" ")}
                         >
-                          Select {grade.name}
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleCarBuilder(grade.name)}
-                          >
-                            <Wrench className="w-4 h-4 mr-1" />
-                            Build
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleTestDrive(grade.name)}
-                          >
-                            <Car className="w-4 h-4 mr-1" />
-                            Drive
-                          </Button>
-                        </div>
-                      </div>
+                          {g.badge}
+                        </span>
+                      )}
+                      {g.name === activeGrade.name && <Check className="h-4 w-4 text-primary" />}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mb-3">
+                  <h3 className="text-xl font-semibold tracking-tight">{activeGrade.name} Grade</h3>
+                  <p className="text-sm text-muted-foreground">{activeGrade.description}</p>
+                </div>
+
+                <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <SpecRow label="Engine" value={activeGrade.specs.engine} />
+                  <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
+                  <SpecRow label="Transmission" value={activeGrade.specs.transmission} />
+                  <SpecRow label="Economy" value={activeGrade.specs.fuelEconomy} />
+                </div>
+
+                <Separator className="my-4" />
+
+                {/* Finance */}
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{AEDFmt.format(activeGrade.price)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      From {AEDFmt.format(activeGrade.monthlyFrom)}/month
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {[36, 48, 60].map((t) => (
+                      <Button
+                        key={t}
+                        variant={term === t ? "default" : "outline"}
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => setTerm(t as 36 | 48 | 60)}
+                      >
+                        {t}m
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Features */}
+                <ul className="mb-4 grid grid-cols-1 gap-x-6 gap-y-1 pl-4 text-sm text-muted-foreground sm:grid-cols-2 list-disc">
+                  {activeGrade.features.slice(0, 6).map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+
+                {/* CTAs */}
+                <div className="space-y-3">
+                  <Button
+                    className="w-full"
+                    onClick={() => onGradeSelect(activeGrade.name)}
+                    aria-label={`Select ${activeGrade.name}`}
+                  >
+                    Select {activeGrade.name}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => onCarBuilder(activeGrade.name)}>
+                      <Wrench className="mr-1 h-4 w-4" /> Build
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => onTestDrive()}>
+                      <CarIcon className="mr-1 h-4 w-4" /> Drive
+                    </Button>
+                  </div>
+                  <Button variant="ghost" className="w-full" onClick={() => setIsComparisonOpen(true)}>
+                    Compare all grades
+                  </Button>
+                </div>
+
+                <p className="mt-4 text-center text-[11px] leading-tight text-muted-foreground">
+                  * Estimate based on 20% down payment, 3.5% APR, selected term. Subject to credit approval.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Mobile sticky summary */}
+        {isMobile && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+            <div className="pointer-events-auto rounded-3xl border-0 bg-white p-3 shadow-[0_16px_40px_rgba(0,0,0,0.12)]">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">{activeGrade.name}</div>
+                  <div className="text-xs text-muted-foreground">From {AEDFmt.format(activeGrade.monthlyFrom)}/mo</div>
+                </div>
+                <div className="text-base font-semibold">{AEDFmt.format(activeGrade.price)}</div>
+              </div>
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={() => onGradeSelect(activeGrade.name)}>
+                  Select
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setIsComparisonOpen(true)}>
+                  Compare
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Compare Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="text-center"
-        >
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setIsComparisonOpen(true)}
-            className="px-8"
-          >
-            Compare All Grades
-          </Button>
-        </motion.div>
-
-        {/* Grade Comparison Modal */}
+        {/* Comparison Modal */}
         <VehicleGradeComparison
           isOpen={isComparisonOpen}
           onClose={() => setIsComparisonOpen(false)}
           engineName={`${vehicle.name} ${selectedEngine}`}
           grades={grades}
-          onGradeSelect={handleGradeSelect}
-          onCarBuilder={handleCarBuilder}
-          onTestDrive={handleTestDrive}
+          onGradeSelect={(n) => onGradeSelect(n)}
+          onCarBuilder={(n) => onCarBuilder(n)}
+          onTestDrive={() => onTestDrive()}
         />
       </div>
     </section>
