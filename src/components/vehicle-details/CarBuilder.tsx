@@ -18,6 +18,7 @@ export interface CarBuilderProps {
   vehicle: VehicleModel;
   isOpen: boolean;
   onClose: () => void;
+  initialGrade?: string;
 }
 
 /* ---------- Defaults ---------- */
@@ -31,7 +32,7 @@ const DEFAULT_CONFIG: DesktopBuilderConfig = {
   stockStatus: "pipeline",
 };
 
-const CarBuilder: React.FC<CarBuilderProps> = ({ vehicle, isOpen, onClose }) => {
+const CarBuilder: React.FC<CarBuilderProps> = ({ vehicle, isOpen, onClose, initialGrade }) => {
   const [step, setStep] = useState(1);
   const [config, setConfig] = useState<DesktopBuilderConfig>({ ...DEFAULT_CONFIG });
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -124,6 +125,13 @@ const CarBuilder: React.FC<CarBuilderProps> = ({ vehicle, isOpen, onClose }) => 
       </LoadingDialog>
     );
   }
+
+  // Apply initial grade when provided and builder opens
+  React.useEffect(() => {
+    if (isOpen && initialGrade && !config.grade) {
+      setConfig((c) => ({ ...c, grade: initialGrade }));
+    }
+  }, [isOpen, initialGrade]);
 
   const content = (
     <AnimatePresence mode="wait">

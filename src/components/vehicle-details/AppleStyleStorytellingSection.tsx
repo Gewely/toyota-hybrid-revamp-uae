@@ -216,7 +216,10 @@ const StorytellingSection: React.FC<Props> = ({
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
         cta: {
           label: "Explore Design",
-          action: () => navigate("/design"),
+          action: () => {
+            const el = document.getElementById("seamless-showroom");
+            el?.scrollIntoView({ behavior: "smooth", block: "start" });
+          },
           variant: "secondary",
         },
         features: [
@@ -292,16 +295,14 @@ const StorytellingSection: React.FC<Props> = ({
     
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const visible = entry.intersectionRatio >= 0.6;
-        
+        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.9;
         // Only reset to scene 0 when entering section (not continuously)
         if (visible && !isVisibleEnough) {
           setIndex(0);
         }
-        
         setIsVisibleEnough(visible);
       },
-      { threshold: 0.6 }
+      { threshold: 0.9, rootMargin: "0px 0px -5% 0px" }
     );
     
     observer.observe(el);
@@ -427,7 +428,7 @@ const StorytellingSection: React.FC<Props> = ({
 
   /* ----------------- Attach handlers ----------------- */
   useEffect(() => {
-    if (isLocked) {
+    if (isLocked && isVisibleEnough) {
       window.addEventListener("wheel", onWheel, { passive: false });
       window.addEventListener("touchstart", onTouchStart, { passive: true });
       window.addEventListener("touchmove", onTouchMove, { passive: false });
@@ -441,7 +442,7 @@ const StorytellingSection: React.FC<Props> = ({
       window.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown as any);
     };
-  }, [isLocked, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
+  }, [isLocked, isVisibleEnough, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
   /* ----------------- Wistia Player ----------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(
@@ -467,7 +468,8 @@ const StorytellingSection: React.FC<Props> = ({
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100svh] bg-black text-white overflow-hidden touch-pan-y"
+      className="relative min-h-[100svh] bg-black text-white overflow-hidden"
+      style={{ touchAction: "pan-y", scrollSnapAlign: "start" }}
       aria-label="Cinematic automotive storytelling"
     >
       {/* MEDIA LAYER */}

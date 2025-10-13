@@ -318,20 +318,31 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
           </div>
         </div>
 
-        {/* Quick info row */}
+        {/* Quick links row (anchors to main sections) */}
         <div
           className={[
-            "hidden xl:flex absolute left-1/2 -translate-x-1/2 bottom-1 items-center gap-3 pointer-events-none",
+            "hidden xl:flex absolute left-1/2 -translate-x-1/2 bottom-1 items-center gap-4",
             "text-[clamp(9px,0.78vw,11px)]",
-            isGR ? "text-neutral-400" : "text-muted-foreground",
+            isGR ? "text-neutral-300" : "text-muted-foreground",
           ].join(" ")}
         >
-          <span className="flex items-center">
-            <MapPin style={{ width: 16, height: 16 }} className="mr-1" />
-            Available at all showrooms
-          </span>
-          <span>• Free delivery</span>
-          <span>• 7-day return</span>
+          {[
+            { id: "hero", label: "Overview" },
+            { id: "seamless-showroom", label: "Showroom" },
+            { id: "media-showcase", label: "Media" },
+            { id: "virtual-showroom", label: "Virtual" },
+            { id: "configuration", label: "Grades" },
+            { id: "related", label: "Related" },
+            { id: "faq", label: "FAQ" },
+          ].map((link) => (
+            <a
+              key={link.id}
+              href={`#${link.id}`}
+              className="pointer-events-auto hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
       </div>
     </motion.div>
