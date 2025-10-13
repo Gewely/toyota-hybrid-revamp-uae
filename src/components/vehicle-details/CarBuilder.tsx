@@ -127,11 +127,11 @@ const CarBuilder: React.FC<CarBuilderProps> = ({ vehicle, isOpen, onClose, initi
   }
 
   // Apply initial grade when provided and builder opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && initialGrade && !config.grade) {
       setConfig((c) => ({ ...c, grade: initialGrade }));
     }
-  }, [isOpen, initialGrade]);
+  }, [isOpen, initialGrade, config.grade]);
 
   const content = (
     <AnimatePresence mode="wait">

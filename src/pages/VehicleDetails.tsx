@@ -59,7 +59,7 @@ const SeamlessCinematicShowroom = createLazyComponent(
 );
 
 const VirtualShowroom = createLazyComponent(
-  () => import("@/components/vehicle-details/VirtualShowroom")
+  () => import("@/components/vehicle-details/PremiumVirtualShowroom")
 );
 
 const PreOwnedSimilar = createLazyComponent(
