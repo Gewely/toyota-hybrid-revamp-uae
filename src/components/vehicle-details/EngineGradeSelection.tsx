@@ -11,7 +11,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ArrowRight, Car as CarIcon, Check, Star, Wrench } from "lucide-react";
 
 /* =========================================================
-   Luxury Light v4 — "Porcelain+" (no dark mode)
+   Luxury Light v5 — "Porcelain+" (no dark mode)
    Upgrades: animated segmented pill, cross-fade hero, finance sliders,
    magnetic CTAs, sticky mobile summary with live monthly, a11y polish
 ========================================================= */
@@ -314,6 +314,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   const liveMonthly = (price: number) =>
     monthlyPayment(price, { termMonths: term, downPaymentPct: dpPct, annualRate: apr });
+  const termLabel = (t: 36 | 48 | 60) => (t === 36 ? "3 yrs" : t === 48 ? "4 yrs" : "5 yrs");
+  const monthsLabel = (t: 36 | 48 | 60) => `${t} months`;
 
   return (
     <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-12 lg:py-20">
@@ -430,7 +432,14 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     <div>
                       <div className="text-2xl font-bold">{AEDFmt.format(activeGrade.price)}</div>
                       <div className="text-xs text-muted-foreground">
-                        From {AEDFmt.format(liveMonthly(activeGrade.price))}/month
+                        From {AEDFmt.format(liveMonthly(activeGrade.price))}/mo{" "}
+                        <span className="opacity-70" title="Based on your term, APR, and down payment">
+                          (est.)
+                        </span>
+                        nth{" "}
+                        <span className="opacity-70" title="Based on your term, APR, and down payment">
+                          (est.)
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -442,7 +451,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                           className="rounded-full"
                           onClick={() => setTerm(t as 36 | 48 | 60)}
                         >
-                          {t}m
+                          <div className="leading-tight text-left">
+                            <div className="text-xs font-semibold">{termLabel(t as 36 | 48 | 60)}</div>
+                            <div className="text-[10px] opacity-70">{monthsLabel(t as 36 | 48 | 60)}</div>
+                          </div>
                         </Button>
                       ))}
                     </div>
@@ -527,7 +539,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 <div>
                   <div className="text-sm font-medium">{activeGrade.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    From {AEDFmt.format(liveMonthly(activeGrade.price))}/mo
+                    From {AEDFmt.format(liveMonthly(activeGrade.price))}/mo{" "}
+                    <span className="opacity-70" title="Based on your term, APR, and down payment">
+                      (est.)
+                    </span>
                   </div>
                 </div>
                 <div className="text-base font-semibold">{AEDFmt.format(activeGrade.price)}</div>
