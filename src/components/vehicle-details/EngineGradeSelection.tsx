@@ -47,6 +47,7 @@ type Grade = {
   price: number;
   monthlyFrom: number;
   badge?: "Value" | "Most Popular" | "Luxury";
+  badgeColor: string;
   image: string;
   features: string[];
   specs: GradeSpec;
@@ -185,6 +186,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           price: basePrice + 20000,
           monthlyFrom: monthlyPayment(basePrice + 20000, { termMonths: term }),
           badge: "Value",
+          badgeColor: "bg-blue-100 text-blue-700",
           image: baseImage,
           features: ["Crawl Control", "Multi-Terrain Select", "Skid Plates", "TRD Wheels"],
           specs: {
@@ -202,6 +204,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           price: basePrice + 50000,
           monthlyFrom: monthlyPayment(basePrice + 50000, { termMonths: term }),
           badge: "Most Popular",
+          badgeColor: "bg-orange-100 text-orange-700",
           image: baseImage,
           features: ["Fox Racing Shocks", "TRD Pro Wheels", "Premium Interior", "LED Light Bar"],
           specs: {
@@ -223,6 +226,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         price: basePrice,
         monthlyFrom: monthlyPayment(basePrice, { termMonths: term }),
         badge: "Value",
+        badgeColor: "bg-blue-100 text-blue-700",
         image: baseImage,
         features: ["LED Headlights", "Smart Key", '8" Display', "Toyota Safety Sense"],
         specs: {
@@ -240,6 +244,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         price: basePrice + 20000,
         monthlyFrom: monthlyPayment(basePrice + 20000, { termMonths: term }),
         badge: "Most Popular",
+        badgeColor: "bg-orange-100 text-orange-700",
         image: baseImage,
         features: ["Sunroof", "Premium Audio", "Heated Seats", "Wireless Charging", "360° Camera"],
         specs: {
@@ -257,6 +262,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         price: basePrice + 40000,
         monthlyFrom: monthlyPayment(basePrice + 40000, { termMonths: term }),
         badge: "Luxury",
+        badgeColor: "bg-purple-100 text-purple-700",
         image: baseImage,
         features: ["Leather Interior", "JBL", "Head-up Display", "Adaptive Cruise", "Premium Paint"],
         specs: {
