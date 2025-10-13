@@ -122,10 +122,11 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
         onBookTestDrive={() => handleTestDriveFromModal(setIsHybridTechModalOpen)}
       />
 
-      <InteriorModal
-        onClose={() => handleModalClose(setIsInteriorModalOpen)}
-        isOpen={isInteriorModalOpen}
-      />
+      {isInteriorModalOpen && (
+        <InteriorModal
+          onClose={() => handleModalClose(setIsInteriorModalOpen)}
+        />
+      )}
     </>
   );
 };
