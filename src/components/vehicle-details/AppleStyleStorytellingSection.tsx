@@ -295,14 +295,20 @@ const StorytellingSection: React.FC<Props> = ({
     
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.9;
-        // Only reset to scene 0 when entering section (not continuously)
+        // Require 95% visibility for stricter control
+        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.95;
+        // Debounce visibility changes
         if (visible && !isVisibleEnough) {
-          setIndex(0);
+          const timer = setTimeout(() => {
+            setIndex(0);
+            setIsVisibleEnough(true);
+          }, 200);
+          return () => clearTimeout(timer);
+        } else if (!visible) {
+          setIsVisibleEnough(false);
         }
-        setIsVisibleEnough(visible);
       },
-      { threshold: 0.9, rootMargin: "0px 0px -5% 0px" }
+      { threshold: 0.95, rootMargin: "0px 0px -10% 0px" }
     );
     
     observer.observe(el);

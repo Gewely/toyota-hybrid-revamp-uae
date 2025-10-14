@@ -361,54 +361,34 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    const nav = navRef.current;
 
-    const setViewportVars = () => {
-      const vv = window.visualViewport;
-      const vh = vv ? vv.height * 0.01 : window.innerHeight * 0.01;
-      document.documentElement.style.setProperty("--vh", `${vh}px`);
-
-      const navHeight = nav?.offsetHeight ?? 0;
-      if (navHeight > 0) {
-        document.documentElement.style.setProperty("--mobile-nav-height", `${navHeight}px`);
-      }
-      const visualBottom = vv ? window.innerHeight - vv.height - vv.offsetTop : 0;
-      document.documentElement.style.setProperty("--nav-offset", `${visualBottom}px`);
-    };
-
-    // Retry until nav reports a non-zero height (covers first-paint races on refresh)
-    let tries = 0;
-    const retryUntilStable = () => {
-      setViewportVars();
-      const navHeight = nav?.offsetHeight ?? 0;
-      if (navHeight === 0 && tries < 20) {
-        tries += 1;
-        requestAnimationFrame(retryUntilStable);
+    const updatePosition = () => {
+      // Use window.innerHeight (more stable than visualViewport on iOS)
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      
+      // Get actual nav height after render
+      const nav = navRef.current;
+      if (nav) {
+        const navHeight = nav.getBoundingClientRect().height;
+        document.documentElement.style.setProperty('--mobile-nav-height', `${navHeight}px`);
       }
     };
-
-    retryUntilStable();
-
-    const onVVUpdate = () => requestAnimationFrame(setViewportVars);
-    const onLoadLike = () => requestAnimationFrame(retryUntilStable);
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") onLoadLike();
-    };
-
-    window.visualViewport?.addEventListener("resize", onVVUpdate);
-    window.visualViewport?.addEventListener("scroll", onVVUpdate);
-    window.addEventListener("orientationchange", onVVUpdate);
-    window.addEventListener("load", onLoadLike);
-    window.addEventListener("pageshow", onLoadLike); // BFCache restore
-    document.addEventListener("visibilitychange", onVisibility);
-
+    
+    // Run immediately
+    updatePosition();
+    
+    // Update on resize/orientation change
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('orientationchange', updatePosition);
+    
+    // For BFCache restore
+    window.addEventListener('pageshow', updatePosition);
+    
     return () => {
-      window.visualViewport?.removeEventListener("resize", onVVUpdate);
-      window.visualViewport?.removeEventListener("scroll", onVVUpdate);
-      window.removeEventListener("orientationchange", onVVUpdate);
-      window.removeEventListener("load", onLoadLike);
-      window.removeEventListener("pageshow", onLoadLike);
-      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('orientationchange', updatePosition);
+      window.removeEventListener('pageshow', updatePosition);
     };
   }, []);
 
