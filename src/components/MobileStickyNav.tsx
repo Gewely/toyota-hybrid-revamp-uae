@@ -549,7 +549,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             )}
             style={{
               ...(isGR ? carbonMatte : undefined),
-              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px) + 8px)", // sits above nav
+              bottom: "calc(var(--mobile-nav-height,80px) + env(safe-area-inset-bottom) + 12px)", // sits above nav with safe area
             }}
             role="dialog"
             aria-modal="true"
@@ -1488,8 +1488,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       {/* Bottom Nav */}
       <motion.nav
         ref={navRef}
-        className={cn("backdrop-blur-xl left-0 right-0 z-[200]", "fixed transition-transform duration-300")}
-        style={{ bottom: "calc(var(--nav-offset,0px))" }} // uses dynamic offset
+        className={cn("backdrop-blur-xl left-0 right-0 z-[100]", "fixed transition-transform duration-300")}
+        style={{ 
+          bottom: 0,
+          paddingBottom: "env(safe-area-inset-bottom)"
+        }}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={reduceMotion ? { duration: 0.1 } : spring}

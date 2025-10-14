@@ -86,7 +86,7 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
   return (
     <section
       ref={targetRef}
-      className="relative min-h-[100svh] lg:min-h-screen bg-black text-white overflow-hidden"
+      className="relative min-h-[100svh] lg:min-h-screen bg-white text-gray-900 overflow-hidden"
       {...touchHandlers}
     >
       {/* MOBILE: Full-screen immersive gallery */}
@@ -109,7 +109,7 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
             />
             
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/30 to-transparent" />
           </motion.div>
         </AnimatePresence>
 
@@ -164,11 +164,11 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
             NEW 2025
           </motion.div>
 
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight text-white">
             {title}
           </h1>
 
-          <p className="text-lg text-white/80 max-w-md">
+          <p className="text-lg text-white/90 max-w-md">
             {tagline}
           </p>
 
@@ -186,14 +186,14 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
                 >
                   <Icon className="w-5 h-5 text-[#EB0A1E]" />
                   <div>
-                    <div className="text-xl font-bold">
+                    <div className="text-xl font-bold text-white">
                       <AnimatedCounter
                         value={spec.value}
                         suffix={spec.suffix}
                         decimals={spec.decimals || 0}
                       />
                     </div>
-                    <div className="text-xs text-white/60">{spec.label}</div>
+                    <div className="text-xs text-white/70">{spec.label}</div>
                   </div>
                 </motion.div>
               );
@@ -281,7 +281,7 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
         </div>
 
         {/* Right: Content (40%) */}
-        <div className="relative w-[40%] h-full bg-gradient-to-br from-neutral-900 to-black p-12 flex flex-col justify-center">
+        <div className="relative w-[40%] h-full bg-gradient-to-br from-gray-50 to-white p-12 flex flex-col justify-center">
           <motion.div
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -298,10 +298,10 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
             </motion.div>
 
             <div>
-              <h1 className="text-6xl xl:text-7xl font-bold leading-tight mb-4">
+              <h1 className="text-6xl xl:text-7xl font-bold leading-tight mb-4 text-gray-900">
                 {title}
               </h1>
-              <p className="text-xl text-white/70 max-w-lg">
+              <p className="text-xl text-gray-600 max-w-lg">
                 {tagline}
               </p>
             </div>
@@ -313,21 +313,21 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
                 return (
                   <motion.div
                     key={idx}
-                    className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+                    className="p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-all cursor-pointer"
                     initial={{ y: 30, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.5 + idx * 0.1 }}
                     whileHover={{ y: -4, scale: 1.02 }}
                   >
                     <Icon className="w-6 h-6 text-[#EB0A1E] mb-3" />
-                    <div className="text-3xl font-bold mb-1">
+                    <div className="text-3xl font-bold mb-1 text-gray-900">
                       <AnimatedCounter
                         value={spec.value}
                         suffix={spec.suffix}
                         decimals={spec.decimals || 0}
                       />
                     </div>
-                    <div className="text-sm text-white/60">{spec.label}</div>
+                    <div className="text-sm text-gray-600">{spec.label}</div>
                   </motion.div>
                 );
               })}
@@ -346,7 +346,7 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
               <PremiumButton
                 onClick={onCarBuilder}
                 variant="outline"
-                className="h-16 border-2 border-white/20 text-white hover:bg-white/10 rounded-2xl text-lg font-semibold"
+                className="h-16 border-2 border-gray-300 text-gray-900 hover:bg-gray-50 rounded-2xl text-lg font-semibold"
               >
                 <Settings className="w-6 h-6 mr-2" />
                 Configure Your Vehicle
@@ -355,7 +355,7 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
           </motion.div>
 
           {/* Toyota emblem watermark */}
-          <div className="absolute bottom-12 right-12 opacity-5 text-white text-9xl font-bold pointer-events-none">
+          <div className="absolute bottom-12 right-12 opacity-5 text-gray-200 text-9xl font-bold pointer-events-none">
             TOYOTA
           </div>
         </div>
