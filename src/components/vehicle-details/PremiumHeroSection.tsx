@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   ChevronLeft,
@@ -21,7 +21,13 @@ import { PremiumButton } from "@/components/ui/premium-button";
 import AnimatedCounter from "@/components/ui/animated-counter";
 
 export type PremiumHeroSectionProps = {
-  vehicle?: VehicleModel & { tagline?: string; priceFrom?: string; badges?: string[]; disclaimer?: string };
+  vehicle?: VehicleModel & {
+    tagline?: string;
+    priceFrom?: string; // "From AED 129,900*"
+    badges?: string[]; // ["Hybrid","EV","GR"]
+    disclaimer?: string; // price footnote
+    year?: number;
+  };
   galleryImages: string[];
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
@@ -34,37 +40,39 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
   onCarBuilder,
 }) => {
   const prefersReduced = useReducedMotion();
+  const { targetRef, isIntersecting } = usePerformantIntersection({ threshold: 0.35 });
+
   const [current, setCurrent] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [isZoomed, setIsZoomed] = useState(false);
   const [showPriceNote, setShowPriceNote] = useState(false);
-  const { targetRef, isIntersecting } = usePerformantIntersection({ threshold: 0.35 });
-  const hasImages = galleryImages.length > 0;
 
-  // preload first 3
+  const images = galleryImages.length ? galleryImages : [];
+
+  // Preload first 3 images
   useEffect(() => {
-    galleryImages.slice(0, 3).forEach((src) => {
+    images.slice(0, 3).forEach((src) => {
       const img = new Image();
       img.src = src;
     });
-  }, [galleryImages]);
+  }, [images]);
 
-  // autoplay only when visible
+  // Autoplay while in view
   useEffect(() => {
-    if (!autoPlay || !isIntersecting || galleryImages.length < 2) return;
-    const id = setInterval(() => setCurrent((p) => (p + 1) % galleryImages.length), 5000);
+    if (!autoPlay || !isIntersecting || images.length < 2) return;
+    const id = setInterval(() => setCurrent((p) => (p + 1) % images.length), 5000);
     return () => clearInterval(id);
-  }, [autoPlay, isIntersecting, galleryImages.length]);
+  }, [autoPlay, isIntersecting, images.length]);
 
   const prev = useCallback(() => {
     setAutoPlay(false);
-    setCurrent((p) => (p - 1 + galleryImages.length) % galleryImages.length);
-  }, [galleryImages.length]);
+    setCurrent((p) => (p - 1 + images.length) % images.length);
+  }, [images.length]);
 
   const next = useCallback(() => {
     setAutoPlay(false);
-    setCurrent((p) => (p + 1) % galleryImages.length);
-  }, [galleryImages.length]);
+    setCurrent((p) => (p + 1) % images.length);
+  }, [images.length]);
 
   const touchHandlers = useTouchGestures({
     onSwipeLeft: next,
@@ -87,7 +95,7 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
 
   const title = `${vehicle?.year ? vehicle.year + " " : ""}${vehicle?.name ?? "Toyota"}`;
   const tagline = vehicle?.tagline ?? "Electrified performance. Everyday mastery.";
-  const priceFrom = vehicle?.priceFrom; // e.g., "From AED 129,900*"
+  const priceFrom = vehicle?.priceFrom;
 
   const specs = [
     { icon: Zap, value: 268, suffix: " HP", label: "Power" },
@@ -96,60 +104,63 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
     { icon: Shield, value: 5, suffix: "★", label: "Safety" },
   ] as const;
 
-  // Safe-area insets (no sticky usage anywhere)
+  // Safe-area insets (for notch devices; nothing sticky)
   const safe = {
     top: "env(safe-area-inset-top)",
     bottom: "env(safe-area-inset-bottom)",
   } as const;
 
   return (
-    <section ref={targetRef} className="relative isolate overflow-hidden bg-white text-gray-900" {...touchHandlers}>
-      {/* ===== Mobile: immersive stage with non-sticky UI ===== */}
-      <div className="lg:hidden relative w-full min-h-[100svh]">
-        {/* top util (not sticky; scoped inside hero only) */}
-        <div className="absolute left-0 right-0 flex items-center justify-between p-4" style={{ top: safe.top }}>
+    <section ref={targetRef} className="relative isolate min-h-[100svh] bg-white text-gray-900" {...touchHandlers}>
+      {/* ===== FULL-BLEED STAGE (single layout for all breakpoints) ===== */}
+      <div className="relative h-[100svh] w-full overflow-hidden">
+        {/* Media */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={images.length ? images[current] : "placeholder"}
+            className="absolute inset-0 z-0"
+            initial={{ opacity: 0, scale: prefersReduced ? 1 : 1.03 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0.15, scale: 0.98 }}
+            transition={{ duration: prefersReduced ? 0.2 : 0.6, ease: [0.22, 0.61, 0.36, 1] }}
+          >
+            {images.length ? (
+              <PremiumImage
+                src={images[current]}
+                alt={`${title} – ${current + 1}`}
+                priority={current === 0}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 h-full w-full bg-gray-100" />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Readability gradients (bottom + top) */}
+        <div className="absolute inset-x-0 bottom-0 z-10 h-[45%] bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
+        <div className="absolute inset-x-0 top-0 z-10 h-[18%] bg-gradient-to-b from-black/15 via-black/0 to-transparent" />
+
+        {/* Top utilities (not sticky, just inside hero) */}
+        <div className="absolute left-0 right-0 z-20 flex items-center justify-between p-4" style={{ top: safe.top }}>
+          <div className="text-xs text-white/90">{vehicle?.badges?.join(" • ")}</div>
           <button
             onClick={handleShare}
-            className="rounded-xl border border-gray-200/70 bg-white/70 px-3 py-2 backdrop-blur"
+            className="rounded-xl border border-white/30 bg-white/60 px-3 py-2 backdrop-blur"
             aria-label="Share"
           >
             <Share2 className="h-5 w-5" />
           </button>
-          <div className="text-xs text-gray-500">{vehicle?.badges?.join(" • ")}</div>
         </div>
 
-        {/* media */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={hasImages ? galleryImages[current] : "placeholder"}
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: prefersReduced ? 1 : 1.03 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0.1, scale: 0.98 }}
-            transition={{ duration: prefersReduced ? 0.2 : 0.6, ease: [0.22, 0.61, 0.36, 1] }}
-          >
-            {hasImages ? (
-              <PremiumImage
-                src={galleryImages[current]}
-                alt={`${title} – ${current + 1}`}
-                priority={current === 0}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full bg-gray-100" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* arrows */}
-        {galleryImages.length > 1 && (
+        {/* Arrows */}
+        {images.length > 1 && (
           <>
             <motion.button
               onClick={prev}
               whileTap={{ scale: 0.95 }}
               aria-label="Previous image"
-              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/25 p-3 backdrop-blur border border-white/25"
+              className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/25 bg-black/30 p-3 backdrop-blur"
             >
               <ChevronLeft className="h-5 w-5 text-white" />
             </motion.button>
@@ -157,17 +168,17 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
               onClick={next}
               whileTap={{ scale: 0.95 }}
               aria-label="Next image"
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/25 p-3 backdrop-blur border border-white/25"
+              className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/25 bg-black/30 p-3 backdrop-blur"
             >
               <ChevronRight className="h-5 w-5 text-white" />
             </motion.button>
           </>
         )}
 
-        {/* dots */}
-        {galleryImages.length > 1 && (
-          <div className="absolute left-0 right-0 bottom-40 flex items-center justify-center gap-2">
-            {galleryImages.map((_, i) => (
+        {/* Dots */}
+        {images.length > 1 && (
+          <div className="absolute bottom-[32%] left-0 right-0 z-20 flex items-center justify-center gap-2 px-6">
+            {images.map((_, i) => (
               <span
                 key={i}
                 className={`h-1.5 w-6 rounded-full transition-all ${i === current ? "bg-white" : "bg-white/40"}`}
@@ -176,282 +187,105 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
           </div>
         )}
 
-        {/* content block (bottom), not sticky */}
-        <motion.div
-          className="absolute left-0 right-0 rounded-t-3xl bg-white p-6 shadow-[0_-20px_60px_rgba(0,0,0,0.12)]"
-          style={{ bottom: `max(0px, ${safe.bottom})` }}
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <div className="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
-            NEW 2025
-          </div>
+        {/* ===== Overlay Content: centered-left on desktop, centered on mobile ===== */}
+        <div className="absolute inset-x-0 bottom-0 z-30" style={{ paddingBottom: `max(16px, ${safe.bottom})` }}>
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="pb-6 sm:pb-8 lg:pb-12">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                NEW 2025
+              </div>
 
-          <h1 className="mt-3 text-4xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-2 text-base text-gray-600">{tagline}</p>
+              {/* Title / Tagline */}
+              <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">{title}</h1>
+              <p className="mt-2 max-w-2xl text-base text-white/90 sm:text-lg">{tagline}</p>
 
-          {/* price + disclaimer popover (tap to toggle) */}
-          {priceFrom && (
-            <div className="mt-3 flex items-center gap-2">
-              <div className="text-sm font-medium text-gray-900">{priceFrom}</div>
-              {vehicle?.disclaimer && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowPriceNote((s) => !s)}
-                    className="rounded-full border border-gray-300 p-1"
-                    aria-expanded={showPriceNote}
-                    aria-controls="price-note"
-                  >
-                    <Info className="h-4 w-4 text-gray-500" />
-                  </button>
-                  <AnimatePresence>
-                    {showPriceNote && (
-                      <motion.div
-                        id="price-note"
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 6 }}
-                        transition={{ duration: 0.18 }}
-                        className="absolute z-10 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-600 shadow-lg"
+              {/* Price + disclaimer */}
+              {priceFrom && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="text-sm font-medium text-white">{priceFrom}</div>
+                  {vehicle?.disclaimer && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowPriceNote((s) => !s)}
+                        className="rounded-full border border-white/40 bg-white/10 p-1 backdrop-blur"
+                        aria-expanded={showPriceNote}
+                        aria-controls="price-note"
                       >
-                        {vehicle.disclaimer}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <Info className="h-4 w-4 text-white/80" />
+                      </button>
+                      <AnimatePresence>
+                        {showPriceNote && (
+                          <motion.div
+                            id="price-note"
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 6 }}
+                            transition={{ duration: 0.18 }}
+                            className="absolute z-40 mt-2 w-72 rounded-xl border border-white/20 bg-white/95 p-3 text-xs text-gray-700 shadow-xl backdrop-blur"
+                          >
+                            {vehicle.disclaimer}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* specs */}
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            {specs.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <motion.div
-                  key={s.label}
-                  initial={{ y: 12, opacity: 0 }}
-                  whileInView={{ y: 0, opacity: 1 }}
-                  viewport={{ once: true, amount: 0.6 }}
-                  transition={{ delay: 0.05 * i }}
-                  className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
-                >
-                  <Icon className="h-5 w-5 text-red-600" />
-                  <div>
-                    <div className="text-lg font-semibold">
-                      <AnimatedCounter
-                        value={s.value as number}
-                        suffix={s.suffix}
-                        decimals={(s as any).decimals || 0}
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500">{s.label}</div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* CTAs (clustered; not sticky) */}
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <PremiumButton
-              onClick={onBookTestDrive}
-              className="h-14 flex-1 rounded-2xl bg-red-600 text-white hover:bg-red-600/90"
-            >
-              <Calendar className="mr-2 h-5 w-5" />
-              Book Test Drive
-            </PremiumButton>
-            <PremiumButton
-              onClick={onCarBuilder}
-              variant="outline"
-              className="h-14 flex-1 rounded-2xl border-2 border-gray-300 text-gray-900 hover:bg-gray-50"
-            >
-              <Settings className="mr-2 h-5 w-5" />
-              Configure
-            </PremiumButton>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* ===== Desktop: split layout, no sticky elements ===== */}
-      <div className="hidden h-[calc(100vh)] w-full grid-cols-12 lg:grid">
-        {/* stage */}
-        <div className="relative col-span-7">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={hasImages ? galleryImages[current] : "placeholder-d"}
-              className="absolute inset-0"
-              initial={{ opacity: 0.3 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0.3 }}
-              transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
-            >
-              {hasImages ? (
-                <PremiumImage
-                  src={galleryImages[current]}
-                  alt={`${title} – ${current + 1}`}
-                  priority={current === 0}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-gray-100" />
-              )}
-              {/* subtle hover light sweep */}
-              {!prefersReduced && (
-                <motion.div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0"
-                  whileHover={{
-                    background: [
-                      "radial-gradient(800px 400px at 0% 50%, rgba(255,255,255,0.12), transparent 60%)",
-                      "radial-gradient(800px 400px at 100% 50%, rgba(255,255,255,0.12), transparent 60%)",
-                    ],
-                  }}
-                  transition={{ duration: 1.2, repeat: Infinity, repeatType: "mirror" }}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {galleryImages.length > 1 && (
-            <>
-              <motion.button
-                onClick={prev}
-                whileHover={{ scale: 1.05, x: -3 }}
-                whileTap={{ scale: 0.95 }}
-                className="absolute left-8 top-1/2 -translate-y-1/2 rounded-full border border-white/25 bg-black/25 p-4 backdrop-blur"
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="h-6 w-6 text-white" />
-              </motion.button>
-              <motion.button
-                onClick={next}
-                whileHover={{ scale: 1.05, x: 3 }}
-                whileTap={{ scale: 0.95 }}
-                className="absolute right-8 top-1/2 -translate-y-1/2 rounded-full border border-white/25 bg:black/25 p-4 backdrop-blur"
-                aria-label="Next image"
-              >
-                <ChevronRight className="h-6 w-6 text-white" />
-              </motion.button>
-
-              {/* thumbs */}
-              <div className="absolute bottom-8 left-8 right-8 flex gap-2 overflow-x-auto">
-                {galleryImages.map((src, i) => (
-                  <button
-                    key={src}
-                    onClick={() => {
-                      setAutoPlay(false);
-                      setCurrent(i);
-                    }}
-                    className={`relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
-                      i === current ? "border-red-600" : "border-white/30 opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <img src={src} className="h-full w-full object-cover" alt="" />
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* content */}
-        <div className="relative col-span-5 flex items-center bg-gradient-to-br from-gray-50 to-white p-12">
-          <div className="w-full max-w-xl">
-            <div className="inline-flex items-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white">
-              NEW 2025
-            </div>
-
-            <h1 className="mt-4 text-6xl font-bold tracking-tight">{title}</h1>
-            <p className="mt-3 max-w-prose text-xl text-gray-600">{tagline}</p>
-
-            {/* price + note */}
-            {priceFrom && (
-              <div className="mt-4 flex items-center gap-2">
-                <div className="text-base font-medium text-gray-900">{priceFrom}</div>
-                {vehicle?.disclaimer && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowPriceNote((s) => !s)}
-                      className="rounded-full border border-gray-300 p-1"
-                      aria-expanded={showPriceNote}
+              {/* Specs row */}
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:max-w-xl sm:grid-cols-4">
+                {specs.map((s, i) => {
+                  const Icon = s.icon;
+                  return (
+                    <motion.div
+                      key={s.label}
+                      initial={{ y: 12, opacity: 0 }}
+                      whileInView={{ y: 0, opacity: 1 }}
+                      viewport={{ once: true, amount: 0.6 }}
+                      transition={{ delay: 0.05 * i }}
+                      className="flex items-center gap-3 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-white backdrop-blur"
                     >
-                      <Info className="h-4 w-4 text-gray-500" />
-                    </button>
-                    <AnimatePresence>
-                      {showPriceNote && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 6 }}
-                          transition={{ duration: 0.18 }}
-                          className="absolute z-10 mt-2 w-80 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-600 shadow-lg"
-                        >
-                          {vehicle.disclaimer}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
+                      <Icon className="h-5 w-5 text-red-300" />
+                      <div>
+                        <div className="text-lg font-semibold">
+                          <AnimatedCounter
+                            value={s.value as number}
+                            suffix={s.suffix}
+                            decimals={(s as any).decimals || 0}
+                          />
+                        </div>
+                        <div className="text-xs text-white/80">{s.label}</div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
-            )}
 
-            {/* specs */}
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              {specs.map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <motion.div
-                    key={s.label}
-                    initial={{ y: 16, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true, amount: 0.6 }}
-                    transition={{ delay: 0.06 * i }}
-                    className="rounded-2xl border border-gray-200 bg-gray-50 p-6 hover:bg-gray-100"
-                  >
-                    <Icon className="mb-3 h-6 w-6 text-red-600" />
-                    <div className="text-3xl font-bold">
-                      <AnimatedCounter
-                        value={s.value as number}
-                        suffix={s.suffix}
-                        decimals={(s as any).decimals || 0}
-                      />
-                    </div>
-                    <div className="text-sm text-gray-600">{s.label}</div>
-                  </motion.div>
-                );
-              })}
+              {/* CTAs */}
+              <div className="mt-5 flex flex-col gap-3 sm:max-w-xl sm:flex-row">
+                <PremiumButton
+                  onClick={onBookTestDrive}
+                  className="h-14 flex-1 rounded-2xl bg-red-600 text-white shadow-2xl shadow-red-600/30 hover:bg-red-600/90"
+                >
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Book Test Drive
+                </PremiumButton>
+                <PremiumButton
+                  onClick={onCarBuilder}
+                  variant="outline"
+                  className="h-14 flex-1 rounded-2xl border-2 border-white/70 bg-white/10 text-white hover:bg-white/20 backdrop-blur"
+                >
+                  <Settings className="mr-2 h-5 w-5" />
+                  Configure
+                </PremiumButton>
+              </div>
             </div>
-
-            {/* CTAs */}
-            <div className="mt-6 flex flex-col gap-4">
-              <PremiumButton
-                className="h-16 rounded-2xl bg-red-600 text-white hover:bg-red-600/90"
-                onClick={onBookTestDrive}
-              >
-                <Calendar className="mr-2 h-6 w-6" />
-                Book Test Drive
-              </PremiumButton>
-              <PremiumButton
-                variant="outline"
-                className="h-16 rounded-2xl border-2 border-gray-300 text-gray-900 hover:bg-gray-50"
-                onClick={onCarBuilder}
-              >
-                <Settings className="mr-2 h-6 w-6" />
-                Configure Your Vehicle
-              </PremiumButton>
-            </div>
-          </div>
-
-          {/* watermark */}
-          <div className="pointer-events-none absolute bottom-10 right-10 text-9xl font-black tracking-tight text-gray-200/60">
-            TOYOTA
           </div>
         </div>
       </div>
 
-      {/* ===== Fullscreen image modal (optional) ===== */}
+      {/* ===== Optional: fullscreen view when zoomed ===== */}
       <AnimatePresence>
         {isZoomed && (
           <motion.div
@@ -467,8 +301,8 @@ const PremiumHeroSection: React.FC<PremiumHeroSectionProps> = ({
             >
               <Maximize2 className="h-6 w-6 text-white" />
             </button>
-            {hasImages ? (
-              <img src={galleryImages[current]} alt={title} className="h-full w-full object-contain" />
+            {images.length ? (
+              <img src={images[current]} alt={title} className="h-full w-full object-contain" />
             ) : (
               <div className="h-full w-full bg-gray-100" />
             )}
