@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import {
   Search,
@@ -313,6 +314,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     }
   };
 
+  const { toast: _toast } = { toast: useToast().toast }; // keep types happy
+
   const handleShare = useCallback(async () => {
     if (!vehicle || typeof window === "undefined") return;
     contextualHaptic.buttonPress();
@@ -325,27 +328,30 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         });
       } else {
         await navigator.clipboard.writeText(window.location.href);
-        toast({ title: "Link Copied", description: "Vehicle link has been copied to clipboard." });
+        _toast({
+          title: "Link Copied",
+          description: "Vehicle link has been copied to clipboard.",
+        });
       }
     } catch {
       /* user cancelled share */
     }
-  }, [vehicle, fmt, toast]);
+  }, [vehicle, fmt, _toast]);
 
   const handleBrochureDownload = useCallback(() => {
     if (!vehicle) return;
     contextualHaptic.buttonPress();
-    toast({
+    _toast({
       title: "Brochure Download",
       description: "Your brochure is being prepared and will be downloaded shortly.",
     });
     setTimeout(() => {
-      toast({
+      _toast({
         title: "Download Complete",
         description: `${vehicle.name} brochure has been downloaded.`,
       });
     }, 1500);
-  }, [vehicle, toast]);
+  }, [vehicle, _toast]);
 
   const shouldShowNav = deviceInfo.isInitialized && deviceInfo.isMobile;
 
@@ -385,7 +391,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         if (computedPb > 0) lastEl.style.paddingBottom = "0px";
       }
 
-      // CSS fallback so if the last element changes later, it still zeroes out
       if (!document.getElementById("mobile-nav-gap-fix")) {
         const s = document.createElement("style");
         s.id = "mobile-nav-gap-fix";
@@ -413,8 +418,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       vv?.removeEventListener?.("scroll", onVV);
 
       const scroller = getScrollRoot();
-
-      // restore last element inline styles
       const el = scroller.lastElementChild as HTMLElement | null;
       if (el) {
         if (el.dataset.prevMb !== undefined) el.style.marginBottom = el.dataset.prevMb!;
@@ -503,7 +506,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   const coachVariants = {
     hidden: { opacity: 0, y: 8, scale: 0.98 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 18 } },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { type: "spring", stiffness: 300, damping: 18 },
+    },
     exit: { opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.15 } },
   };
 
@@ -536,7 +544,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
   if (!shouldShowNav) return null;
 
-  return (
+  // ---------- PORTAL CONTENT (fixes iOS/transform ancestor issues) ----------
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
+
+  const content = (
     <>
       {/* Backdrop for overlays */}
       <AnimatePresence>
@@ -1510,10 +1521,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       <motion.nav
         ref={navRef}
         className={cn("backdrop-blur-xl left-0 right-0 fixed")}
-        style={{
-          bottom: 0,
-          zIndex: Z.stickyNav,
-        }}
+        style={{ bottom: 0, zIndex: Z.stickyNav }}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={reduceMotion ? { duration: 0.1 } : spring}
@@ -1530,7 +1538,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   border: "1px solid rgba(200, 200, 200, 0.3)",
                   borderBottom: "none",
                 }),
-            // HEIGHT TWEAK: slightly smaller bar, still safe-area-aware
             paddingBottom: "calc(2px + env(safe-area-inset-bottom))",
             paddingTop: "0px",
           }}
@@ -1669,6 +1676,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       </motion.nav>
     </>
   );
+
+  return portalTarget ? createPortal(content, portalTarget) : content;
 };
 
 interface NavItemProps {
