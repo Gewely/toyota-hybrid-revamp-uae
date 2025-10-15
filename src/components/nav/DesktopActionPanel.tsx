@@ -13,6 +13,8 @@ import {
   X
 } from 'lucide-react';
 import { useReducedMotionSafe } from '@/hooks/useReducedMotionSafe';
+import { usePassiveScroll } from '@/hooks/use-passive-scroll';
+import { Z } from '@/lib/z-index';
 
 interface DesktopActionPanelProps {
   onReserve?: () => void;
@@ -37,15 +39,10 @@ const DesktopActionPanel: React.FC<DesktopActionPanelProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const prefersReducedMotion = useReducedMotionSafe();
 
-  // Show after scrolling down
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrolled = window.scrollY > 300;
-      setIsVisible(scrolled);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+  // Show after scrolling down - using passive scroll hook
+  usePassiveScroll(() => {
+    const scrolled = window.scrollY > 300;
+    setIsVisible(scrolled);
   }, []);
 
   const actions = [
@@ -97,7 +94,8 @@ const DesktopActionPanel: React.FC<DesktopActionPanelProps> = ({
             animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
             exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 100 }}
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-            className={`fixed right-8 top-1/2 transform -translate-y-1/2 z-50 ${className}`}
+            className={`fixed right-8 top-1/2 transform -translate-y-1/2 ${className}`}
+            style={{ zIndex: Z.floatingActions }}
           >
             {/* Glass panel */}
             <div className="bg-black/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl min-w-[280px]">

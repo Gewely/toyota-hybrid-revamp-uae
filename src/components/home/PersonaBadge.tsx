@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { usePassiveScroll } from "@/hooks/use-passive-scroll";
 
 const PersonaBadge: React.FC = () => {
   const { selectedPersona, resetPersona, setSelectedPersona, isTransitioning, personaData } = usePersona();
@@ -21,15 +22,10 @@ const PersonaBadge: React.FC = () => {
   const [badgePosition, setBadgePosition] = useState({ x: 0, y: 0 });
   const [isPinned, setIsPinned] = useState(true);
 
-  // Track scroll position for dynamic badge behavior
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      // Show CTA after scrolling a bit
-      setShowCTA(scrollY > 300);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+  // Track scroll position for dynamic badge behavior - using passive scroll hook
+  usePassiveScroll(() => {
+    const scrollY = window.scrollY;
+    setShowCTA(scrollY > 300);
   }, []);
   
   if (!selectedPersona) return null;

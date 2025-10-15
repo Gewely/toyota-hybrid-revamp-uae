@@ -30,6 +30,9 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
+import { Z } from "@/lib/z-index";
+import { useVisualViewport } from "@/hooks/use-visual-viewport";
+import { usePassiveScroll } from "@/hooks/use-passive-scroll";
 
 const GR_RED = "#EB0A1E";
 const GR_EDGE = "#17191B";
@@ -213,24 +216,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     [],
   );
 
-  // Scroll shrink
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let ticking = false;
-    const update = () => {
-      const y = window.scrollY;
-      const threshold = 100;
-      setIsScrolled((prev) => (y > threshold ? true : y <= threshold * 0.7 ? false : prev));
-      ticking = false;
-    };
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+  // Visual viewport tracking for iOS
+  const { viewportHeight } = useVisualViewport();
+
+  // Scroll shrink - using passive scroll hook
+  usePassiveScroll(() => {
+    const y = window.scrollY;
+    const threshold = 100;
+    setIsScrolled((prev) => (y > threshold ? true : y <= threshold * 0.7 ? false : prev));
   }, []);
 
   // Reset section on route change
@@ -526,9 +519,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-40"
+            className="fixed inset-0 bg-black/60"
+            style={{ zIndex: Z.overlay }}
             onClick={navigationState.resetNavigation}
-            style={{ WebkitTapHighlightColor: "transparent" }}
             aria-hidden="true"
           />
         )}
@@ -543,13 +536,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             exit={{ y: 300, opacity: 0 }}
             transition={reduceMotion ? { duration: 0.1 } : spring}
             className={cn(
-              "fixed left-4 right-4 z-50 rounded-2xl shadow-2xl border",
+              "fixed left-4 right-4 rounded-2xl shadow-2xl border",
               deviceInfo.deviceCategory === "smallMobile" ? "p-3" : "p-4",
               isGR ? "" : "bg-white/95 backdrop-blur-xl border-gray-200/50",
             )}
             style={{
               ...(isGR ? carbonMatte : undefined),
-              bottom: "calc(var(--mobile-nav-height,80px) + env(safe-area-inset-bottom) + 12px)", // sits above nav with safe area
+              zIndex: Z.drawer,
+              bottom: `calc(var(--mobile-nav-height,80px) + env(safe-area-inset-bottom) + 12px)`,
             }}
             role="dialog"
             aria-modal="true"
@@ -694,7 +688,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             exit={{ y: "100%" }}
             transition={reduceMotion ? { duration: 0.2 } : spring}
             className={cn(
-              "fixed left-0 right-0 rounded-t-3xl shadow-2xl z-50 overflow-hidden border-t",
+              "fixed left-0 right-0 rounded-t-3xl shadow-2xl overflow-hidden border-t",
               deviceInfo.deviceCategory === "smallMobile" ? "max-h-[70vh]" : "max-h-[80vh]",
               isGR ? "border-[1px]" : "border-t-4",
             )}
@@ -703,7 +697,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             aria-label="Toyota Connect menu"
             style={{
               ...(isGR ? carbonMatte : { backgroundColor: "white", border: "1px solid #e5e7eb" }),
-              bottom: "calc(var(--mobile-nav-height,72px) + var(--nav-offset,0px))",
+              zIndex: Z.drawer,
+              bottom: `calc(var(--mobile-nav-height,72px) + env(safe-area-inset-bottom))`,
             }}
           >
             <div
@@ -1488,10 +1483,11 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       {/* Bottom Nav */}
       <motion.nav
         ref={navRef}
-        className={cn("backdrop-blur-xl left-0 right-0 z-[100]", "fixed transition-transform duration-300")}
+        className={cn("backdrop-blur-xl left-0 right-0 fixed transition-transform duration-300")}
         style={{ 
           bottom: 0,
-          paddingBottom: "env(safe-area-inset-bottom)"
+          paddingBottom: "env(safe-area-inset-bottom)",
+          zIndex: Z.stickyNav,
         }}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

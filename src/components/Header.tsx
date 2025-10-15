@@ -13,6 +13,8 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { openTestDrivePopup } from "@/utils/testDriveUtils";
+import { Z } from "@/lib/z-index";
+import { usePassiveScroll } from "@/hooks/use-passive-scroll";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -45,24 +47,19 @@ const Header: React.FC = () => {
     { label: "Motor Sport", href: "https://www.toyota.ae/en/motorsports/", external: true },
   ];
 
-  // Handle scroll behavior
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < lastScrollY) {
-        // Scrolling up
-        setIsVisible(true);
-      } else if (currentScrollY > 100 && currentScrollY > lastScrollY) {
-        // Scrolling down and past 100px
-        setIsVisible(false);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+  // Handle scroll behavior - using passive scroll hook
+  usePassiveScroll(() => {
+    const currentScrollY = window.scrollY;
+    
+    if (currentScrollY < lastScrollY) {
+      // Scrolling up
+      setIsVisible(true);
+    } else if (currentScrollY > 100 && currentScrollY > lastScrollY) {
+      // Scrolling down and past 100px
+      setIsVisible(false);
+    }
+    
+    setLastScrollY(currentScrollY);
   }, [lastScrollY]);
 
   const handleNavigation = (item: any) => {
@@ -80,8 +77,11 @@ const Header: React.FC = () => {
   if (isMobile) {
     return (
       <motion.header 
-        className="bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100/50 sticky top-0 z-40"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 14px)' }}
+        className="bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100/50 sticky top-0"
+        style={{ 
+          paddingTop: 'max(env(safe-area-inset-top), 14px)',
+          zIndex: Z.header 
+        }}
         initial={{ y: 0 }}
         animate={{ y: isVisible ? 0 : -100 }}
         transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -159,8 +159,11 @@ const Header: React.FC = () => {
 
   return (
     <motion.header 
-      className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40"
-      style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}
+      className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0"
+      style={{ 
+        paddingTop: 'max(env(safe-area-inset-top), 0px)',
+        zIndex: Z.header 
+      }}
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
