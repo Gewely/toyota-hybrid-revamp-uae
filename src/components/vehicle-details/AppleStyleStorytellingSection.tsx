@@ -36,11 +36,11 @@ type Scene = {
 /* ============================================================
    Animated Number (reduced-motion aware)
 ============================================================ */
-const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
-  value,
-  duration = 900,
-  suffix = "",
-}) => {
+const AnimatedNumber: React.FC<{
+  value: number;
+  duration?: number;
+  suffix?: string;
+}> = ({ value, duration = 900, suffix = "" }) => {
   const prefersReduced = useReducedMotion();
   const [display, setDisplay] = useState<number>(prefersReduced ? value : 0);
 
@@ -112,7 +112,6 @@ function useWistiaPlayer(videoId?: string) {
 function isSectionFullyInView(el: HTMLElement, tol = 2) {
   const rect = el.getBoundingClientRect();
   const vh = window.innerHeight || document.documentElement.clientHeight;
-  // “Fully viewed” = covers the viewport (within tolerance)
   return rect.top <= tol && rect.bottom >= vh - tol;
 }
 
@@ -126,23 +125,23 @@ interface Props {
   navigate: (path: string) => void;
   onInteriorExplore: () => void;
   onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void; // kept for API compatibility
-  onSafetyExplore: () => void; // kept for API compatibility
+  onHybridTechExplore: () => void;
+  onSafetyExplore: () => void;
   galleryImages: string[];
 }
 
 /* ============================================================
    Component
 ============================================================ */
-const StorytellingSection: React.FC<Props> = ({
+const AppleStyleStorytellingSection: React.FC<Props> = ({
   monthlyEMI,
   setIsBookingOpen,
   setIsFinanceOpen,
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore, // eslint-disable-line
-  onSafetyExplore, // eslint-disable-line
+  onHybridTechExplore: _onHybridTechExplore, // keep API compatibility
+  onSafetyExplore: _onSafetyExplore, // keep API compatibility
   galleryImages,
 }) => {
   const prefersReduced = useReducedMotion();
@@ -169,10 +168,10 @@ const StorytellingSection: React.FC<Props> = ({
           variant: "secondary",
         },
         stats: [
-          { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6" /> },
-          { value: 7.1, suffix: "s", label: "0–100 km/h", icon: <Car className="w-6 h-6" /> },
-          { value: 850, suffix: " km", label: "Range", icon: <Sparkles className="w-6 h-6" /> },
-          { value: 5, suffix: "★", label: "Safety", icon: <Shield className="w-6 h-6" /> },
+          { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6" aria-hidden="true" /> },
+          { value: 7.1, suffix: "s", label: "0–100 km/h", icon: <Car className="w-6 h-6" aria-hidden="true" /> },
+          { value: 850, suffix: " km", label: "Range", icon: <Sparkles className="w-6 h-6" aria-hidden="true" /> },
+          { value: 5, suffix: "★", label: "Safety", icon: <Shield className="w-6 h-6" aria-hidden="true" /> },
         ],
       },
       {
@@ -219,15 +218,15 @@ const StorytellingSection: React.FC<Props> = ({
   const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [fullyInView, setFullyInView] = useState(false); // <— precise visibility gate
+  const [fullyInView, setFullyInView] = useState(false);
 
   const active = scenes[index];
   const lastIndex = scenes.length - 1;
 
-  // LOCK only when section fully covers viewport, motion is allowed, and not on last slide
+  // Lock only when: section fully covers viewport, motion allowed, and not on last slide
   const isLocked = fullyInView && !prefersReduced && index < lastIndex;
 
-  /* ----------------- Fully-in-view tracker (scroll+resize, rAF-throttled) ----------------- */
+  /* ----------------- Fully-in-view tracker (rAF-throttled) ----------------- */
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -237,7 +236,6 @@ const StorytellingSection: React.FC<Props> = ({
       ticking = false;
       const nowFullyInView = isSectionFullyInView(el, 2);
       setFullyInView((prev) => {
-        // Reset to scene 0 ONLY on first full entry
         if (!prev && nowFullyInView) setIndex(0);
         return nowFullyInView;
       });
@@ -250,7 +248,6 @@ const StorytellingSection: React.FC<Props> = ({
       }
     };
 
-    // initial compute
     update();
     window.addEventListener("scroll", onScrollOrResize, { passive: true });
     window.addEventListener("resize", onScrollOrResize, { passive: true });
@@ -275,7 +272,7 @@ const StorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, [prefersReduced]);
 
-  /* ----------------- Step navigation handlers (attached ONLY when locked) ----------------- */
+  /* ----------------- Step navigation handlers ----------------- */
   const touchStartY = useRef<number | null>(null);
 
   const step = useCallback(
@@ -306,7 +303,7 @@ const StorytellingSection: React.FC<Props> = ({
       if (!isLocked || touchStartY.current === null) return;
       const currentY = e.touches[0].clientY;
       const deltaY = Math.abs(touchStartY.current - currentY);
-      if (deltaY > 10) e.preventDefault(); // clear vertical swipe
+      if (deltaY > 10) e.preventDefault();
     },
     [isLocked],
   );
@@ -388,7 +385,7 @@ const StorytellingSection: React.FC<Props> = ({
       ref={sectionRef}
       className="relative bg-black text-white overflow-hidden select-none"
       style={{
-        minHeight: "100svh", // use 100lvh if available in your Tailwind config
+        minHeight: "100svh",
         overscrollBehavior: "contain",
         touchAction: isLocked || prefersReduced ? (isLocked ? "none" : "auto") : "auto",
         scrollSnapAlign: "start",
@@ -415,7 +412,7 @@ const StorytellingSection: React.FC<Props> = ({
             alt={active.title}
             className="absolute inset-0 w-full h-full object-cover"
             loading="eager"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
           />
           {active.backgroundVideoWistiaId && (
@@ -427,7 +424,7 @@ const StorytellingSection: React.FC<Props> = ({
               />
             </div>
           )}
-          {/* overlays */}
+          {/* subtle overlays */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay pointer-events-none"
             animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
@@ -540,7 +537,7 @@ const StorytellingSection: React.FC<Props> = ({
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20 overflow-hidden">
         <motion.div
           className="h-full bg-red-600 origin-left will-change-transform"
-          animate={{ scaleX: (index + 1) / scenes.length }}
+          animate={{ scaleX: progressRatio }}
           initial={false}
           transition={{ duration: prefersReduced ? 0.18 : 0.45 }}
         />
@@ -570,4 +567,4 @@ const StorytellingSection: React.FC<Props> = ({
   );
 };
 
-export default StorytellingSection;
+export default AppleStyleStorytellingSection;
