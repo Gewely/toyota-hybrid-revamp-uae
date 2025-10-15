@@ -1504,8 +1504,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   borderBottom: "none",
                 }),
             // Compact, safe-area aware bar
-            paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
-            paddingTop: "6px",
+            paddingBottom: "calc(4px + env(safe-area-inset-bottom))",
+            paddingTop: "2px",
           }}
         >
           <div
@@ -1514,7 +1514,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               vehicle ? "grid-cols-5" : "grid-cols-4",
               "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4",
             )}
-            style={{ minHeight: "56px" }}
+            style={{ minHeight: "48px" }}
           >
             <NavItem
               asButton
@@ -1593,8 +1593,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       <div
                         className={cn("flex items-center justify-center rounded-full")}
                         style={{
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           background: "linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)",
                           boxShadow:
                             "0 6px 20px rgba(235, 10, 30, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.2)",
@@ -1673,8 +1673,8 @@ const NavItem: React.FC<NavItemProps> = ({
   ariaLabel,
 }) => {
   // Fixed compact sizes (no shrink-on-scroll)
-  const itemMinHeight = deviceCategory === "smallMobile" ? 50 : deviceCategory === "standardMobile" ? 56 : 60;
-  const iconBox = deviceCategory === "smallMobile" ? 32 : 36;
+  const itemMinHeight = deviceCategory === "smallMobile" ? 44 : deviceCategory === "standardMobile" ? 46 : 48;
+  const iconBox = deviceCategory === "smallMobile" ? 26 : 28;
 
   const content = (
     <>
