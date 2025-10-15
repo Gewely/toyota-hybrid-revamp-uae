@@ -50,6 +50,8 @@ const GR_BTN_PRIMARY =
 const GR_BTN_SURFACE =
   "bg-[#111315] border border-[#17191B] text-[#E6E7E9] hover:bg-[#141618] focus-visible:ring-2 focus-visible:ring-[#EB0A1E]";
 
+const NAV_BLEED_PX = 12;
+
 function useGRMode() {
   const initial = () => {
     if (typeof window !== "undefined") {
@@ -370,10 +372,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       const navHeight = Math.round(nav.getBoundingClientRect().height);
       document.documentElement.style.setProperty("--mobile-nav-height", `${navHeight}px`);
       document.documentElement.style.setProperty("--mobile-nav-total", `var(--mobile-nav-height, ${navHeight}px)`);
+      document.documentElement.style.setProperty("--mobile-nav-overlap", `${NAV_BLEED_PX}px`);
 
-      // Pad the element that actually scrolls
+      // Pad the element that actually scrolls, but allow a small overlap
       scroller.classList.add("with-mobile-nav");
-      (scroller.style as any).paddingBottom = `var(--mobile-nav-total)`;
+      (scroller.style as any).paddingBottom =
+        `calc(var(--mobile-nav-total) - var(--mobile-nav-overlap, ${NAV_BLEED_PX}px))`;
     };
 
     applyOffsets();
