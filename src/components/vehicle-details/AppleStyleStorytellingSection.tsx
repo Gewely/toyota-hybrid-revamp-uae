@@ -8,19 +8,8 @@ import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX
 /* ============================================================
    Types
 ============================================================ */
-type CTA = {
-  label: string;
-  action: () => void;
-  variant?: "primary" | "secondary";
-};
-
-type Stat = {
-  value: number;
-  suffix?: string;
-  label: string;
-  icon?: React.ReactNode;
-};
-
+type CTA = { label: string; action: () => void; variant?: "primary" | "secondary" };
+type Stat = { value: number; suffix?: string; label: string; icon?: React.ReactNode };
 type Scene = {
   id: string;
   title: string;
@@ -36,11 +25,11 @@ type Scene = {
 /* ============================================================
    Animated Number (reduced-motion aware)
 ============================================================ */
-const AnimatedNumber: React.FC<{
-  value: number;
-  duration?: number;
-  suffix?: string;
-}> = ({ value, duration = 900, suffix = "" }) => {
+const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
+  value,
+  duration = 900,
+  suffix = "",
+}) => {
   const prefersReduced = useReducedMotion();
   const [display, setDisplay] = useState<number>(prefersReduced ? value : 0);
 
@@ -109,10 +98,14 @@ function useWistiaPlayer(videoId?: string) {
 /* ============================================================
    Helpers
 ============================================================ */
-function isSectionFullyInView(el: HTMLElement, tol = 2) {
+function pointInRect(x: number, y: number, r: DOMRect) {
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+function coversViewport(el: HTMLElement, topOffsetPx = 0, tol = 6) {
   const rect = el.getBoundingClientRect();
   const vh = window.innerHeight || document.documentElement.clientHeight;
-  return rect.top <= tol && rect.bottom >= vh - tol;
+  // Consider sticky header via topOffsetPx
+  return rect.top <= topOffsetPx + tol && rect.bottom >= vh - tol;
 }
 
 /* ============================================================
@@ -125,9 +118,13 @@ interface Props {
   navigate: (path: string) => void;
   onInteriorExplore: () => void;
   onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void;
-  onSafetyExplore: () => void;
+  onHybridTechExplore: () => void; // kept for API compatibility
+  onSafetyExplore: () => void; // kept for API compatibility
   galleryImages: string[];
+  /** Height of any sticky header that occupies the top of the viewport */
+  topOffsetPx?: number;
+  /** Force step-scroll even if user prefers-reduced-motion is on (debug only) */
+  forceMotion?: boolean;
 }
 
 /* ============================================================
@@ -140,11 +137,15 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore: _onHybridTechExplore, // keep API compatibility
-  onSafetyExplore: _onSafetyExplore, // keep API compatibility
+  onHybridTechExplore: _onHybridTechExplore,
+  onSafetyExplore: _onSafetyExplore,
   galleryImages,
+  topOffsetPx = 0,
+  forceMotion = false,
 }) => {
   const prefersReduced = useReducedMotion();
+  const motionAllowed = forceMotion || !prefersReduced;
+
   const sectionRef = useRef<HTMLElement | null>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
 
@@ -157,16 +158,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Power, efficiency, and innovation in perfect harmony.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
-        cta: {
-          label: "Reserve Now",
-          action: () => setIsBookingOpen(true),
-          variant: "primary",
-        },
-        secondaryCta: {
-          label: "Explore Finance",
-          action: () => setIsFinanceOpen(true),
-          variant: "secondary",
-        },
+        cta: { label: "Reserve Now", action: () => setIsBookingOpen(true), variant: "primary" },
+        secondaryCta: { label: "Explore Finance", action: () => setIsFinanceOpen(true), variant: "secondary" },
         stats: [
           { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6" aria-hidden="true" /> },
           { value: 7.1, suffix: "s", label: "0–100 km/h", icon: <Car className="w-6 h-6" aria-hidden="true" /> },
@@ -182,10 +175,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
         cta: {
           label: "Explore Design",
-          action: () => {
-            const el = document.getElementById("seamless-showroom");
-            el?.scrollIntoView({ behavior: "smooth", block: "start" });
-          },
+          action: () => document.getElementById("seamless-showroom")?.scrollIntoView({ behavior: "smooth" }),
           variant: "secondary",
         },
         features: ["LED Matrix Headlights", "Active Aero", "Carbon Fiber Accents", "Sport Wheels"],
@@ -211,58 +201,51 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     ],
     [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, onInteriorExplore, onConnectivityExplore, galleryImages],
   );
-
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
 
   /* ----------------- State ----------------- */
   const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [fullyInView, setFullyInView] = useState(false);
+  const [lockActive, setLockActive] = useState(false); // recalculated live
 
   const active = scenes[index];
   const lastIndex = scenes.length - 1;
 
-  // Lock only when: section fully covers viewport, motion allowed, and not on last slide
-  const isLocked = fullyInView && !prefersReduced && index < lastIndex;
-
-  /* ----------------- Fully-in-view tracker (rAF-throttled) ----------------- */
+  /* ----------------- Lock evaluator (rAF-throttled on scroll/resize + index) ----------- */
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
 
     let ticking = false;
-    const update = () => {
+    const evalLock = () => {
       ticking = false;
-      const nowFullyInView = isSectionFullyInView(el, 2);
-      setFullyInView((prev) => {
-        if (!prev && nowFullyInView) setIndex(0);
-        return nowFullyInView;
-      });
+      const fully = coversViewport(el, topOffsetPx, 6);
+      // lock only when fully covering viewport AND not on last slide AND motion allowed
+      setLockActive(fully && index < lastIndex && motionAllowed);
     };
-
-    const onScrollOrResize = () => {
+    const onScrollResize = () => {
       if (!ticking) {
         ticking = true;
-        requestAnimationFrame(update);
+        requestAnimationFrame(evalLock);
       }
     };
 
-    update();
-    window.addEventListener("scroll", onScrollOrResize, { passive: true });
-    window.addEventListener("resize", onScrollOrResize, { passive: true });
-    window.addEventListener("orientationchange", onScrollOrResize);
+    evalLock();
+    window.addEventListener("scroll", onScrollResize, { passive: true });
+    window.addEventListener("resize", onScrollResize, { passive: true });
+    window.addEventListener("orientationchange", onScrollResize);
 
     return () => {
-      window.removeEventListener("scroll", onScrollOrResize as any);
-      window.removeEventListener("resize", onScrollOrResize as any);
-      window.removeEventListener("orientationchange", onScrollOrResize as any);
+      window.removeEventListener("scroll", onScrollResize as any);
+      window.removeEventListener("resize", onScrollResize as any);
+      window.removeEventListener("orientationchange", onScrollResize as any);
     };
-  }, []);
+  }, [index, lastIndex, topOffsetPx, motionAllowed]);
 
   /* ----------------- Parallax (off for reduced motion) ----------------- */
   useEffect(() => {
-    if (prefersReduced) return;
+    if (!motionAllowed) return;
     const onMove = (e: MouseEvent) => {
       const cx = (e.clientX / window.innerWidth - 0.5) * 16;
       const cy = (e.clientY / window.innerHeight - 0.5) * 16;
@@ -270,90 +253,102 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
-  }, [prefersReduced]);
+  }, [motionAllowed]);
 
-  /* ----------------- Step navigation handlers ----------------- */
-  const touchStartY = useRef<number | null>(null);
-
+  /* ----------------- Step navigation ----------------- */
   const step = useCallback(
     (dir: 1 | -1) => {
       if (isTransitioning) return;
       setIsTransitioning(true);
       setIndex((i) => Math.max(0, Math.min(lastIndex, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
+      setTimeout(() => setIsTransitioning(false), motionAllowed ? 700 : 200);
     },
-    [isTransitioning, lastIndex, prefersReduced],
+    [isTransitioning, lastIndex, motionAllowed],
   );
 
+  // Window-level handlers (always attached; guard inside)
   const onWheel = useCallback(
     (e: WheelEvent) => {
-      if (!isLocked) return;
+      const el = sectionRef.current;
+      if (!el || !lockActive) return;
+
+      const rect = el.getBoundingClientRect();
+      // Some browsers provide clientX/Y=0 for wheel; fallback to center
+      const cx = (e as any).clientX ?? rect.left + rect.width / 2;
+      const cy = (e as any).clientY ?? rect.top + rect.height / 2;
+      if (!pointInRect(cx, cy, rect)) return;
+
       e.preventDefault();
       step(e.deltaY > 0 ? 1 : -1);
     },
-    [isLocked, step],
+    [lockActive, step],
   );
 
+  const touchStartY = useRef<number | null>(null);
+  const touchActiveInSection = useRef(false);
+
   const onTouchStart = useCallback((e: TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
+    const el = sectionRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const t = e.touches[0];
+    touchActiveInSection.current = pointInRect(t.clientX, t.clientY, rect);
+    touchStartY.current = t.clientY;
   }, []);
 
   const onTouchMove = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || touchStartY.current === null) return;
+      if (!lockActive || !touchActiveInSection.current || touchStartY.current === null) return;
       const currentY = e.touches[0].clientY;
       const deltaY = Math.abs(touchStartY.current - currentY);
       if (deltaY > 10) e.preventDefault();
     },
-    [isLocked],
+    [lockActive],
   );
 
   const onTouchEnd = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || touchStartY.current === null) return;
+      if (!lockActive || !touchActiveInSection.current || touchStartY.current === null) return;
       const dy = touchStartY.current - e.changedTouches[0].clientY;
       touchStartY.current = null;
+      touchActiveInSection.current = false;
       if (Math.abs(dy) < 50) return;
       step(dy > 0 ? 1 : -1);
     },
-    [isLocked, step],
+    [lockActive, step],
   );
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!isLocked) return;
+      if (!lockActive) return;
       if (!["ArrowDown", "ArrowRight", "PageDown", " ", "ArrowUp", "ArrowLeft", "PageUp"].includes(e.key)) return;
       e.preventDefault();
       const dir = e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " ? 1 : -1;
       step(dir as 1 | -1);
     },
-    [isLocked, step],
+    [lockActive, step],
   );
 
-  // Attach listeners to SECTION only while locked; keyboard to window
   useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || !isLocked) return;
-    el.addEventListener("wheel", onWheel as any, { passive: false });
-    el.addEventListener("touchstart", onTouchStart as any, { passive: true });
-    el.addEventListener("touchmove", onTouchMove as any, { passive: false });
-    el.addEventListener("touchend", onTouchEnd as any, { passive: true });
+    window.addEventListener("wheel", onWheel as any, { passive: false });
+    window.addEventListener("touchstart", onTouchStart as any, { passive: true });
+    window.addEventListener("touchmove", onTouchMove as any, { passive: false });
+    window.addEventListener("touchend", onTouchEnd as any, { passive: true });
     window.addEventListener("keydown", onKeyDown);
-
     return () => {
-      el.removeEventListener("wheel", onWheel as any);
-      el.removeEventListener("touchstart", onTouchStart as any);
-      el.removeEventListener("touchmove", onTouchMove as any);
-      el.removeEventListener("touchend", onTouchEnd as any);
+      window.removeEventListener("wheel", onWheel as any);
+      window.removeEventListener("touchstart", onTouchStart as any);
+      window.removeEventListener("touchmove", onTouchMove as any);
+      window.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isLocked, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
+  }, [onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
   /* ----------------- Wistia reacts to visibility & index ----------------- */
-  const { mute, unmute, pause, play } = useWistiaPlayer(fullyInView ? active.backgroundVideoWistiaId : undefined);
+  const { mute, unmute, pause, play } = useWistiaPlayer(lockActive ? active.backgroundVideoWistiaId : undefined);
 
   useEffect(() => {
-    if (!fullyInView) {
+    if (!lockActive) {
       pause();
       return;
     }
@@ -365,7 +360,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       mute();
       pause();
     }
-  }, [index, isMuted, active.backgroundVideoWistiaId, fullyInView, mute, unmute, play, pause]);
+  }, [index, isMuted, active.backgroundVideoWistiaId, lockActive, mute, unmute, play, pause]);
 
   /* ----------------- Preload next background ----------------- */
   useEffect(() => {
@@ -387,7 +382,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       style={{
         minHeight: "100svh",
         overscrollBehavior: "contain",
-        touchAction: isLocked || prefersReduced ? (isLocked ? "none" : "auto") : "auto",
+        touchAction: lockActive ? "none" : "auto", // needed for consistent iOS behavior
         scrollSnapAlign: "start",
       }}
       aria-label="Cinematic automotive storytelling"
@@ -401,11 +396,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           initial={{ opacity: 0 }}
           animate={{
             opacity: 1,
-            x: prefersReduced ? 0 : parallax.x * 0.3,
-            y: prefersReduced ? 0 : parallax.y * 0.3,
+            x: motionAllowed ? parallax.x * 0.3 : 0,
+            y: motionAllowed ? parallax.y * 0.3 : 0,
           }}
           exit={{ opacity: 0 }}
-          transition={{ duration: prefersReduced ? 0.18 : 0.5 }}
+          transition={{ duration: motionAllowed ? 0.5 : 0.18 }}
         >
           <img
             src={active.backgroundImage}
@@ -424,7 +419,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
               />
             </div>
           )}
-          {/* subtle overlays */}
+          {/* overlays */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay pointer-events-none"
             animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
@@ -453,7 +448,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -40 }}
-          transition={{ duration: prefersReduced ? 0.18 : 0.5 }}
+          transition={{ duration: motionAllowed ? 0.5 : 0.18 }}
           className="max-w-3xl text-left"
         >
           <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-5 py-5 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
@@ -539,12 +534,12 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           className="h-full bg-red-600 origin-left will-change-transform"
           animate={{ scaleX: progressRatio }}
           initial={false}
-          transition={{ duration: prefersReduced ? 0.18 : 0.45 }}
+          transition={{ duration: motionAllowed ? 0.45 : 0.18 }}
         />
       </div>
 
       {/* SCROLL HINT */}
-      {(isFirst || isLast) && !prefersReduced && (
+      {(isFirst || isLast) && motionAllowed && (
         <motion.div
           className="absolute bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+2.75rem))] left-1/2 -translate-x-1/2 z-20 text-center text-white/85 text-sm"
           initial={{ opacity: 0 }}
