@@ -1,28 +1,9 @@
 "use client";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  motion,
-  AnimatePresence,
-  useReducedMotion,
-} from "framer-motion";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Zap,
-  Car,
-  Shield,
-  Sparkles,
-  ChevronRight,
-  ChevronDown,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX } from "lucide-react";
 
 /* ============================================================
    Types
@@ -53,42 +34,52 @@ type Scene = {
 };
 
 /* ============================================================
-   Animated Number Counter
+   Animated Number Counter (respects reduced motion)
 ============================================================ */
 const AnimatedNumber: React.FC<{
   value: number;
   duration?: number;
   suffix?: string;
 }> = ({ value, duration = 900, suffix = "" }) => {
-  const [display, setDisplay] = useState(0);
+  const prefersReduced = useReducedMotion();
+  const [display, setDisplay] = useState<number>(prefersReduced ? value : 0);
+
   useEffect(() => {
-    let raf: number;
+    if (prefersReduced) {
+      setDisplay(value);
+      return;
+    }
+    let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      setDisplay(Math.round(value * t * 100) / 100);
+      // round to 0.1 for non-integers to avoid jitter
+      const next = Number.isInteger(value) ? Math.round(value * t) : Math.round((value * t + Number.EPSILON) * 10) / 10;
+      setDisplay(next);
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [value, duration]);
+  }, [value, duration, prefersReduced]);
+
   return (
     <span>
-      {Number.isInteger(value)
-        ? Math.round(display)
-        : display.toFixed(1)}
+      {Number.isInteger(value) ? display : display.toFixed(1)}
       {suffix}
     </span>
   );
 };
 
 /* ============================================================
-   Wistia Video Player Hook
+   Wistia Video Player Hook (guards + visibility control)
 ============================================================ */
 function useWistiaPlayer(videoId?: string) {
   const playerRef = useRef<any>(null);
+
   useEffect(() => {
     if (!videoId) return;
+
+    // Ensure script once
     (window as any)._wq = (window as any)._wq || [];
     if (!document.getElementById("wistia-e-v1")) {
       const s = document.createElement("script");
@@ -97,6 +88,8 @@ function useWistiaPlayer(videoId?: string) {
       s.async = true;
       document.head.appendChild(s);
     }
+
+    // Create/attach player
     (window as any)._wq.push({
       id: videoId,
       onReady: (video: any) => {
@@ -105,27 +98,21 @@ function useWistiaPlayer(videoId?: string) {
           video.mute();
           video.loop(true);
           video.play();
-        } catch {}
+        } catch {
+          /* no-op */
+        }
       },
     });
+
+    // no cleanup API from Wistia per instance; changing key unmounts div
   }, [videoId]);
+
   const mute = () => playerRef.current?.mute?.();
   const unmute = () => playerRef.current?.unmute?.();
   const pause = () => playerRef.current?.pause?.();
   const play = () => playerRef.current?.play?.();
-  return { mute, unmute, pause, play };
-}
 
-/* ============================================================
-   Helpers
-============================================================ */
-function mostlyVisible(el: HTMLElement, threshold = 0.8) {
-  const rect = el.getBoundingClientRect();
-  const vh =
-    window.innerHeight || document.documentElement.clientHeight;
-  const visibleHeight =
-    Math.min(rect.bottom, vh) - Math.max(rect.top, 0);
-  return visibleHeight / vh >= threshold;
+  return { mute, unmute, pause, play };
 }
 
 /* ============================================================
@@ -138,13 +125,13 @@ interface Props {
   navigate: (path: string) => void;
   onInteriorExplore: () => void;
   onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void;
-  onSafetyExplore: () => void;
+  onHybridTechExplore: () => void; // kept for compatibility
+  onSafetyExplore: () => void; // kept for compatibility
   galleryImages: string[];
 }
 
 /* ============================================================
-   Storytelling Section
+   Component
 ============================================================ */
 const StorytellingSection: React.FC<Props> = ({
   monthlyEMI,
@@ -153,8 +140,8 @@ const StorytellingSection: React.FC<Props> = ({
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore,
-  onSafetyExplore,
+  onHybridTechExplore, // eslint-disable-line @typescript-eslint/no-unused-vars
+  onSafetyExplore, // eslint-disable-line @typescript-eslint/no-unused-vars
   galleryImages,
 }) => {
   const prefersReduced = useReducedMotion();
@@ -185,33 +172,32 @@ const StorytellingSection: React.FC<Props> = ({
           {
             value: 268,
             label: "Horsepower",
-            icon: <Zap className="w-6 h-6 text-yellow-400" />,
+            icon: <Zap className="w-6 h-6" aria-hidden="true" />,
           },
           {
             value: 7.1,
             suffix: "s",
             label: "0–100 km/h",
-            icon: <Car className="w-6 h-6 text-blue-400" />,
+            icon: <Car className="w-6 h-6" aria-hidden="true" />,
           },
           {
             value: 850,
             suffix: " km",
             label: "Range",
-            icon: <Sparkles className="w-6 h-6 text-green-400" />,
+            icon: <Sparkles className="w-6 h-6" aria-hidden="true" />,
           },
           {
             value: 5,
             suffix: "★",
             label: "Safety",
-            icon: <Shield className="w-6 h-6 text-red-400" />,
+            icon: <Shield className="w-6 h-6" aria-hidden="true" />,
           },
         ],
       },
       {
         id: "exterior",
         title: "Sculpted for Performance",
-        subtitle:
-          "Every curve designed with purpose, every line crafted for excellence.",
+        subtitle: "Every curve designed with purpose, every line crafted for excellence.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
         cta: {
@@ -222,18 +208,12 @@ const StorytellingSection: React.FC<Props> = ({
           },
           variant: "secondary",
         },
-        features: [
-          "LED Matrix Headlights",
-          "Active Aero",
-          "Carbon Fiber Accents",
-          "Sport Wheels",
-        ],
+        features: ["LED Matrix Headlights", "Active Aero", "Carbon Fiber Accents", "Sport Wheels"],
       },
       {
         id: "interior",
         title: "Luxury Redefined",
-        subtitle:
-          "Step into a world where comfort meets cutting-edge technology.",
+        subtitle: "Step into a world where comfort meets cutting-edge technology.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
         cta: {
@@ -241,12 +221,7 @@ const StorytellingSection: React.FC<Props> = ({
           action: onInteriorExplore,
           variant: "primary",
         },
-        features: [
-          "Premium Leather",
-          "Ambient Lighting",
-          "Panoramic Roof",
-          "JBL Premium Audio",
-        ],
+        features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Premium Audio"],
       },
       {
         id: "technology",
@@ -259,23 +234,18 @@ const StorytellingSection: React.FC<Props> = ({
           action: onConnectivityExplore,
           variant: "secondary",
         },
-        features: [
-          "Hybrid Synergy Drive",
-          "Toyota Safety Sense",
-          "Connected Services",
-          "Wireless Charging",
-        ],
+        features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
     [
-      monthlyEMI,
+      monthlyEMI, // kept in deps if you bind it later inside labels/finance copy
       setIsBookingOpen,
       setIsFinanceOpen,
       navigate,
       onInteriorExplore,
       onConnectivityExplore,
       galleryImages,
-    ]
+    ],
   );
 
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
@@ -285,43 +255,44 @@ const StorytellingSection: React.FC<Props> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
 
-  const isLocked = index < scenes.length - 1; // unlock scroll after last
+  // Lock only when: section is visible + not reduced motion + not last slide
+  const isLocked = isVisibleEnough && !prefersReduced && index < scenes.length - 1;
   const active = scenes[index];
 
-  /* ----------------- Visibility watcher with IntersectionObserver ----------------- */
+  /* ----------------- Visibility watcher (fixed debounce & cleanup) ----------------- */
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    
+
+    let debounceId: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Require 95% visibility for stricter control
         const visible = entry.isIntersecting && entry.intersectionRatio >= 0.95;
-        // Debounce visibility changes
-        if (visible && !isVisibleEnough) {
-          const timer = setTimeout(() => {
+        if (visible) {
+          if (debounceId) clearTimeout(debounceId);
+          debounceId = setTimeout(() => {
             setIndex(0);
             setIsVisibleEnough(true);
-          }, 200);
-          return () => clearTimeout(timer);
-        } else if (!visible) {
+          }, 120);
+        } else {
+          if (debounceId) clearTimeout(debounceId);
           setIsVisibleEnough(false);
         }
       },
-      { threshold: 0.95, rootMargin: "0px 0px -10% 0px" }
+      { threshold: [0.5, 0.95], rootMargin: "0px 0px -8% 0px" },
     );
-    
+
     observer.observe(el);
-    
     return () => {
+      if (debounceId) clearTimeout(debounceId);
       observer.disconnect();
     };
-  }, [isVisibleEnough]);
+  }, []);
 
   /* ----------------- Parallax (reduced motion guard) ----------------- */
   useEffect(() => {
-    if (prefersReduced) return; // Guard for reduced motion
-    
+    if (prefersReduced) return;
     const onMove = (e: MouseEvent) => {
       const cx = (e.clientX / window.innerWidth - 0.5) * 16;
       const cy = (e.clientY / window.innerHeight - 0.5) * 16;
@@ -331,7 +302,9 @@ const StorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, [prefersReduced]);
 
-  /* ----------------- Scroll Handlers ----------------- */
+  /* ----------------- Scroll Handlers (localized to section) ----------------- */
+  const touchStartY = useRef<number | null>(null);
+
   const onWheel = useCallback(
     (e: WheelEvent) => {
       if (!isLocked) return;
@@ -339,42 +312,24 @@ const StorytellingSection: React.FC<Props> = ({
       if (isTransitioning) return;
       setIsTransitioning(true);
       const dir = e.deltaY > 0 ? 1 : -1;
-      setIndex((i) =>
-        Math.max(0, Math.min(scenes.length - 1, i + dir))
-      );
-      setTimeout(
-        () => setIsTransitioning(false),
-        prefersReduced ? 250 : 750
-      );
+      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
+      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isTransitioning, scenes.length, prefersReduced],
   );
 
-  const touchStartY = useRef<number | null>(null);
   const onTouchStart = useCallback((e: TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   }, []);
 
   const onTouchMove = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || !touchStartY.current) return;
-      
+      if (!isLocked || touchStartY.current === null) return;
       const currentY = e.touches[0].clientY;
       const deltaY = Math.abs(touchStartY.current - currentY);
-      
-      // Only prevent if this is a clear vertical swipe within our section
-      // Don't prevent horizontal scrolling or small movements
-      if (deltaY > 10) {
-        const target = e.target as Element;
-        const isInSection = sectionRef.current?.contains(target);
-        
-        // Only preventDefault if we're in the section and it's vertical movement
-        if (isInSection) {
-          e.preventDefault();
-        }
-      }
+      if (deltaY > 10) e.preventDefault(); // only when obviously vertical
     },
-    [isLocked]
+    [isLocked],
   );
 
   const onTouchEnd = useCallback(
@@ -385,77 +340,54 @@ const StorytellingSection: React.FC<Props> = ({
       if (Math.abs(dy) < 50 || isTransitioning) return;
       setIsTransitioning(true);
       const dir = dy > 0 ? 1 : -1;
-      setIndex((i) =>
-        Math.max(0, Math.min(scenes.length - 1, i + dir))
-      );
-      setTimeout(
-        () => setIsTransitioning(false),
-        prefersReduced ? 250 : 750
-      );
+      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
+      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isTransitioning, scenes.length, prefersReduced],
   );
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!isLocked) return;
-      if (
-        ![
-          "ArrowDown",
-          "ArrowRight",
-          "PageDown",
-          " ",
-          "ArrowUp",
-          "ArrowLeft",
-          "PageUp",
-        ].includes(e.key)
-      )
-        return;
+      if (!["ArrowDown", "ArrowRight", "PageDown", " ", "ArrowUp", "ArrowLeft", "PageUp"].includes(e.key)) return;
       e.preventDefault();
       if (isTransitioning) return;
       setIsTransitioning(true);
-      const dir =
-        e.key === "ArrowDown" ||
-        e.key === "ArrowRight" ||
-        e.key === "PageDown" ||
-        e.key === " "
-          ? 1
-          : -1;
-      setIndex((i) =>
-        Math.max(0, Math.min(scenes.length - 1, i + dir))
-      );
-      setTimeout(
-        () => setIsTransitioning(false),
-        prefersReduced ? 250 : 750
-      );
+      const dir = e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " ? 1 : -1;
+      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
+      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced]
+    [isLocked, isTransitioning, scenes.length, prefersReduced],
   );
 
-  /* ----------------- Attach handlers ----------------- */
+  // Attach listeners to the SECTION (not window) to avoid hijacking outside interactions
   useEffect(() => {
-    if (isLocked && isVisibleEnough) {
-      window.addEventListener("wheel", onWheel, { passive: false });
-      window.addEventListener("touchstart", onTouchStart, { passive: true });
-      window.addEventListener("touchmove", onTouchMove, { passive: false });
-      window.addEventListener("touchend", onTouchEnd, { passive: true });
-      window.addEventListener("keydown", onKeyDown);
-    }
+    const el = sectionRef.current;
+    if (!el || !isLocked) return;
+
+    el.addEventListener("wheel", onWheel as any, { passive: false });
+    el.addEventListener("touchstart", onTouchStart as any, { passive: true });
+    el.addEventListener("touchmove", onTouchMove as any, { passive: false });
+    el.addEventListener("touchend", onTouchEnd as any, { passive: true });
+    window.addEventListener("keydown", onKeyDown); // keep keyboard global for a11y
+
     return () => {
-      window.removeEventListener("wheel", onWheel as any);
-      window.removeEventListener("touchstart", onTouchStart as any);
-      window.removeEventListener("touchmove", onTouchMove as any);
-      window.removeEventListener("touchend", onTouchEnd as any);
-      window.removeEventListener("keydown", onKeyDown as any);
+      el.removeEventListener("wheel", onWheel as any);
+      el.removeEventListener("touchstart", onTouchStart as any);
+      el.removeEventListener("touchmove", onTouchMove as any);
+      el.removeEventListener("touchend", onTouchEnd as any);
+      window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isLocked, isVisibleEnough, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
+  }, [isLocked, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
-  /* ----------------- Wistia Player ----------------- */
-  const { mute, unmute, pause, play } = useWistiaPlayer(
-    active.backgroundVideoWistiaId
-  );
+  /* ----------------- Wistia Player react to index/visibility ----------------- */
+  const { mute, unmute, pause, play } = useWistiaPlayer(isVisibleEnough ? active.backgroundVideoWistiaId : undefined);
 
   useEffect(() => {
+    if (!isVisibleEnough) {
+      pause();
+      return;
+    }
     if (active.backgroundVideoWistiaId) {
       if (isMuted) mute();
       else unmute();
@@ -464,86 +396,109 @@ const StorytellingSection: React.FC<Props> = ({
       mute();
       pause();
     }
-  }, [index, isMuted, active.backgroundVideoWistiaId]);
+  }, [index, isMuted, active.backgroundVideoWistiaId, isVisibleEnough, mute, unmute, play, pause]);
+
+  /* ----------------- Preload next background ----------------- */
+  useEffect(() => {
+    const next = scenes[index + 1];
+    if (!next?.backgroundImage) return;
+    const img = new Image();
+    img.src = next.backgroundImage;
+    // no need to keep reference; browser caches it
+  }, [index, scenes]);
 
   /* ----------------- UI ----------------- */
-  const progressPct = ((index + 1) / scenes.length) * 100;
+  const progressRatio = (index + 1) / scenes.length;
   const isFirst = index === 0;
   const isLast = index === scenes.length - 1;
 
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100svh] bg-black text-white overflow-hidden"
-      style={{ touchAction: "pan-y", scrollSnapAlign: "start" }}
+      className="relative min-h-[100svh] bg-black text-white overflow-hidden select-none"
+      style={{
+        // contain to reduce paint/scroll chain & handle iOS Chrome/Safari UI
+        overscrollBehavior: "contain",
+        touchAction: prefersReduced ? "auto" : "none",
+        scrollSnapAlign: "start",
+      }}
       aria-label="Cinematic automotive storytelling"
+      aria-live="polite"
     >
       {/* MEDIA LAYER */}
       <AnimatePresence mode="wait">
         <motion.div
           key={active.id}
-          className="absolute inset-0"
+          className="absolute inset-0 will-change-transform"
           initial={{ opacity: 0 }}
           animate={{
             opacity: 1,
-            x: parallax.x * 0.3,
-            y: parallax.y * 0.3,
+            x: prefersReduced ? 0 : parallax.x * 0.3,
+            y: prefersReduced ? 0 : parallax.y * 0.3,
           }}
           exit={{ opacity: 0 }}
-          transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
+          transition={{ duration: prefersReduced ? 0.18 : 0.5 }}
         >
           <img
             src={active.backgroundImage}
             alt={active.title}
             className="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
           />
           {active.backgroundVideoWistiaId && (
             <div className="absolute inset-0">
               <div
                 className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} videoFoam=true`}
                 style={{ width: "100%", height: "100%" }}
+                aria-hidden="true"
               />
             </div>
           )}
+
+          {/* Subtle animated overlay */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay"
-            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+            className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay pointer-events-none"
+            animate={{
+              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+            }}
             transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
+          {/* Vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 
-      {/* SOUND TOGGLE */}
+      {/* SOUND TOGGLE (focusable, large tap target) */}
       {active.backgroundVideoWistiaId && (
         <button
           onClick={() => setIsMuted((m) => !m)}
-          className="absolute top-6 left-6 z-20 bg-black/55 text-white p-2 rounded-full hover:bg-black/70 transition"
+          className="absolute top-6 left-6 z-20 bg-black/60 text-white p-3 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+          aria-label={isMuted ? "Unmute background video" : "Mute background video"}
         >
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </button>
       )}
 
       {/* CONTENT LAYER */}
-      <div className="absolute bottom-0 left-0 w-full z-10 flex justify-start px-10 pb-20">
+      <div className="absolute bottom-0 left-0 w-full z-10 flex justify-start px-6 md:px-10 pb-[max(5.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           key={`content-${active.id}`}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -40 }}
-          transition={{ duration: prefersReduced ? 0.2 : 0.6 }}
+          transition={{ duration: prefersReduced ? 0.18 : 0.5 }}
           className="max-w-3xl text-left"
         >
-          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-6 py-6 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-            <h2 className="text-3xl md:text-6xl font-extralight mb-4">
-              {active.title}
-            </h2>
-            <p className="text-base md:text-2xl text-white/90 mb-6">{active.subtitle}</p>
+          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-5 py-5 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+            <h2 className="text-3xl md:text-6xl font-extralight mb-3 md:mb-4">{active.title}</h2>
+            <p className="text-base md:text-2xl text-white/90 mb-5 md:mb-6">{active.subtitle}</p>
 
             {/* Stats */}
             {active.stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mb-5 md:mb-6">
                 {active.stats.map((s, i) => (
                   <div key={i} className="text-center">
                     <div className="flex justify-center mb-2">{s.icon}</div>
@@ -558,9 +513,9 @@ const StorytellingSection: React.FC<Props> = ({
 
             {/* Features */}
             {active.features && (
-              <div className="flex flex-wrap justify-center gap-2 mb-6">
+              <div className="flex flex-wrap justify-center gap-2 mb-5 md:mb-6">
                 {active.features.map((f, i) => (
-                  <Badge key={i} className="bg-white/10 text-white border-white/20">
+                  <Badge key={i} className="bg-white/10 text-white border-white/20" aria-label={f}>
                     {f}
                   </Badge>
                 ))}
@@ -572,24 +527,24 @@ const StorytellingSection: React.FC<Props> = ({
               {active.cta && (
                 <Button
                   onClick={active.cta.action}
-                  className={`px-6 py-3 transition-transform hover:scale-[1.03] ${
+                  className={`px-6 py-3 transition-transform hover:scale-[1.03] focus:ring-2 focus:ring-white/60 ${
                     active.cta.variant === "primary"
                       ? "bg-white text-black hover:bg-white/90"
                       : "border border-white/40 text-white hover:bg-white/10"
                   }`}
                 >
                   {active.cta.label}
-                  <ChevronRight className="ml-2 w-5 h-5" />
+                  <ChevronRight className="ml-2 w-5 h-5" aria-hidden="true" />
                 </Button>
               )}
               {active.secondaryCta && (
                 <Button
                   onClick={active.secondaryCta.action}
                   variant="outline"
-                  className="px-6 py-3 border border-white/40 text-white hover:bg-white/10 transition-transform hover:scale-[1.03]"
+                  className="px-6 py-3 border border-white/40 text-white hover:bg-white/10 transition-transform hover:scale-[1.03] focus:ring-2 focus:ring-white/60"
                 >
                   {active.secondaryCta.label}
-                  <ChevronRight className="ml-2 w-5 h-5" />
+                  <ChevronRight className="ml-2 w-5 h-5" aria-hidden="true" />
                 </Button>
               )}
             </div>
@@ -597,50 +552,51 @@ const StorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* PROGRESS DOTS */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex space-x-6">
+      {/* PROGRESS DOTS (safe area + bigger tap targets) */}
+      <div className="absolute bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] left-1/2 -translate-x-1/2 z-20 flex space-x-6">
         {scenes.map((s, i) => (
           <div key={s.id} className="flex flex-col items-center">
             <button
               onClick={() => setIndex(i)}
-              className={`h-2 rounded-full mb-1 transition-all ${
-                i === index ? "bg-white w-8" : "bg-white/40 hover:bg-white/60 w-2"
+              aria-label={`Go to ${labels[i]} section`}
+              aria-current={i === index ? "true" : "false"}
+              className={`rounded-full mb-1 transition-all focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                i === index ? "bg-white w-8 h-2" : "bg-white/40 hover:bg-white/60 w-3 h-3"
               }`}
             />
-            <span className={`text-xs ${i === index ? "text-white" : "text-white/50"}`}>
-              {labels[i]}
-            </span>
+            <span className={`text-xs ${i === index ? "text-white" : "text-white/60"}`}>{labels[i]}</span>
           </div>
         ))}
       </div>
 
-      {/* PROGRESS BAR */}
-      <motion.div
-        className="absolute bottom-0 left-0 h-1 bg-red-600 z-20"
-        animate={{ width: `${progressPct}%` }}
-        transition={{ duration: prefersReduced ? 0.2 : 0.45 }}
-      />
+      {/* PROGRESS (GPU scaleX for cheaper animation) */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20 overflow-hidden">
+        <motion.div
+          className="h-full bg-red-600 origin-left will-change-transform"
+          animate={{ scaleX: progressRatio }}
+          initial={false}
+          transition={{ duration: prefersReduced ? 0.18 : 0.45 }}
+        />
+      </div>
 
       {/* SCROLL HINT */}
-      {(isFirst || isLast) && (
+      {(isFirst || isLast) && !prefersReduced && (
         <motion.div
-          className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 text-center text-white/80 text-sm"
+          className="absolute bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+2.75rem))] left-1/2 -translate-x-1/2 z-20 text-center text-white/85 text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.5 }}
         >
-          {isFirst && (
+          {isFirst ? (
             <>
               <p className="mb-2">Scroll to explore</p>
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ repeat: Infinity, duration: 1.4 }}
-              >
-                <ChevronDown className="w-6 h-6 mx-auto" />
+              <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.4 }}>
+                <ChevronDown className="w-6 h-6 mx-auto" aria-hidden="true" />
               </motion.div>
             </>
+          ) : (
+            <p>Scroll to continue</p>
           )}
-          {isLast && <p>Scroll to continue</p>}
         </motion.div>
       )}
     </section>
