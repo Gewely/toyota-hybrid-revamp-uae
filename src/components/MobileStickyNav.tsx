@@ -31,8 +31,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
 import { Z } from "@/lib/z-index";
-import { useVisualViewport } from "@/hooks/use-visual-viewport";
-import { usePassiveScroll } from "@/hooks/use-passive-scroll";
 
 const GR_RED = "#EB0A1E";
 const GR_EDGE = "#17191B";
@@ -171,7 +169,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([50000, 200000]);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   const { isGR, toggleGR } = useGRMode();
   const [userTouchedCategory, setUserTouchedCategory] = useState(false);
@@ -215,16 +212,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       }),
     [],
   );
-
-  // Visual viewport tracking for iOS
-  const { viewportHeight } = useVisualViewport();
-
-  // Scroll shrink - using passive scroll hook
-  usePassiveScroll(() => {
-    const y = window.scrollY;
-    const threshold = 100;
-    setIsScrolled((prev) => (y > threshold ? true : y <= threshold * 0.7 ? false : prev));
-  }, []);
 
   // Reset section on route change
   useEffect(() => {
@@ -349,58 +336,48 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // VisualViewport-based height tracking (refresh-proof)
+  // VisualViewport-independent sizing + body padding to prevent overlay
   const navRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
 
-    const updatePosition = () => {
-      // Use window.innerHeight (more stable than visualViewport on iOS)
+    const updateVars = () => {
+      // lock to innerHeight to avoid iOS 100vh quirks
       const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-      
-      // Get actual nav height after render
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+
       const nav = navRef.current;
       if (nav) {
         const navHeight = nav.getBoundingClientRect().height;
-        document.documentElement.style.setProperty('--mobile-nav-height', `${navHeight}px`);
+        document.documentElement.style.setProperty("--mobile-nav-height", `${Math.round(navHeight)}px`);
+        // Critical: ensure page content never sits under the fixed nav,
+        // even when browser controls hide/show.
+        document.body.style.paddingBottom = `calc(var(--mobile-nav-height, ${Math.round(
+          navHeight,
+        )}px) + env(safe-area-inset-bottom))`;
       }
     };
-    
-    // Run immediately
-    updatePosition();
-    
-    // Update on resize/orientation change
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('orientationchange', updatePosition);
-    
-    // For BFCache restore
-    window.addEventListener('pageshow', updatePosition);
-    
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('orientationchange', updatePosition);
-      window.removeEventListener('pageshow', updatePosition);
-    };
-  }, []);
 
-  // Debug viewer for dynamic CSS variables (optional but handy)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const log = () => {
-      const styles = getComputedStyle(document.documentElement);
-      // eslint-disable-next-line no-console
-      console.log({
-        vh: styles.getPropertyValue("--vh"),
-        navHeight: styles.getPropertyValue("--mobile-nav-height"),
-        navOffset: styles.getPropertyValue("--nav-offset"),
-      });
+    updateVars();
+    window.addEventListener("resize", updateVars);
+    window.addEventListener("orientationchange", updateVars);
+    window.addEventListener("pageshow", updateVars);
+
+    // iOS visualViewport height changes when browser chrome hides/shows.
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const onVV = () => updateVars();
+    vv?.addEventListener?.("resize", onVV);
+    vv?.addEventListener?.("scroll", onVV);
+
+    return () => {
+      window.removeEventListener("resize", updateVars);
+      window.removeEventListener("orientationchange", updateVars);
+      window.removeEventListener("pageshow", updateVars);
+      vv?.removeEventListener?.("resize", onVV);
+      vv?.removeEventListener?.("scroll", onVV);
+      document.body.style.paddingBottom = "";
     };
-    log();
-    const onResize = () => log();
-    window.visualViewport?.addEventListener("resize", onResize);
-    return () => window.visualViewport?.removeEventListener("resize", onResize);
   }, []);
 
   /**
@@ -543,7 +520,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             style={{
               ...(isGR ? carbonMatte : undefined),
               zIndex: Z.drawer,
-              bottom: `calc(var(--mobile-nav-height,80px) + env(safe-area-inset-bottom) + 12px)`,
+              bottom: `calc(var(--mobile-nav-height,56px) + env(safe-area-inset-bottom) + 12px)`,
             }}
             role="dialog"
             aria-modal="true"
@@ -698,7 +675,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             style={{
               ...(isGR ? carbonMatte : { backgroundColor: "white", border: "1px solid #e5e7eb" }),
               zIndex: Z.drawer,
-              bottom: `calc(var(--mobile-nav-height,72px) + env(safe-area-inset-bottom))`,
+              bottom: `calc(var(--mobile-nav-height,56px) + env(safe-area-inset-bottom))`,
             }}
           >
             <div
@@ -1283,7 +1260,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   </div>
 
                   <div
-                    className={cn("mb-6 p-4 rounded-xl", isGR ? "border" : "bg-gray-50 dark:bg-gray-8 00")}
+                    className={cn("mb-6 p-4 rounded-xl", isGR ? "border" : "bg-gray-50 dark:bg-gray-800")}
                     style={isGR ? { ...carbonMatte, borderColor: GR_EDGE } : undefined}
                   >
                     <div className="flex items-center justify-between mb-3">
@@ -1480,13 +1457,12 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Bottom Nav */}
+      {/* Bottom Nav (fixed height, no shrink) */}
       <motion.nav
         ref={navRef}
-        className={cn("backdrop-blur-xl left-0 right-0 fixed transition-transform duration-300")}
-        style={{ 
+        className={cn("backdrop-blur-xl left-0 right-0 fixed")}
+        style={{
           bottom: 0,
-          paddingBottom: "env(safe-area-inset-bottom)",
           zIndex: Z.stickyNav,
         }}
         initial={{ y: 100, opacity: 0 }}
@@ -1495,7 +1471,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         aria-label="Bottom navigation"
       >
         <div
-          className={cn("rounded-t-2xl", "py-0.5 sm:py-1")}
+          className={cn("rounded-t-2xl")}
           style={{
             ...(isGR
               ? { ...carbonMatte, borderColor: GR_EDGE, boxShadow: "0 -12px 30px rgba(0,0,0,.45)" }
@@ -1505,40 +1481,40 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   border: "1px solid rgba(200, 200, 200, 0.3)",
                   borderBottom: "none",
                 }),
+            // Fixed compact height (no shrinking). Add safe-area padding inside the bar.
+            paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+            paddingTop: "6px",
           }}
         >
           <div
             className={cn(
-              "grid items-center transition-all duration-500",
+              "grid items-center",
+              // 5 columns if vehicle actions present
               vehicle ? "grid-cols-5" : "grid-cols-4",
               "gap-1 px-2 sm:gap-1.5 sm:px-3 md:gap-2 md:px-4",
             )}
+            // lock the bar height ~56–60px depending on content
+            style={{ minHeight: "56px" }}
           >
-            {/* Use buttons for toggles (no fake links) */}
             <NavItem
               asButton
-              icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "transition-all", "h-4 w-4")} />}
+              icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "h-4 w-4")} />}
               label="Models"
               onClick={() => handleSectionToggle("models")}
               isActive={activeItem === "models" || navigationState.activeSection === "models"}
-              isScrolled={isScrolled}
               grMode={isGR}
               deviceCategory={deviceInfo.deviceCategory}
             />
             <NavItem
               asButton
-              icon={
-                <ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />
-              }
+              icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
               label="Pre-Owned"
               onClick={() => handleSectionToggle("pre-owned")}
               isActive={activeItem === "pre-owned" || navigationState.activeSection === "pre-owned"}
-              isScrolled={isScrolled}
               grMode={isGR}
               deviceCategory={deviceInfo.deviceCategory}
             />
 
-            {/* ACTIONS with attract animation + coachmark */}
             {vehicle && (
               <div className="relative">
                 {/* Coachmark bubble */}
@@ -1595,17 +1571,16 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                         )}
                       </AnimatePresence>
                       <div
-                        className={cn(
-                          "flex items-center justify-center rounded-full transition-transform",
-                          "w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11",
-                        )}
+                        className={cn("flex items-center justify-center rounded-full")}
                         style={{
+                          width: 40,
+                          height: 40,
                           background: "linear-gradient(145deg, #ff1a1a 0%, #cc0000 100%)",
                           boxShadow:
                             "0 6px 20px rgba(235, 10, 30, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.2)",
                         }}
                       >
-                        <Bolt className="text-white w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" />
+                        <Bolt className="text-white w-4 h-4" />
                       </div>
                     </motion.div>
                   }
@@ -1618,7 +1593,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     }
                   }}
                   isActive={navigationState.isActionsExpanded}
-                  isScrolled={isScrolled}
                   grMode={isGR}
                   deviceCategory={deviceInfo.deviceCategory}
                 />
@@ -1627,21 +1601,19 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
             <NavItem
               asButton
-              icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "transition-all", "h-4 w-4")} />}
+              icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
               label="Search"
               onClick={() => handleSectionToggle("search")}
               isActive={activeItem === "search" || navigationState.activeSection === "search"}
-              isScrolled={isScrolled}
               grMode={isGR}
               deviceCategory={deviceInfo.deviceCategory}
             />
             <NavItem
               asButton
-              icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "transition-all", "h-4 w-4")} />}
+              icon={<Menu className={cn(isGR ? "text-red-400" : "text-gray-900", "h-4 w-4")} />}
               label="Menu"
               onClick={toggleMenu}
               isActive={navigationState.isMenuOpen}
-              isScrolled={isScrolled}
               grMode={isGR}
               deviceCategory={deviceInfo.deviceCategory}
             />
@@ -1659,7 +1631,6 @@ interface NavItemProps {
   isActive?: boolean;
   onClick?: () => void;
   badge?: number;
-  isScrolled?: boolean;
   grMode?: boolean;
   deviceCategory?: string;
   asButton?: boolean;
@@ -1673,69 +1644,37 @@ const NavItem: React.FC<NavItemProps> = ({
   isActive = false,
   onClick,
   badge,
-  isScrolled = false,
   grMode = false,
   deviceCategory = "standardMobile",
   asButton = false,
   ariaLabel,
 }) => {
-  const getNavItemHeight = () => {
-    if (isScrolled) {
-      switch (deviceCategory) {
-        case "smallMobile":
-          return "32px";
-        case "standardMobile":
-          return "36px";
-        default:
-          return "40px";
-      }
-    } else {
-      switch (deviceCategory) {
-        case "smallMobile":
-          return "38px";
-        case "standardMobile":
-          return "42px";
-        default:
-          return "46px";
-      }
-    }
-  };
-
-  const getIconSize = () => {
-    if (isScrolled) {
-      return deviceCategory === "smallMobile" ? "28px" : "32px";
-    } else {
-      return deviceCategory === "smallMobile" ? "34px" : "38px";
-    }
-  };
+  // Fixed compact sizes (no shrink-on-scroll)
+  const itemMinHeight = deviceCategory === "smallMobile" ? 50 : deviceCategory === "standardMobile" ? 56 : 60;
+  const iconBox = deviceCategory === "smallMobile" ? 32 : 36;
 
   const content = (
     <>
-      <div
-        className="flex flex-col items-center justify-center relative w-full transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
-        style={{ minHeight: getNavItemHeight() }}
-      >
+      <div className="flex flex-col items-center justify-center relative w-full" style={{ minHeight: itemMinHeight }}>
         <motion.div
           className={cn(
-            "p-2 rounded-xl transition-all relative duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center",
+            "rounded-xl relative flex items-center justify-center",
             "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#EB0A1E]",
             isActive
               ? grMode
-                ? "bg-[#141618] text-[#E6E7E9] scale-110 shadow-[inset_0_0_0_1px_#17191B]"
-                : "text-gray-900 bg-gray-100 dark:bg-gray-800 scale-110"
+                ? "bg-[#141618] text-[#E6E7E9] shadow-[inset_0_0_0_1px_#17191B]"
+                : "text-gray-900 bg-gray-100 dark:bg-gray-800"
               : grMode
                 ? "text-[#E6E7E9] bg-[#101214] hover:bg-[#121416] shadow-[inset_0_0_0_1px_#17191B]"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300",
           )}
-          animate={{ minWidth: getIconSize(), minHeight: getIconSize(), padding: isScrolled ? "6px" : "8px" }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          whileHover={{ scale: isActive ? 1.1 : 1.05 }}
+          style={{ minWidth: iconBox, minHeight: iconBox, padding: 6 }}
+          whileHover={{ scale: isActive ? 1.05 : 1.03 }}
           whileTap={{ scale: 0.95 }}
           aria-current={isActive ? "page" : undefined}
-          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           {React.cloneElement(icon as React.ReactElement, {
-            className: cn("transition-transform duration-300", "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"),
+            className: cn("transition-transform", "w-4 h-4"),
           })}
           {typeof badge === "number" && (
             <motion.div
@@ -1753,12 +1692,12 @@ const NavItem: React.FC<NavItemProps> = ({
           )}
         </motion.div>
 
-        {!isScrolled && label && (
+        {label && (
           <span
             className={cn(
-              "text-center font-medium mt-0.5 leading-tight transition-colors duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+              "text-center font-medium leading-tight",
               grMode ? (isActive ? "text-red-300" : "text-neutral-300") : "text-gray-900",
-              "text-[8px] sm:text-[9px] md:text-[10px]",
+              "text-[10px] mt-0.5",
             )}
           >
             {label}
@@ -1773,8 +1712,8 @@ const NavItem: React.FC<NavItemProps> = ({
       <button
         type="button"
         onClick={onClick}
-        className="relative flex items-center justify-center px-1 py-1 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg"
-        style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
+        className="relative flex items-center justify-center px-1 py-1 rounded-lg"
+        style={{ WebkitTapHighlightColor: "transparent", minHeight: itemMinHeight, minWidth: 44 }}
         aria-label={ariaLabel || label || undefined}
       >
         {content}
@@ -1785,8 +1724,8 @@ const NavItem: React.FC<NavItemProps> = ({
   return (
     <Link
       to={to}
-      className="relative flex items-center justify-center px-1 py-1 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] rounded-lg"
-      style={{ WebkitTapHighlightColor: "transparent", minHeight: getNavItemHeight(), minWidth: "44px" }}
+      className="relative flex items-center justify-center px-1 py-1 rounded-lg"
+      style={{ WebkitTapHighlightColor: "transparent", minHeight: itemMinHeight, minWidth: 44 }}
       aria-current={isActive ? "page" : undefined}
       aria-label={ariaLabel || label || undefined}
     >
