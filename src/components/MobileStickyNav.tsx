@@ -369,10 +369,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
       const navHeight = Math.round(nav.getBoundingClientRect().height);
       document.documentElement.style.setProperty("--mobile-nav-height", `${navHeight}px`);
-      document.documentElement.style.setProperty(
-        "--mobile-nav-total",
-        `calc(var(--mobile-nav-height, ${navHeight}px) + env(safe-area-inset-bottom))`,
-      );
+      document.documentElement.style.setProperty("--mobile-nav-total", `var(--mobile-nav-height, ${navHeight}px)`);
 
       // Pad the element that actually scrolls
       scroller.classList.add("with-mobile-nav");
@@ -1505,7 +1502,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                 }),
             // Compact, safe-area aware bar
             paddingBottom: "calc(4px + env(safe-area-inset-bottom))",
-            paddingTop: "2px",
+            paddingTop: "0px",
           }}
         >
           <div
@@ -1640,9 +1637,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           </div>
         </div>
       </motion.nav>
-
-      {/* Spacer so content never sits under the fixed nav (defensive fallback) */}
-      <div aria-hidden="true" className="md:hidden" style={{ height: "var(--mobile-nav-total, 64px)" }} />
     </>
   );
 };
