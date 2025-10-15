@@ -369,14 +369,29 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
       const navHeight = Math.round(nav.getBoundingClientRect().height);
       document.documentElement.style.setProperty("--mobile-nav-height", `${navHeight}px`);
-      document.documentElement.style.setProperty(
-        "--mobile-nav-total",
-        `calc(var(--mobile-nav-height, ${navHeight}px) + env(safe-area-inset-bottom))`,
-      );
+      document.documentElement.style.setProperty("--mobile-nav-total", `var(--mobile-nav-height, ${navHeight}px)`);
 
       // Pad the element that actually scrolls
       scroller.classList.add("with-mobile-nav");
       (scroller.style as any).paddingBottom = `var(--mobile-nav-total)`;
+
+      // GAP FIX: prevent stacking of last element's bottom margin/padding with the nav padding
+      const lastEl = scroller.lastElementChild as HTMLElement | null;
+      if (lastEl) {
+        if (!lastEl.dataset.prevMb) lastEl.dataset.prevMb = lastEl.style.marginBottom || "";
+        if (!lastEl.dataset.prevPb) lastEl.dataset.prevPb = lastEl.style.paddingBottom || "";
+        lastEl.style.marginBottom = "0px";
+        const computedPb = parseFloat(getComputedStyle(lastEl).paddingBottom || "0");
+        if (computedPb > 0) lastEl.style.paddingBottom = "0px";
+      }
+
+      // CSS fallback so if the last element changes later, it still zeroes out
+      if (!document.getElementById("mobile-nav-gap-fix")) {
+        const s = document.createElement("style");
+        s.id = "mobile-nav-gap-fix";
+        s.textContent = `.with-mobile-nav > :last-child{margin-bottom:0!important;padding-bottom:0!important;}`;
+        document.head.appendChild(s);
+      }
     };
 
     applyOffsets();
@@ -396,7 +411,19 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
       window.removeEventListener("pageshow", applyOffsets);
       vv?.removeEventListener?.("resize", onVV);
       vv?.removeEventListener?.("scroll", onVV);
+
       const scroller = getScrollRoot();
+
+      // restore last element inline styles
+      const el = scroller.lastElementChild as HTMLElement | null;
+      if (el) {
+        if (el.dataset.prevMb !== undefined) el.style.marginBottom = el.dataset.prevMb!;
+        if (el.dataset.prevPb !== undefined) el.style.paddingBottom = el.dataset.prevPb!;
+        delete el.dataset.prevMb;
+        delete el.dataset.prevPb;
+      }
+      document.getElementById("mobile-nav-gap-fix")?.remove();
+
       scroller.classList.remove("with-mobile-nav");
       (scroller.style as any).paddingBottom = "";
     };
@@ -1503,9 +1530,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                   border: "1px solid rgba(200, 200, 200, 0.3)",
                   borderBottom: "none",
                 }),
-            // Compact, safe-area aware bar
-            paddingBottom: "calc(4px + env(safe-area-inset-bottom))",
-            paddingTop: "2px",
+            // HEIGHT TWEAK: slightly smaller bar, still safe-area-aware
+            paddingBottom: "calc(2px + env(safe-area-inset-bottom))",
+            paddingTop: "0px",
           }}
         >
           <div
@@ -1640,9 +1667,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           </div>
         </div>
       </motion.nav>
-
-      {/* Spacer so content never sits under the fixed nav (defensive fallback) */}
-      <div aria-hidden="true" className="md:hidden" style={{ height: "var(--mobile-nav-total, 64px)" }} />
     </>
   );
 };
