@@ -34,13 +34,13 @@ type Scene = {
 };
 
 /* ============================================================
-   Animated Number Counter (respects reduced motion)
+   Animated Number (reduced-motion aware)
 ============================================================ */
-const AnimatedNumber: React.FC<{
-  value: number;
-  duration?: number;
-  suffix?: string;
-}> = ({ value, duration = 900, suffix = "" }) => {
+const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
+  value,
+  duration = 900,
+  suffix = "",
+}) => {
   const prefersReduced = useReducedMotion();
   const [display, setDisplay] = useState<number>(prefersReduced ? value : 0);
 
@@ -53,7 +53,6 @@ const AnimatedNumber: React.FC<{
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      // round to 0.1 for non-integers to avoid jitter
       const next = Number.isInteger(value) ? Math.round(value * t) : Math.round((value * t + Number.EPSILON) * 10) / 10;
       setDisplay(next);
       if (t < 1) raf = requestAnimationFrame(tick);
@@ -71,15 +70,13 @@ const AnimatedNumber: React.FC<{
 };
 
 /* ============================================================
-   Wistia Video Player Hook (guards + visibility control)
+   Wistia Player Hook
 ============================================================ */
 function useWistiaPlayer(videoId?: string) {
   const playerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!videoId) return;
-
-    // Ensure script once
     (window as any)._wq = (window as any)._wq || [];
     if (!document.getElementById("wistia-e-v1")) {
       const s = document.createElement("script");
@@ -88,8 +85,6 @@ function useWistiaPlayer(videoId?: string) {
       s.async = true;
       document.head.appendChild(s);
     }
-
-    // Create/attach player
     (window as any)._wq.push({
       id: videoId,
       onReady: (video: any) => {
@@ -98,13 +93,9 @@ function useWistiaPlayer(videoId?: string) {
           video.mute();
           video.loop(true);
           video.play();
-        } catch {
-          /* no-op */
-        }
+        } catch {}
       },
     });
-
-    // no cleanup API from Wistia per instance; changing key unmounts div
   }, [videoId]);
 
   const mute = () => playerRef.current?.mute?.();
@@ -113,6 +104,16 @@ function useWistiaPlayer(videoId?: string) {
   const play = () => playerRef.current?.play?.();
 
   return { mute, unmute, pause, play };
+}
+
+/* ============================================================
+   Helpers
+============================================================ */
+function isSectionFullyInView(el: HTMLElement, tol = 2) {
+  const rect = el.getBoundingClientRect();
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  // “Fully viewed” = covers the viewport (within tolerance)
+  return rect.top <= tol && rect.bottom >= vh - tol;
 }
 
 /* ============================================================
@@ -125,8 +126,8 @@ interface Props {
   navigate: (path: string) => void;
   onInteriorExplore: () => void;
   onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void; // kept for compatibility
-  onSafetyExplore: () => void; // kept for compatibility
+  onHybridTechExplore: () => void; // kept for API compatibility
+  onSafetyExplore: () => void; // kept for API compatibility
   galleryImages: string[];
 }
 
@@ -140,13 +141,12 @@ const StorytellingSection: React.FC<Props> = ({
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore, // eslint-disable-line @typescript-eslint/no-unused-vars
-  onSafetyExplore, // eslint-disable-line @typescript-eslint/no-unused-vars
+  onHybridTechExplore, // eslint-disable-line
+  onSafetyExplore, // eslint-disable-line
   galleryImages,
 }) => {
   const prefersReduced = useReducedMotion();
   const sectionRef = useRef<HTMLElement | null>(null);
-  const [isVisibleEnough, setIsVisibleEnough] = useState(false);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
 
   /* ----------------- Scenes ----------------- */
@@ -169,29 +169,10 @@ const StorytellingSection: React.FC<Props> = ({
           variant: "secondary",
         },
         stats: [
-          {
-            value: 268,
-            label: "Horsepower",
-            icon: <Zap className="w-6 h-6" aria-hidden="true" />,
-          },
-          {
-            value: 7.1,
-            suffix: "s",
-            label: "0–100 km/h",
-            icon: <Car className="w-6 h-6" aria-hidden="true" />,
-          },
-          {
-            value: 850,
-            suffix: " km",
-            label: "Range",
-            icon: <Sparkles className="w-6 h-6" aria-hidden="true" />,
-          },
-          {
-            value: 5,
-            suffix: "★",
-            label: "Safety",
-            icon: <Shield className="w-6 h-6" aria-hidden="true" />,
-          },
+          { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6" /> },
+          { value: 7.1, suffix: "s", label: "0–100 km/h", icon: <Car className="w-6 h-6" /> },
+          { value: 850, suffix: " km", label: "Range", icon: <Sparkles className="w-6 h-6" /> },
+          { value: 5, suffix: "★", label: "Safety", icon: <Shield className="w-6 h-6" /> },
         ],
       },
       {
@@ -216,11 +197,7 @@ const StorytellingSection: React.FC<Props> = ({
         subtitle: "Step into a world where comfort meets cutting-edge technology.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
-        cta: {
-          label: "Experience Interior",
-          action: onInteriorExplore,
-          variant: "primary",
-        },
+        cta: { label: "Experience Interior", action: onInteriorExplore, variant: "primary" },
         features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Premium Audio"],
       },
       {
@@ -229,23 +206,11 @@ const StorytellingSection: React.FC<Props> = ({
         subtitle: "Advanced technology that anticipates your needs.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg",
-        cta: {
-          label: "Discover Tech",
-          action: onConnectivityExplore,
-          variant: "secondary",
-        },
+        cta: { label: "Discover Tech", action: onConnectivityExplore, variant: "secondary" },
         features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
-    [
-      monthlyEMI, // kept in deps if you bind it later inside labels/finance copy
-      setIsBookingOpen,
-      setIsFinanceOpen,
-      navigate,
-      onInteriorExplore,
-      onConnectivityExplore,
-      galleryImages,
-    ],
+    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, onInteriorExplore, onConnectivityExplore, galleryImages],
   );
 
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
@@ -254,43 +219,51 @@ const StorytellingSection: React.FC<Props> = ({
   const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [fullyInView, setFullyInView] = useState(false); // <— precise visibility gate
 
-  // Lock only when: section is visible + not reduced motion + not last slide
-  const isLocked = isVisibleEnough && !prefersReduced && index < scenes.length - 1;
   const active = scenes[index];
+  const lastIndex = scenes.length - 1;
 
-  /* ----------------- Visibility watcher (fixed debounce & cleanup) ----------------- */
+  // LOCK only when section fully covers viewport, motion is allowed, and not on last slide
+  const isLocked = fullyInView && !prefersReduced && index < lastIndex;
+
+  /* ----------------- Fully-in-view tracker (scroll+resize, rAF-throttled) ----------------- */
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
 
-    let debounceId: ReturnType<typeof setTimeout> | null = null;
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const nowFullyInView = isSectionFullyInView(el, 2);
+      setFullyInView((prev) => {
+        // Reset to scene 0 ONLY on first full entry
+        if (!prev && nowFullyInView) setIndex(0);
+        return nowFullyInView;
+      });
+    };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.95;
-        if (visible) {
-          if (debounceId) clearTimeout(debounceId);
-          debounceId = setTimeout(() => {
-            setIndex(0);
-            setIsVisibleEnough(true);
-          }, 120);
-        } else {
-          if (debounceId) clearTimeout(debounceId);
-          setIsVisibleEnough(false);
-        }
-      },
-      { threshold: [0.5, 0.95], rootMargin: "0px 0px -8% 0px" },
-    );
+    const onScrollOrResize = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
 
-    observer.observe(el);
+    // initial compute
+    update();
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize, { passive: true });
+    window.addEventListener("orientationchange", onScrollOrResize);
+
     return () => {
-      if (debounceId) clearTimeout(debounceId);
-      observer.disconnect();
+      window.removeEventListener("scroll", onScrollOrResize as any);
+      window.removeEventListener("resize", onScrollOrResize as any);
+      window.removeEventListener("orientationchange", onScrollOrResize as any);
     };
   }, []);
 
-  /* ----------------- Parallax (reduced motion guard) ----------------- */
+  /* ----------------- Parallax (off for reduced motion) ----------------- */
   useEffect(() => {
     if (prefersReduced) return;
     const onMove = (e: MouseEvent) => {
@@ -302,20 +275,26 @@ const StorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, [prefersReduced]);
 
-  /* ----------------- Scroll Handlers (localized to section) ----------------- */
+  /* ----------------- Step navigation handlers (attached ONLY when locked) ----------------- */
   const touchStartY = useRef<number | null>(null);
+
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      if (isTransitioning) return;
+      setIsTransitioning(true);
+      setIndex((i) => Math.max(0, Math.min(lastIndex, i + dir)));
+      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
+    },
+    [isTransitioning, lastIndex, prefersReduced],
+  );
 
   const onWheel = useCallback(
     (e: WheelEvent) => {
       if (!isLocked) return;
       e.preventDefault();
-      if (isTransitioning) return;
-      setIsTransitioning(true);
-      const dir = e.deltaY > 0 ? 1 : -1;
-      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
+      step(e.deltaY > 0 ? 1 : -1);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced],
+    [isLocked, step],
   );
 
   const onTouchStart = useCallback((e: TouchEvent) => {
@@ -327,7 +306,7 @@ const StorytellingSection: React.FC<Props> = ({
       if (!isLocked || touchStartY.current === null) return;
       const currentY = e.touches[0].clientY;
       const deltaY = Math.abs(touchStartY.current - currentY);
-      if (deltaY > 10) e.preventDefault(); // only when obviously vertical
+      if (deltaY > 10) e.preventDefault(); // clear vertical swipe
     },
     [isLocked],
   );
@@ -337,13 +316,10 @@ const StorytellingSection: React.FC<Props> = ({
       if (!isLocked || touchStartY.current === null) return;
       const dy = touchStartY.current - e.changedTouches[0].clientY;
       touchStartY.current = null;
-      if (Math.abs(dy) < 50 || isTransitioning) return;
-      setIsTransitioning(true);
-      const dir = dy > 0 ? 1 : -1;
-      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
+      if (Math.abs(dy) < 50) return;
+      step(dy > 0 ? 1 : -1);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced],
+    [isLocked, step],
   );
 
   const onKeyDown = useCallback(
@@ -351,25 +327,21 @@ const StorytellingSection: React.FC<Props> = ({
       if (!isLocked) return;
       if (!["ArrowDown", "ArrowRight", "PageDown", " ", "ArrowUp", "ArrowLeft", "PageUp"].includes(e.key)) return;
       e.preventDefault();
-      if (isTransitioning) return;
-      setIsTransitioning(true);
       const dir = e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " ? 1 : -1;
-      setIndex((i) => Math.max(0, Math.min(scenes.length - 1, i + dir)));
-      setTimeout(() => setIsTransitioning(false), prefersReduced ? 200 : 700);
+      step(dir as 1 | -1);
     },
-    [isLocked, isTransitioning, scenes.length, prefersReduced],
+    [isLocked, step],
   );
 
-  // Attach listeners to the SECTION (not window) to avoid hijacking outside interactions
+  // Attach listeners to SECTION only while locked; keyboard to window
   useEffect(() => {
     const el = sectionRef.current;
     if (!el || !isLocked) return;
-
     el.addEventListener("wheel", onWheel as any, { passive: false });
     el.addEventListener("touchstart", onTouchStart as any, { passive: true });
     el.addEventListener("touchmove", onTouchMove as any, { passive: false });
     el.addEventListener("touchend", onTouchEnd as any, { passive: true });
-    window.addEventListener("keydown", onKeyDown); // keep keyboard global for a11y
+    window.addEventListener("keydown", onKeyDown);
 
     return () => {
       el.removeEventListener("wheel", onWheel as any);
@@ -380,11 +352,11 @@ const StorytellingSection: React.FC<Props> = ({
     };
   }, [isLocked, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
-  /* ----------------- Wistia Player react to index/visibility ----------------- */
-  const { mute, unmute, pause, play } = useWistiaPlayer(isVisibleEnough ? active.backgroundVideoWistiaId : undefined);
+  /* ----------------- Wistia reacts to visibility & index ----------------- */
+  const { mute, unmute, pause, play } = useWistiaPlayer(fullyInView ? active.backgroundVideoWistiaId : undefined);
 
   useEffect(() => {
-    if (!isVisibleEnough) {
+    if (!fullyInView) {
       pause();
       return;
     }
@@ -396,7 +368,7 @@ const StorytellingSection: React.FC<Props> = ({
       mute();
       pause();
     }
-  }, [index, isMuted, active.backgroundVideoWistiaId, isVisibleEnough, mute, unmute, play, pause]);
+  }, [index, isMuted, active.backgroundVideoWistiaId, fullyInView, mute, unmute, play, pause]);
 
   /* ----------------- Preload next background ----------------- */
   useEffect(() => {
@@ -404,22 +376,21 @@ const StorytellingSection: React.FC<Props> = ({
     if (!next?.backgroundImage) return;
     const img = new Image();
     img.src = next.backgroundImage;
-    // no need to keep reference; browser caches it
   }, [index, scenes]);
 
   /* ----------------- UI ----------------- */
   const progressRatio = (index + 1) / scenes.length;
   const isFirst = index === 0;
-  const isLast = index === scenes.length - 1;
+  const isLast = index === lastIndex;
 
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[100svh] bg-black text-white overflow-hidden select-none"
+      className="relative bg-black text-white overflow-hidden select-none"
       style={{
-        // contain to reduce paint/scroll chain & handle iOS Chrome/Safari UI
+        minHeight: "100svh", // use 100lvh if available in your Tailwind config
         overscrollBehavior: "contain",
-        touchAction: prefersReduced ? "auto" : "none",
+        touchAction: isLocked || prefersReduced ? (isLocked ? "none" : "auto") : "auto",
         scrollSnapAlign: "start",
       }}
       aria-label="Cinematic automotive storytelling"
@@ -456,22 +427,18 @@ const StorytellingSection: React.FC<Props> = ({
               />
             </div>
           )}
-
-          {/* Subtle animated overlay */}
+          {/* overlays */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay pointer-events-none"
-            animate={{
-              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-            }}
+            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
             transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
           />
-          {/* Vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 
-      {/* SOUND TOGGLE (focusable, large tap target) */}
+      {/* SOUND TOGGLE */}
       {active.backgroundVideoWistiaId && (
         <button
           onClick={() => setIsMuted((m) => !m)}
@@ -552,7 +519,7 @@ const StorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* PROGRESS DOTS (safe area + bigger tap targets) */}
+      {/* PROGRESS DOTS */}
       <div className="absolute bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] left-1/2 -translate-x-1/2 z-20 flex space-x-6">
         {scenes.map((s, i) => (
           <div key={s.id} className="flex flex-col items-center">
@@ -569,11 +536,11 @@ const StorytellingSection: React.FC<Props> = ({
         ))}
       </div>
 
-      {/* PROGRESS (GPU scaleX for cheaper animation) */}
+      {/* PROGRESS BAR */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20 overflow-hidden">
         <motion.div
           className="h-full bg-red-600 origin-left will-change-transform"
-          animate={{ scaleX: progressRatio }}
+          animate={{ scaleX: (index + 1) / scenes.length }}
           initial={false}
           transition={{ duration: prefersReduced ? 0.18 : 0.45 }}
         />
