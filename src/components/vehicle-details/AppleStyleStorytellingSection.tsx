@@ -8,19 +8,8 @@ import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX
 /* ============================================================
    Types
 ============================================================ */
-type CTA = {
-  label: string;
-  action: () => void;
-  variant?: "primary" | "secondary";
-};
-
-type Stat = {
-  value: number;
-  suffix?: string;
-  label: string;
-  icon?: React.ReactNode;
-};
-
+type CTA = { label: string; action: () => void; variant?: "primary" | "secondary" };
+type Stat = { value: number; suffix?: string; label: string; icon?: React.ReactNode };
 type Scene = {
   id: string;
   title: string;
@@ -36,11 +25,11 @@ type Scene = {
 /* ============================================================
    Animated Number (reduced-motion aware)
 ============================================================ */
-const AnimatedNumber: React.FC<{
-  value: number;
-  duration?: number;
-  suffix?: string;
-}> = ({ value, duration = 900, suffix = "" }) => {
+const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
+  value,
+  duration = 900,
+  suffix = "",
+}) => {
   const prefersReduced = useReducedMotion();
   const [display, setDisplay] = useState<number>(prefersReduced ? value : 0);
 
@@ -109,10 +98,13 @@ function useWistiaPlayer(videoId?: string) {
 /* ============================================================
    Helpers
 ============================================================ */
-function isSectionFullyInView(el: HTMLElement, tol = 2) {
+function rectCoversViewport(el: HTMLElement, tol = 6) {
   const rect = el.getBoundingClientRect();
   const vh = window.innerHeight || document.documentElement.clientHeight;
   return rect.top <= tol && rect.bottom >= vh - tol;
+}
+function pointInRect(x: number, y: number, r: DOMRect) {
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
 /* ============================================================
@@ -125,8 +117,8 @@ interface Props {
   navigate: (path: string) => void;
   onInteriorExplore: () => void;
   onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void;
-  onSafetyExplore: () => void;
+  onHybridTechExplore: () => void; // kept for API compatibility
+  onSafetyExplore: () => void; // kept for API compatibility
   galleryImages: string[];
 }
 
@@ -140,8 +132,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   navigate,
   onInteriorExplore,
   onConnectivityExplore,
-  onHybridTechExplore: _onHybridTechExplore, // keep API compatibility
-  onSafetyExplore: _onSafetyExplore, // keep API compatibility
+  onHybridTechExplore: _onHybridTechExplore,
+  onSafetyExplore: _onSafetyExplore,
   galleryImages,
 }) => {
   const prefersReduced = useReducedMotion();
@@ -157,16 +149,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Power, efficiency, and innovation in perfect harmony.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
-        cta: {
-          label: "Reserve Now",
-          action: () => setIsBookingOpen(true),
-          variant: "primary",
-        },
-        secondaryCta: {
-          label: "Explore Finance",
-          action: () => setIsFinanceOpen(true),
-          variant: "secondary",
-        },
+        cta: { label: "Reserve Now", action: () => setIsBookingOpen(true), variant: "primary" },
+        secondaryCta: { label: "Explore Finance", action: () => setIsFinanceOpen(true), variant: "secondary" },
         stats: [
           { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6" aria-hidden="true" /> },
           { value: 7.1, suffix: "s", label: "0–100 km/h", icon: <Car className="w-6 h-6" aria-hidden="true" /> },
@@ -182,10 +166,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
         cta: {
           label: "Explore Design",
-          action: () => {
-            const el = document.getElementById("seamless-showroom");
-            el?.scrollIntoView({ behavior: "smooth", block: "start" });
-          },
+          action: () => document.getElementById("seamless-showroom")?.scrollIntoView({ behavior: "smooth" }),
           variant: "secondary",
         },
         features: ["LED Matrix Headlights", "Active Aero", "Carbon Fiber Accents", "Sport Wheels"],
@@ -211,56 +192,64 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     ],
     [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, onInteriorExplore, onConnectivityExplore, galleryImages],
   );
-
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
 
   /* ----------------- State ----------------- */
   const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [fullyInView, setFullyInView] = useState(false);
+  const [almostFull, setAlmostFull] = useState(false); // IO-based
+  const [coversViewport, setCoversViewport] = useState(false); // rect fallback
 
   const active = scenes[index];
   const lastIndex = scenes.length - 1;
 
-  // Lock only when: section fully covers viewport, motion allowed, and not on last slide
+  // Fully in view = either IO says ~full OR rect check says covers viewport
+  const fullyInView = almostFull || coversViewport;
+
+  // Lock while section is fully visible, animations allowed, and not last slide
   const isLocked = fullyInView && !prefersReduced && index < lastIndex;
 
-  /* ----------------- Fully-in-view tracker (rAF-throttled) ----------------- */
+  /* ----------------- Visibility (IntersectionObserver + rect fallback) ----------------- */
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
 
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const nowFullyInView = isSectionFullyInView(el, 2);
-      setFullyInView((prev) => {
-        if (!prev && nowFullyInView) setIndex(0);
-        return nowFullyInView;
-      });
-    };
+    // IntersectionObserver: treat as "almost full" when >= 0.98 visible
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        setAlmostFull(entry.intersectionRatio >= 0.98 && entry.isIntersecting);
+      },
+      { threshold: Array.from({ length: 101 }, (_, i) => i / 100) }, // 0.00..1.00
+    );
+    io.observe(el);
 
-    const onScrollOrResize = () => {
+    // Rect fallback (handles iOS URL bar resizing better)
+    let ticking = false;
+    const computeRect = () => {
+      ticking = false;
+      setCoversViewport(rectCoversViewport(el, 6));
+    };
+    const onScrollResize = () => {
       if (!ticking) {
         ticking = true;
-        requestAnimationFrame(update);
+        requestAnimationFrame(computeRect);
       }
     };
-
-    update();
-    window.addEventListener("scroll", onScrollOrResize, { passive: true });
-    window.addEventListener("resize", onScrollOrResize, { passive: true });
-    window.addEventListener("orientationchange", onScrollOrResize);
+    computeRect();
+    window.addEventListener("scroll", onScrollResize, { passive: true });
+    window.addEventListener("resize", onScrollResize, { passive: true });
+    window.addEventListener("orientationchange", onScrollResize);
 
     return () => {
-      window.removeEventListener("scroll", onScrollOrResize as any);
-      window.removeEventListener("resize", onScrollOrResize as any);
-      window.removeEventListener("orientationchange", onScrollOrResize as any);
+      io.disconnect();
+      window.removeEventListener("scroll", onScrollResize as any);
+      window.removeEventListener("resize", onScrollResize as any);
+      window.removeEventListener("orientationchange", onScrollResize as any);
     };
   }, []);
 
-  /* ----------------- Parallax (off for reduced motion) ----------------- */
+  /* ----------------- Parallax ----------------- */
   useEffect(() => {
     if (prefersReduced) return;
     const onMove = (e: MouseEvent) => {
@@ -272,9 +261,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, [prefersReduced]);
 
-  /* ----------------- Step navigation handlers ----------------- */
-  const touchStartY = useRef<number | null>(null);
-
+  /* ----------------- Step navigation ----------------- */
   const step = useCallback(
     (dir: 1 | -1) => {
       if (isTransitioning) return;
@@ -285,34 +272,54 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     [isTransitioning, lastIndex, prefersReduced],
   );
 
+  // Window-level wheel handler: act only if pointer is over the section
   const onWheel = useCallback(
     (e: WheelEvent) => {
       if (!isLocked) return;
+      const el = sectionRef.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      // Some browsers send clientX/Y as 0 on wheel; fallback to midpoint
+      const cx = (e as any).clientX ?? rect.left + rect.width / 2;
+      const cy = (e as any).clientY ?? rect.top + rect.height / 2;
+
+      if (!pointInRect(cx, cy, rect)) return; // ignore wheels outside section
       e.preventDefault();
       step(e.deltaY > 0 ? 1 : -1);
     },
     [isLocked, step],
   );
 
+  // Touch: track if the gesture started inside the section
+  const touchStartY = useRef<number | null>(null);
+  const touchActiveInSection = useRef(false);
+
   const onTouchStart = useCallback((e: TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
+    const el = sectionRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const t = e.touches[0];
+    touchActiveInSection.current = pointInRect(t.clientX, t.clientY, rect);
+    touchStartY.current = t.clientY;
   }, []);
 
   const onTouchMove = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || touchStartY.current === null) return;
+      if (!isLocked || !touchActiveInSection.current || touchStartY.current === null) return;
       const currentY = e.touches[0].clientY;
       const deltaY = Math.abs(touchStartY.current - currentY);
-      if (deltaY > 10) e.preventDefault();
+      if (deltaY > 10) e.preventDefault(); // consume vertical swipe while locked
     },
     [isLocked],
   );
 
   const onTouchEnd = useCallback(
     (e: TouchEvent) => {
-      if (!isLocked || touchStartY.current === null) return;
+      if (!isLocked || !touchActiveInSection.current || touchStartY.current === null) return;
       const dy = touchStartY.current - e.changedTouches[0].clientY;
       touchStartY.current = null;
+      touchActiveInSection.current = false;
       if (Math.abs(dy) < 50) return;
       step(dy > 0 ? 1 : -1);
     },
@@ -330,24 +337,22 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     [isLocked, step],
   );
 
-  // Attach listeners to SECTION only while locked; keyboard to window
+  // Attach to WINDOW so we never miss events, but act only when over the section
   useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || !isLocked) return;
-    el.addEventListener("wheel", onWheel as any, { passive: false });
-    el.addEventListener("touchstart", onTouchStart as any, { passive: true });
-    el.addEventListener("touchmove", onTouchMove as any, { passive: false });
-    el.addEventListener("touchend", onTouchEnd as any, { passive: true });
+    if (!fullyInView) return; // only arm when visible; auto-releases otherwise
+    window.addEventListener("wheel", onWheel as any, { passive: false });
+    window.addEventListener("touchstart", onTouchStart as any, { passive: true });
+    window.addEventListener("touchmove", onTouchMove as any, { passive: false });
+    window.addEventListener("touchend", onTouchEnd as any, { passive: true });
     window.addEventListener("keydown", onKeyDown);
-
     return () => {
-      el.removeEventListener("wheel", onWheel as any);
-      el.removeEventListener("touchstart", onTouchStart as any);
-      el.removeEventListener("touchmove", onTouchMove as any);
-      el.removeEventListener("touchend", onTouchEnd as any);
+      window.removeEventListener("wheel", onWheel as any);
+      window.removeEventListener("touchstart", onTouchStart as any);
+      window.removeEventListener("touchmove", onTouchMove as any);
+      window.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isLocked, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
+  }, [fullyInView, onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
 
   /* ----------------- Wistia reacts to visibility & index ----------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(fullyInView ? active.backgroundVideoWistiaId : undefined);
@@ -387,7 +392,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       style={{
         minHeight: "100svh",
         overscrollBehavior: "contain",
-        touchAction: isLocked || prefersReduced ? (isLocked ? "none" : "auto") : "auto",
+        // We don't set touchAction:none globally anymore; window handlers gate by pointer-in-section.
         scrollSnapAlign: "start",
       }}
       aria-label="Cinematic automotive storytelling"
@@ -424,7 +429,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
               />
             </div>
           )}
-          {/* subtle overlays */}
+          {/* overlays */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay pointer-events-none"
             animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
