@@ -1,19 +1,20 @@
 "use client";
 
-import React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { VehicleModel } from "@/types/vehicle";
 import { PremiumButton } from "@/components/ui/premium-button";
 import YouTubeEmbed from "@/components/ui/youtube-embed";
-import { Info, Share2 } from "lucide-react";
+import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ============================================================
-   MinimalistVideoHero (EN)
-   - Fullscreen background video with top & bottom scrims
-   - Clear, English-only labels
-   - Safe-area aware for mobile toolbars / notches
-   - Accessible roles, aria labels, keyboard-friendly buttons
-   - Reduced-motion aware (disables autoplay if user prefers)
+   MinimalistVideoHero — Full, Single-File Version
+   - Hybrid media (video / images) with thumb strip + lightbox
+   - Variant toggle (Original / Modellista)
+   - WLTP / disclaimer bottom sheet
+   - Sticky mobile CTA bar
+   - Safe-area aware, accessible, reduced-motion & data-saver aware
+   - Lightweight analytics hooks via data-analytics-id attributes
 ============================================================ */
 
 export type MinimalistVideoHeroProps = {
@@ -22,15 +23,32 @@ export type MinimalistVideoHeroProps = {
     priceFrom?: string | number;
     modelYear?: number;
   };
+  heroImages?: { src: string; alt?: string }[];
+  defaultVariant?: "original" | "modellista";
   onBookTestDrive?: () => void;
   onCarBuilder?: () => void;
-  onInfoClick?: () => void;
-  onShareClick?: () => void;
+  onInfoClick?: () => void; // If provided, overrides internal WLTP sheet
+  onShareClick?: () => void; // If provided, overrides internal share
 };
 
 const DEFAULT_VIDEO_ID = "E-TmuQuQwVI";
 const DEFAULT_TITLE = "TOYOTA";
 const DEFAULT_PRICE = "AED 18,090";
+
+const FALLBACK_IMAGES: { src: string; alt?: string }[] = [
+  {
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/original1_01.jpg",
+    alt: "Land Cruiser 300 — Original kit",
+  },
+  {
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/modellista1_01.jpg",
+    alt: "Land Cruiser 300 — Modellista kit",
+  },
+  {
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/design/gallery_10.jpg",
+    alt: "Land Cruiser 300 — Exterior gallery",
+  },
+];
 
 function formatPrice(price?: string | number) {
   if (price == null) return DEFAULT_PRICE;
@@ -45,20 +63,256 @@ function formatPrice(price?: string | number) {
       return `AED ${Math.round(price).toLocaleString("en-US")}`;
     }
   }
-  return price; // assume already formatted
+  return price;
 }
 
-const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
+/* -----------------------------------------------
+   Internal: MediaStrip (thumbnail row)
+----------------------------------------------- */
+function MediaStrip({
+  images,
+  activeIndex,
+  onSelect,
+}: {
+  images: { src: string; alt: string }[];
+  activeIndex: number;
+  onSelect: (i: number) => void;
+}) {
+  if (!images?.length) return null;
+  return (
+    <div className="flex max-w-full gap-2 overflow-x-auto rounded-xl bg-black/20 p-2 backdrop-blur-sm">
+      {images.map((img, i) => (
+        <button
+          key={img.src + i}
+          onClick={() => onSelect(i)}
+          aria-label={`Open image ${i + 1}`}
+          className={`relative h-16 w-24 flex-none overflow-hidden rounded-md ring-offset-2 focus:outline-none focus:ring-2 focus:ring-white/60 ${
+            i === activeIndex ? "ring-2 ring-white/70" : "ring-0"
+          }`}
+        >
+          <motion.img
+            src={img.src}
+            alt={img.alt}
+            className="h-full w-full object-cover"
+            initial={{ opacity: 0.3 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* -----------------------------------------------
+   Internal: Lightbox (full-screen gallery)
+----------------------------------------------- */
+function Lightbox({
+  isOpen,
+  images,
+  index,
+  onClose,
+  onPrev,
+  onNext,
+}: {
+  isOpen: boolean;
+  images: { src: string; alt: string }[];
+  index: number;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") onPrev();
+      if (e.key === "ArrowRight") onNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose, onPrev, onNext]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Close */}
+          <button
+            onClick={onClose}
+            aria-label="Close gallery"
+            className="absolute right-4 top-4 z-[1001] rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Image */}
+          <div className="flex h-full w-full items-center justify-center p-4">
+            <motion.img
+              key={images[index]?.src}
+              src={images[index]?.src}
+              alt={images[index]?.alt || "Gallery image"}
+              className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
+              initial={{ opacity: 0.2, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25 }}
+              draggable={false}
+            />
+          </div>
+
+          {/* Prev/Next hit-areas */}
+          <button onClick={onPrev} aria-label="Previous image" className="absolute left-0 top-0 h-full w-1/3" />
+          <button onClick={onNext} aria-label="Next image" className="absolute right-0 top-0 h-full w-1/3" />
+
+          {/* Prev/Next icons (visual hint) */}
+          <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/80">
+            <ChevronLeft className="h-8 w-8" />
+          </div>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/80">
+            <ChevronRight className="h-8 w-8" />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* -----------------------------------------------
+   Internal: BottomSheet (WLTP / disclaimers)
+----------------------------------------------- */
+function BottomSheet({
+  open,
+  onClose,
+  title = "Efficiency & Legal",
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-[900] bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-x-0 bottom-0 z-[901] rounded-t-2xl bg-white p-6 shadow-2xl sm:inset-x-auto sm:bottom-4 sm:left-1/2 sm:max-h-[80vh] sm:w-[640px] sm:-translate-x-1/2 sm:rounded-2xl"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-medium">{title}</h3>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="rounded-full p-2 text-foreground/70 hover:bg-foreground/5 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/30"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="prose prose-sm max-w-none text-muted-foreground">{children}</div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* -----------------------------------------------
+   Main Component
+----------------------------------------------- */
+export default function MinimalistVideoHero({
   vehicle,
+  heroImages = FALLBACK_IMAGES,
+  defaultVariant = "original",
   onBookTestDrive,
   onCarBuilder,
   onInfoClick,
   onShareClick,
-}) => {
+}: MinimalistVideoHeroProps) {
   const shouldReduceMotion = useReducedMotion();
+
+  // Initial media mode: prefer image if reduced motion or data-saver
+  const prefersImage = useMemo(() => {
+    const saveData =
+      typeof navigator !== "undefined" && (navigator as any)?.connection && (navigator as any)?.connection?.saveData;
+    return Boolean(shouldReduceMotion || saveData);
+  }, [shouldReduceMotion]);
+
+  const [mode, setMode] = useState<"video" | "image">(prefersImage ? "image" : "video");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(defaultVariant === "modellista" ? 1 : 0);
+  const [videoPlaying, setVideoPlaying] = useState(!prefersImage);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [shareHint, setShareHint] = useState<string | null>(null);
+  const [stickyVisible, setStickyVisible] = useState(false);
+
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const title = (vehicle?.name ?? DEFAULT_TITLE).toUpperCase();
   const price = formatPrice(vehicle?.priceFrom);
+  const videoId = vehicle?.videoId ?? (vehicle as any)?.videoUrl ?? DEFAULT_VIDEO_ID;
+
+  const images = useMemo(
+    () =>
+      (heroImages?.length ? heroImages : FALLBACK_IMAGES).map((im) => ({
+        src: im.src,
+        alt: im.alt || `${title} gallery`,
+      })),
+    [heroImages, title],
+  );
+
+  // Preload first image for LCP
+  useEffect(() => {
+    if (images?.[0]?.src) {
+      const i = new Image();
+      i.src = images[0].src;
+    }
+  }, [images]);
+
+  // Pause video when hero goes off-screen (coarse heuristic)
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    const el = sectionRef.current;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries[0]?.isIntersecting;
+        if (!visible) setVideoPlaying(false);
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Sticky CTA visibility: show when top sentinel leaves viewport
+  useEffect(() => {
+    if (!topSentinelRef.current) return;
+    const io = new IntersectionObserver((entries) => setStickyVisible(!entries[0].isIntersecting), { threshold: 0 });
+    io.observe(topSentinelRef.current);
+    return () => io.disconnect();
+  }, []);
 
   // Example English specs — replace with real props when available
   const specs: Array<{ label: string; value: string }> = [
@@ -67,34 +321,95 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
     { label: "CO₂ class", value: "C" },
   ];
 
-  const videoId = vehicle?.videoId ?? DEFAULT_VIDEO_ID;
+  const handleInfo = () => {
+    if (onInfoClick) return onInfoClick();
+    setSheetOpen(true);
+  };
+
+  const doShare = async () => {
+    if (onShareClick) return onShareClick();
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("media", mode);
+      url.searchParams.set("image", String(activeIndex));
+      if (navigator.share) {
+        await navigator.share({
+          title,
+          text: `${title} — Build & Price`,
+          url: url.toString(),
+        });
+      } else {
+        await navigator.clipboard.writeText(url.toString());
+        setShareHint("Link copied");
+        setTimeout(() => setShareHint(null), 1600);
+      }
+    } catch {
+      setShareHint("Could not share");
+      setTimeout(() => setShareHint(null), 1600);
+    }
+  };
+
+  const toggleMode = () => setMode((m) => (m === "video" ? "image" : "video"));
+
+  const openLightbox = (i: number) => {
+    setActiveIndex(i);
+    setLightboxOpen(true);
+  };
 
   return (
     <section
+      ref={sectionRef as any}
       role="region"
       aria-labelledby="video-hero-heading"
-      className="relative w-full overflow-hidden bg-background
-                 h-screen min-h-[100svh] md:min-h-screen"
+      className="relative h-screen min-h-[100svh] w-full overflow-hidden bg-background"
+      data-analytics-id="hero"
     >
-      {/* Background Video */}
+      {/* Intersection sentinel for sticky-CTA */}
+      <div ref={topSentinelRef} aria-hidden="true" className="absolute -top-1 h-1 w-1" />
+
+      {/* Background Media */}
       <div className="absolute inset-0 z-0">
-        <YouTubeEmbed
-          videoId={videoId}
-          autoplay={!shouldReduceMotion}
-          muted
-          controls={false}
-          className="h-full w-full"
-        />
-        {/* Readability overlays */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 via-black/30 to-transparent"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/70 via-black/40 to-transparent"
-        />
+        {mode === "video" ? (
+          <>
+            <YouTubeEmbed
+              videoId={videoId}
+              autoplay={!shouldReduceMotion && videoPlaying}
+              muted
+              controls={false}
+              className="h-full w-full"
+              onPlay={() => setVideoPlaying(true)}
+              onPause={() => setVideoPlaying(false)}
+            />
+            {/* Readability overlays */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 via-black/30 to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/70 via-black/40 to-transparent"
+            />
+          </>
+        ) : (
+          <>
+            <img
+              src={images[activeIndex]?.src}
+              alt={images[activeIndex]?.alt || `${title} hero image`}
+              className="h-full w-full object-cover"
+              draggable={false}
+            />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 via-black/30 to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/70 via-black/40 to-transparent"
+            />
+          </>
+        )}
       </div>
 
       {/* Content */}
@@ -120,9 +435,9 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
           </div>
         </motion.div>
 
-        {/* Bottom: CTAs + Specs */}
-        <div className="space-y-6 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-          {/* Action Buttons */}
+        {/* Bottom: CTAs + Specs + Media strip + Variant toggle */}
+        <div className="space-y-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+          {/* CTA Row */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -133,6 +448,7 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
               onClick={onCarBuilder}
               aria-label="Open Car Builder"
               className="h-12 bg-white px-8 text-base font-medium text-foreground hover:bg-white/90"
+              data-analytics-id="cta-build"
             >
               Build & Price
             </PremiumButton>
@@ -142,10 +458,92 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
               aria-label="Book a Test Drive"
               variant="outline"
               className="h-12 border-2 border-white bg-transparent px-8 text-base font-medium text-white hover:bg-white/10"
+              data-analytics-id="cta-testdrive"
             >
               Book a Test Drive
             </PremiumButton>
           </motion.div>
+
+          {/* Variant Toggle (if first two images represent variants) */}
+          {images.length >= 2 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveIndex(0);
+                  setMode("image");
+                }}
+                className={`rounded-full px-3 py-1.5 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                  activeIndex === 0 ? "bg-white text-foreground" : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+                aria-pressed={activeIndex === 0}
+              >
+                Original
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveIndex(1);
+                  setMode("image");
+                }}
+                className={`rounded-full px-3 py-1.5 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                  activeIndex === 1 ? "bg-white text-foreground" : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+                aria-pressed={activeIndex === 1}
+              >
+                Modellista
+              </button>
+            </div>
+          )}
+
+          {/* Media controls + Strip */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+                aria-label={mode === "video" ? "Switch to images" : "Switch to video"}
+              >
+                {mode === "video" ? (
+                  <ImagesIcon className="h-4 w-4" />
+                ) : videoPlaying ? (
+                  <Pause className="h-4 w-4" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                {mode === "video" ? "View Images" : "View Video"}
+              </button>
+
+              {mode === "video" && (
+                <button
+                  type="button"
+                  onClick={() => setVideoPlaying((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+                  aria-label={videoPlaying ? "Pause video" : "Play video"}
+                >
+                  {videoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {videoPlaying ? "Pause" : "Play"}
+                </button>
+              )}
+            </div>
+
+            {mode === "image" && (
+              <>
+                <MediaStrip images={images} activeIndex={activeIndex} onSelect={(i) => setActiveIndex(i)} />
+                <div className="flex">
+                  <button
+                    type="button"
+                    onClick={() => openLightbox(activeIndex)}
+                    className="rounded-full bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+                    aria-label="Open image full screen"
+                  >
+                    Open Full Screen
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Specs Row */}
           {specs.length > 0 && (
@@ -169,10 +567,11 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
 
               <button
                 type="button"
-                onClick={onInfoClick}
+                onClick={handleInfo}
                 className="ml-1 flex h-5 w-5 items-center justify-center rounded-full border border-white/50 text-xs text-white/90 hover:bg-white/10"
                 aria-label="Open more information"
                 title="More information"
+                data-analytics-id="specs-info"
               >
                 i
               </button>
@@ -190,7 +589,7 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
       >
         <button
           type="button"
-          onClick={onInfoClick}
+          onClick={handleInfo}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
           aria-label="More information"
           title="More information"
@@ -198,18 +597,94 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
           <Info className="h-5 w-5" />
         </button>
 
-        <button
-          type="button"
-          onClick={onShareClick}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
-          aria-label="Share"
-          title="Share"
-        >
-          <Share2 className="h-5 w-5" />
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={doShare}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+            aria-label="Share"
+            title="Share"
+            data-analytics-id="share"
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
+          <AnimatePresence>
+            {shareHint && (
+              <motion.div
+                className="absolute -left-2 top-12 rounded-md bg-black/80 px-2 py-1 text-xs text-white"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+              >
+                {shareHint}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
+
+      {/* Lightbox */}
+      <Lightbox
+        isOpen={lightboxOpen}
+        images={images}
+        index={activeIndex}
+        onClose={() => setLightboxOpen(false)}
+        onPrev={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
+        onNext={() => setActiveIndex((i) => (i + 1) % images.length)}
+      />
+
+      {/* WLTP / Disclaimers Bottom Sheet (used only if onInfoClick not provided) */}
+      {!onInfoClick && (
+        <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Efficiency & Legal">
+          <ul className="mb-3 list-disc pl-5">
+            <li>Fuel consumption and CO₂ figures are based on WLTP combined cycle.</li>
+            <li>Actual values may vary depending on driving style, conditions, and vehicle configuration.</li>
+            <li>Images shown may include optional accessories and may vary by market.</li>
+          </ul>
+          <p className="mb-1">
+            For full specifications and disclaimers, please refer to the official product brochure or contact your
+            nearest showroom.
+          </p>
+        </BottomSheet>
+      )}
+
+      {/* Sticky Mobile CTA */}
+      <AnimatePresence>
+        {stickyVisible && (
+          <motion.div
+            className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 bg-black/70 px-4 py-3 text-white backdrop-blur-md md:hidden"
+            initial={{ y: 64, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 64, opacity: 0 }}
+          >
+            <div className="min-w-0">
+              <div className="truncate text-xs text-white/80">Starting from (incl. VAT)</div>
+              <div className="truncate text-base font-medium" aria-live="polite">
+                {price}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <PremiumButton
+                onClick={onCarBuilder}
+                className="h-9 bg-white px-3 text-foreground hover:bg-white/90"
+                data-analytics-id="cta-build-sticky"
+              >
+                Build
+              </PremiumButton>
+              <PremiumButton
+                onClick={onBookTestDrive}
+                variant="outline"
+                className="h-9 border-2 border-white bg-transparent px-3 text-white hover:bg-white/10"
+                data-analytics-id="cta-testdrive-sticky"
+              >
+                Test Drive
+              </PremiumButton>
+            </div>
+            {/* safe-area padding */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[env(safe-area-inset-bottom)]" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
-};
-
-export default MinimalistVideoHero;
+}
