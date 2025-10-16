@@ -4,19 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { VehicleModel } from "@/types/vehicle";
+import type { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ArrowRight, Car as CarIcon, Check, Star, Wrench } from "lucide-react";
 
 /* =========================================================
-   Luxury Light v5 — "Porcelain+" (no dark mode)
-   Mobile fixes:
-   - desktop-only sticky
-   - CSS-gated hero (no SSR mismatch)
-   - full-width mobile carousel items
-   - working mobile sticky summary w/ safe-area
+   Luxury Light v5 — "Porcelain+" (No Sticky Anywhere)
+   - CSS-gated hero to avoid SSR mismatch
+   - Full-width mobile carousel items
+   - Smaller mobile typography and controls
+   - Clean finance copy; no floating/sticky UI
 ========================================================= */
 
 type EngineOption = {
@@ -64,11 +62,7 @@ const AEDFmt = new Intl.NumberFormat("en-AE", {
 
 function monthlyPayment(
   price: number,
-  opts: {
-    downPaymentPct?: number;
-    annualRate?: number;
-    termMonths?: number;
-  } = {},
+  opts: { downPaymentPct?: number; annualRate?: number; termMonths?: number } = {},
 ): number {
   const { downPaymentPct = 0.2, annualRate = 0.035, termMonths = 60 } = opts;
   const principal = price * (1 - downPaymentPct);
@@ -101,7 +95,7 @@ const Segmented: React.FC<{
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(opt.id)}
-            className="relative shrink-0 rounded-2xl px-3 py-2 text-[13px] font-medium text-foreground"
+            className="relative shrink-0 rounded-2xl px-3 py-2 text-[12.5px] sm:text-[13px] font-medium text-foreground"
             whileTap={{ scale: 0.98 }}
           >
             {selected && (
@@ -137,7 +131,7 @@ const GradeHero: React.FC<{ vehicleName: string; grade: Grade }> = ({ vehicleNam
           onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
         />
         {grade.badge && (
-          <div className="absolute left-4 top-4">
+          <div className="absolute left-3 top-3 sm:left-4 sm:top-4">
             <Badge className={grade.badgeColor}>
               {grade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />} {grade.badge}
             </Badge>
@@ -149,7 +143,7 @@ const GradeHero: React.FC<{ vehicleName: string; grade: Grade }> = ({ vehicleNam
 );
 
 const SpecRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex items-center justify-between text-sm">
+  <div className="flex items-center justify-between text-[12.5px] sm:text-sm">
     <span className="text-muted-foreground">{label}</span>
     <span className="font-medium">{value}</span>
   </div>
@@ -165,7 +159,7 @@ const RangeControl: React.FC<{
   onChange: (v: number) => void;
 }> = ({ label, min, max, step, value, onChange, format }) => (
   <div className="grid gap-1">
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between text-[12px] sm:text-xs">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{format ? format(value) : String(value)}</span>
     </div>
@@ -191,8 +185,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   onTestDrive,
   onGradeSelect,
 }) => {
-  const isMobile = useIsMobile(); // kept for the sticky summary only
-
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // live finance controls
@@ -202,20 +194,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   const engines = useMemo<EngineOption[]>(
     () => [
-      {
-        name: "3.5L",
-        power: "295 HP",
-        torque: "263 lb-ft",
-        type: "V6 Dynamic Force",
-        efficiency: "9.2L/100km",
-      },
-      {
-        name: "4.0L",
-        power: "270 HP",
-        torque: "278 lb-ft",
-        type: "V6 1GR-FE",
-        efficiency: "11.8L/100km",
-      },
+      { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
+      { name: "4.0L", power: "270 HP", torque: "278 lb-ft", type: "V6 1GR-FE", efficiency: "11.8L/100km" },
     ],
     [],
   );
@@ -233,11 +213,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           name: "TRD Off-Road",
           description: "Adventure-focused capability with TRD hardware.",
           price: basePrice + 20000,
-          monthlyFrom: monthlyPayment(basePrice + 20000, {
-            termMonths: term,
-            downPaymentPct: dpPct,
-            annualRate: apr,
-          }),
+          monthlyFrom: monthlyPayment(basePrice + 20000, { termMonths: term, downPaymentPct: dpPct, annualRate: apr }),
           badge: "Value",
           badgeColor: "bg-blue-100 text-blue-700",
           image: baseImage,
@@ -255,11 +231,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           name: "TRD Pro",
           description: "Ultimate off-road performance with premium finish.",
           price: basePrice + 50000,
-          monthlyFrom: monthlyPayment(basePrice + 50000, {
-            termMonths: term,
-            downPaymentPct: dpPct,
-            annualRate: apr,
-          }),
+          monthlyFrom: monthlyPayment(basePrice + 50000, { termMonths: term, downPaymentPct: dpPct, annualRate: apr }),
           badge: "Most Popular",
           badgeColor: "bg-orange-100 text-orange-700",
           image: baseImage,
@@ -281,11 +253,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         name: "SE",
         description: "Essential features for everyday driving.",
         price: basePrice,
-        monthlyFrom: monthlyPayment(basePrice, {
-          termMonths: term,
-          downPaymentPct: dpPct,
-          annualRate: apr,
-        }),
+        monthlyFrom: monthlyPayment(basePrice, { termMonths: term, downPaymentPct: dpPct, annualRate: apr }),
         badge: "Value",
         badgeColor: "bg-blue-100 text-blue-700",
         image: baseImage,
@@ -303,11 +271,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         name: "XLE",
         description: "Comfort + technology sweet spot.",
         price: basePrice + 20000,
-        monthlyFrom: monthlyPayment(basePrice + 20000, {
-          termMonths: term,
-          downPaymentPct: dpPct,
-          annualRate: apr,
-        }),
+        monthlyFrom: monthlyPayment(basePrice + 20000, { termMonths: term, downPaymentPct: dpPct, annualRate: apr }),
         badge: "Most Popular",
         badgeColor: "bg-orange-100 text-orange-700",
         image: baseImage,
@@ -325,11 +289,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         name: "Limited",
         description: "Luxury features with advanced technology.",
         price: basePrice + 40000,
-        monthlyFrom: monthlyPayment(basePrice + 40000, {
-          termMonths: term,
-          downPaymentPct: dpPct,
-          annualRate: apr,
-        }),
+        monthlyFrom: monthlyPayment(basePrice + 40000, { termMonths: term, downPaymentPct: dpPct, annualRate: apr }),
         badge: "Luxury",
         badgeColor: "bg-purple-100 text-purple-700",
         image: baseImage,
@@ -359,33 +319,32 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   const monthsLabel = (t: 36 | 48 | 60) => `${t} months`;
 
   return (
-    <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-12 lg:py-20">
-      <div className="toyota-container">
+    <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-10 md:py-16">
+      <div className="toyota-container mx-auto max-w-7xl px-4 md:px-6">
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mb-8 text-center px-4"
+          className="mb-6 md:mb-8 text-center"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">Configure Your {vehicle.name}</h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+          <h2 className="text-[22px] sm:text-3xl md:text-4xl font-bold tracking-tight">
+            Configure Your {vehicle.name}
+          </h2>
+          <p className="mx-auto mt-2 max-w-2xl text-[12.5px] sm:text-sm text-muted-foreground">
             Pick an engine, compare grades, and tailor the perfect setup. Finance shown updates live.
           </p>
         </motion.div>
 
-        <div className="grid items-start gap-6 lg:grid-cols-12 px-4">
+        <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-12">
           {/* Visual / Gallery */}
           <div className="lg:col-span-7">
             {/* Engine segmented control */}
-            <div className="mb-4 flex items-center justify-center lg:justify-start">
+            <div className="mb-3 md:mb-4 flex items-center justify-center lg:justify-start">
               <Segmented
                 ariaLabel="Select engine"
-                options={engines.map((e) => ({
-                  id: e.name,
-                  label: `${e.name} · ${e.type}`,
-                }))}
+                options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
                 value={selectedEngine}
                 onChange={(id) => setSelectedEngine(id)}
               />
@@ -421,10 +380,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             </div>
           </div>
 
-          {/* Decision Panel */}
+          {/* Decision Panel (normal flow, NOT sticky) */}
           <div className="lg:col-span-5">
-            <Card className="lg:sticky lg:top-20 rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
-              <CardContent className="p-6">
+            <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
+              <CardContent className="p-4 sm:p-6">
                 {/* Grade chips */}
                 <div className="mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {grades.map((g) => {
@@ -433,7 +392,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                       <motion.button
                         key={g.name}
                         onClick={() => setActiveGradeName(g.name)}
-                        className="relative flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm"
+                        className="relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[12.5px] sm:text-sm"
                         whileTap={{ scale: 0.98 }}
                         aria-pressed={active}
                       >
@@ -448,8 +407,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 </div>
 
                 <div className="mb-3">
-                  <h3 className="text-xl font-semibold tracking-tight">{activeGrade.name} Grade</h3>
-                  <p className="text-sm text-muted-foreground">{activeGrade.description}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold tracking-tight">{activeGrade.name} Grade</h3>
+                  <p className="text-[12.5px] sm:text-sm text-muted-foreground">{activeGrade.description}</p>
                 </div>
 
                 <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
@@ -465,8 +424,12 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 <div className="mb-4 grid gap-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold">{AEDFmt.format(activeGrade.price)}</div>
-                      <div className="text-xs text-muted-foreground" aria-live="polite" aria-atomic="true">
+                      <div className="text-xl sm:text-2xl font-bold">{AEDFmt.format(activeGrade.price)}</div>
+                      <div
+                        className="text-[12px] sm:text-xs text-muted-foreground"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
                         From {AEDFmt.format(liveMonthly(activeGrade.price))}/mo{" "}
                         <span className="opacity-70" title="Based on your term, APR, and down payment">
                           (est.)
@@ -479,11 +442,11 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                           key={t}
                           variant={term === t ? "default" : "outline"}
                           size="sm"
-                          className="rounded-full"
+                          className="rounded-full px-3 py-2"
                           onClick={() => setTerm(t as 36 | 48 | 60)}
                         >
                           <div className="leading-tight text-left">
-                            <div className="text-xs font-semibold">{termLabel(t as 36 | 48 | 60)}</div>
+                            <div className="text-[11px] sm:text-xs font-semibold">{termLabel(t as 36 | 48 | 60)}</div>
                             <div className="text-[10px] opacity-70">{monthsLabel(t as 36 | 48 | 60)}</div>
                           </div>
                         </Button>
@@ -512,7 +475,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 </div>
 
                 {/* Features */}
-                <ul className="mb-4 grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-4 text-sm text-muted-foreground sm:grid-cols-2">
+                <ul className="mb-4 grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-4 text-[12.5px] sm:text-sm text-muted-foreground sm:grid-cols-2">
                   {activeGrade.features.slice(0, 6).map((f, i) => (
                     <motion.li
                       key={i}
@@ -537,12 +500,16 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
                   <div className="flex gap-2">
                     <motion.div className="flex-1" whileHover={{ y: -1 }} whileTap={{ y: 0 }}>
-                      <Button variant="outline" className="w-full" onClick={() => onCarBuilder(activeGrade.name)}>
+                      <Button
+                        variant="outline"
+                        className="w-full text-[13px]"
+                        onClick={() => onCarBuilder(activeGrade.name)}
+                      >
                         <Wrench className="mr-1 h-4 w-4" /> Build
                       </Button>
                     </motion.div>
                     <motion.div className="flex-1" whileHover={{ y: -1 }} whileTap={{ y: 0 }}>
-                      <Button variant="outline" className="w-full" onClick={onTestDrive}>
+                      <Button variant="outline" className="w-full text-[13px]" onClick={onTestDrive}>
                         <CarIcon className="mr-1 h-4 w-4" /> Drive
                       </Button>
                     </motion.div>
@@ -553,38 +520,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   </Button>
                 </div>
 
-                <p className="mt-4 text-center text-[11px] leading-tight text-muted-foreground">
+                <p className="mt-4 text-center text-[10.5px] sm:text-[11px] leading-tight text-muted-foreground">
                   * Live estimate based on your inputs. Subject to credit approval.
                 </p>
               </CardContent>
             </Card>
           </div>
         </div>
-
-        {/* Mobile sticky summary */}
-        {isMobile && (
-          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-            <div className="pointer-events-auto mx-auto max-w-[720px] rounded-2xl bg-white/95 shadow-[0_12px_30px_rgba(0,0,0,0.18)] backdrop-blur px-4 py-3 border">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">{activeGrade.name}</div>
-                  <div className="text-base font-semibold">
-                    {AEDFmt.format(liveMonthly(activeGrade.price))}/mo{" "}
-                    <span className="text-xs text-muted-foreground">(est.)</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => onCarBuilder(activeGrade.name)}>
-                    Build
-                  </Button>
-                  <Button size="sm" onClick={onTestDrive}>
-                    Drive
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Comparison Modal */}
         <VehicleGradeComparison
