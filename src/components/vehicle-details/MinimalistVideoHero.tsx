@@ -377,8 +377,6 @@ export default function MinimalistVideoHero({
               muted
               controls={false}
               className="h-full w-full"
-              onPlay={() => setVideoPlaying(true)}
-              onPause={() => setVideoPlaying(false)}
             />
             {/* Readability overlays */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
