@@ -7,9 +7,9 @@ import { PremiumButton } from "@/components/ui/premium-button";
 import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ============================================================
-   MinimalistVideoHero — Full, Single-File Version (Fixes)
-   - YouTube "cover" background (no black bars on mobile)
-   - True play/pause control via YouTube JS API postMessage
+   MinimalistVideoHero — Mobile-Compact
+   - Smaller text & controls on mobile; scale up at md:
+   - YouTube "cover" background + true play/pause (JS API)
    - Hybrid media (video/images), thumb strip + lightbox
    - Variant toggle, WLTP bottom sheet, sticky mobile CTA
 ============================================================ */
@@ -32,36 +32,23 @@ function formatPrice(price?: string | number, fallback = "AED 18,090") {
   return price;
 }
 
-/* -------------------- CoverYouTube ---------------------
-   Background YouTube that behaves like object-fit: cover
-   + play/pause via postMessage (enablejsapi=1 required)
--------------------------------------------------------- */
+/* -------------------- CoverYouTube --------------------- */
 function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; playing: boolean; className?: string }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // send simple YT JS API commands via postMessage
   const sendYT = (cmd: "playVideo" | "pauseVideo") => {
     const iframe = iframeRef.current;
     if (!iframe || !iframe.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      JSON.stringify({
-        event: "command",
-        func: cmd,
-        args: [],
-      }),
-      "*",
-    );
+    iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func: cmd, args: [] }), "*");
   };
 
-  // Toggle playback when prop changes
   useEffect(() => {
     const t = setTimeout(() => {
       playing ? sendYT("playVideo") : sendYT("pauseVideo");
-    }, 50); // slight delay to ensure player is ready
+    }, 50);
     return () => clearTimeout(t);
   }, [playing]);
 
-  // Build URL with required params for API + inline autoplay
   const src = useMemo(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const params = new URLSearchParams({
@@ -75,7 +62,7 @@ function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; p
       playsinline: "1",
       iv_load_policy: "3",
       loop: "1",
-      playlist: videoId, // required for loop
+      playlist: videoId,
       origin,
     });
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
@@ -83,11 +70,6 @@ function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; p
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
-      {/* The "cover" trick:
-         - center the iframe
-         - base size: width=100vw, height=56.25vw (16:9)
-         - min constraints ensure full cover on tall viewports
-      */}
       <iframe
         ref={iframeRef}
         title="Background video"
@@ -103,7 +85,6 @@ function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; p
           pointer-events-none
         "
       />
-      {/* readability overlays */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
       <div
         aria-hidden="true"
@@ -136,7 +117,7 @@ function MediaStrip({
           key={img.src + i}
           onClick={() => onSelect(i)}
           aria-label={`Open image ${i + 1}`}
-          className={`relative h-16 w-24 flex-none overflow-hidden rounded-md ring-offset-2 focus:outline-none focus:ring-2 focus:ring-white/60 ${
+          className={`relative h-14 w-20 md:h-16 md:w-24 flex-none overflow-hidden rounded-md ring-offset-2 focus:outline-none focus:ring-2 focus:ring-white/60 ${
             i === activeIndex ? "ring-2 ring-white/70" : "ring-0"
           }`}
         >
@@ -196,12 +177,12 @@ function Lightbox({
           <button
             onClick={onClose}
             aria-label="Close gallery"
-            className="absolute right-4 top-4 z-[1001] rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+            className="absolute right-3 top-3 md:right-4 md:top-4 z-[1001] rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5 md:h-6 md:w-6" />
           </button>
 
-          <div className="flex h-full w-full items-center justify-center p-4">
+          <div className="flex h-full w-full items-center justify-center p-3 md:p-4">
             <motion.img
               key={images[index]?.src}
               src={images[index]?.src}
@@ -217,11 +198,11 @@ function Lightbox({
           <button onClick={onPrev} aria-label="Previous image" className="absolute left-0 top-0 h-full w-1/3" />
           <button onClick={onNext} aria-label="Next image" className="absolute right-0 top-0 h-full w-1/3" />
 
-          <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/80">
-            <ChevronLeft className="h-8 w-8" />
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/80">
+            <ChevronLeft className="h-7 w-7 md:h-8 md:w-8" />
           </div>
-          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/80">
-            <ChevronRight className="h-8 w-8" />
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/80">
+            <ChevronRight className="h-7 w-7 md:h-8 md:w-8" />
           </div>
         </motion.div>
       )}
@@ -256,23 +237,23 @@ function BottomSheet({
           <motion.div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-x-0 bottom-0 z-[901] rounded-t-2xl bg-white p-6 shadow-2xl sm:inset-x-auto sm:bottom-4 sm:left-1/2 sm:max-h-[80vh] sm:w-[640px] sm:-translate-x-1/2 sm:rounded-2xl"
+            className="fixed inset-x-0 bottom-0 z-[901] rounded-t-2xl bg-white p-5 md:p-6 shadow-2xl sm:inset-x-auto sm:bottom-4 sm:left-1/2 sm:max-h-[80vh] sm:w-[640px] sm:-translate-x-1/2 sm:rounded-2xl"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 320 }}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-medium">{title}</h3>
+            <div className="mb-2 md:mb-3 flex items-center justify-between">
+              <h3 className="text-base md:text-lg font-medium">{title}</h3>
               <button
                 onClick={onClose}
                 aria-label="Close"
                 className="rounded-full p-2 text-foreground/70 hover:bg-foreground/5 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/30"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4 md:h-5 md:w-5" />
               </button>
             </div>
-            <div className="prose prose-sm max-w-none text-muted-foreground">{children}</div>
+            <div className="prose prose-[0.9rem] md:prose-sm max-w-none text-muted-foreground">{children}</div>
           </motion.div>
         </>
       )}
@@ -300,15 +281,15 @@ const DEFAULT_VIDEO_ID = "E-TmuQuQwVI";
 const DEFAULT_TITLE = "TOYOTA";
 const FALLBACK_IMAGES: { src: string; alt?: string }[] = [
   {
-    src: "https://images5.alphacoders.com/116/thumb-1920-1162016.jpg",
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/original1_01.jpg",
     alt: "Land Cruiser 300 — Original kit",
   },
   {
-    src: "https://www.stoof-international.de/wp-content/uploads/2021/09/lc300-header.jpg",
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/modellista1_01.jpg",
     alt: "Land Cruiser 300 — Modellista kit",
   },
   {
-    src: "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg",
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/design/gallery_10.jpg",
     alt: "Land Cruiser 300 — Exterior gallery",
   },
 ];
@@ -324,7 +305,6 @@ export default function MinimalistVideoHero({
 }: MinimalistVideoHeroProps) {
   const shouldReduceMotion = useReducedMotion();
 
-  // Prefer Image mode when reduced motion or data-saver
   const prefersImage = useMemo(() => {
     const saveData =
       typeof navigator !== "undefined" && (navigator as any)?.connection && (navigator as any)?.connection?.saveData;
@@ -355,7 +335,6 @@ export default function MinimalistVideoHero({
     [heroImages, title],
   );
 
-  // Preload first image for LCP
   useEffect(() => {
     if (images?.[0]?.src) {
       const i = new Image();
@@ -363,7 +342,6 @@ export default function MinimalistVideoHero({
     }
   }, [images]);
 
-  // Pause video when hero leaves viewport
   useEffect(() => {
     if (!sectionRef.current) return;
     const el = sectionRef.current;
@@ -378,7 +356,6 @@ export default function MinimalistVideoHero({
     return () => io.disconnect();
   }, []);
 
-  // Sticky CTA visibility (when the top sentinel scrolls off)
   useEffect(() => {
     if (!topSentinelRef.current) return;
     const io = new IntersectionObserver((entries) => setStickyVisible(!entries[0].isIntersecting), { threshold: 0 });
@@ -458,7 +435,7 @@ export default function MinimalistVideoHero({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col justify-between p-6 lg:p-12">
+      <div className="relative z-10 flex h-full flex-col justify-between p-4 md:p-6 lg:p-12">
         {/* Top: Title + Price */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
@@ -466,32 +443,36 @@ export default function MinimalistVideoHero({
           transition={{ duration: 0.5, delay: 0.15 }}
           className="space-y-1"
         >
-          <h1 id="video-hero-heading" className="text-4xl font-light tracking-wide text-white lg:text-5xl xl:text-6xl">
+          <h1
+            id="video-hero-heading"
+            className="text-[clamp(1.6rem,6vw,2.25rem)] md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-wide text-white leading-tight"
+          >
             {title}
           </h1>
 
-          {vehicle?.modelYear && <div className="text-sm text-white/80">Model Year {vehicle.modelYear}</div>}
+          {vehicle?.modelYear && <div className="text-xs md:text-sm text-white/80">Model Year {vehicle.modelYear}</div>}
 
-          <div className="text-sm text-white/90">
+          <div className="text-xs md:text-sm text-white/90">
             <span className="font-light">Starting from (incl. VAT)</span>
           </div>
-          <div className="text-2xl font-light text-white lg:text-3xl" aria-live="polite">
+          <div className="text-xl md:text-2xl lg:text-3xl font-light text-white" aria-live="polite">
             {price}
           </div>
         </motion.div>
 
         {/* Bottom: CTAs + Variant + Media Strip + Specs */}
-        <div className="space-y-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+        <div className="space-y-4 md:space-y-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col gap-3 sm:flex-row sm:gap-4"
+            className="flex flex-col gap-2.5 md:flex-row md:gap-4"
           >
             <PremiumButton
               onClick={onCarBuilder}
               aria-label="Open Car Builder"
-              className="h-12 bg-white px-8 text-base font-medium text-foreground hover:bg-white/90"
+              className="h-10 md:h-12 px-5 md:px-8 text-sm md:text-base bg-white text-foreground hover:bg-white/90"
               data-analytics-id="cta-build"
             >
               Build & Price
@@ -501,13 +482,14 @@ export default function MinimalistVideoHero({
               onClick={onBookTestDrive}
               aria-label="Book a Test Drive"
               variant="outline"
-              className="h-12 border-2 border-white bg-transparent px-8 text-base font-medium text-white hover:bg-white/10"
+              className="h-10 md:h-12 border-2 border-white bg-transparent px-5 md:px-8 text-sm md:text-base text-white hover:bg-white/10"
               data-analytics-id="cta-testdrive"
             >
               Book a Test Drive
             </PremiumButton>
           </motion.div>
 
+          {/* Variant Toggle */}
           {images.length >= 2 && (
             <div className="flex items-center gap-2">
               <button
@@ -516,7 +498,7 @@ export default function MinimalistVideoHero({
                   setActiveIndex(0);
                   setMode("image");
                 }}
-                className={`rounded-full px-3 py-1.5 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                className={`rounded-full px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${
                   activeIndex === 0 ? "bg-white text-foreground" : "bg-white/10 text-white hover:bg-white/20"
                 }`}
                 aria-pressed={activeIndex === 0}
@@ -529,7 +511,7 @@ export default function MinimalistVideoHero({
                   setActiveIndex(1);
                   setMode("image");
                 }}
-                className={`rounded-full px-3 py-1.5 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${
+                className={`rounded-full px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${
                   activeIndex === 1 ? "bg-white text-foreground" : "bg-white/10 text-white hover:bg-white/20"
                 }`}
                 aria-pressed={activeIndex === 1}
@@ -539,12 +521,13 @@ export default function MinimalistVideoHero({
             </div>
           )}
 
+          {/* Media controls + Strip */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={toggleMode}
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1.5 md:px-3 md:py-2 text-xs md:text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
                 aria-label={mode === "video" ? "Switch to images" : "Switch to video"}
               >
                 {mode === "video" ? (
@@ -561,7 +544,7 @@ export default function MinimalistVideoHero({
                 <button
                   type="button"
                   onClick={() => setVideoPlaying((v) => !v)}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+                  className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1.5 md:px-3 md:py-2 text-xs md:text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
                   aria-label={videoPlaying ? "Pause video" : "Play video"}
                 >
                   {videoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -577,7 +560,7 @@ export default function MinimalistVideoHero({
                   <button
                     type="button"
                     onClick={() => openLightbox(activeIndex)}
-                    className="rounded-full bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+                    className="rounded-full bg-white/10 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
                     aria-label="Open image full screen"
                   >
                     Open Full Screen
@@ -587,15 +570,16 @@ export default function MinimalistVideoHero({
             )}
           </div>
 
+          {/* Specs */}
           {specs.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.45 }}
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-white/90 lg:text-sm"
+              className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-[11px] md:text-xs lg:text-sm text-white/90"
             >
               {specs.map((s, i) => (
-                <div key={`${s.label}-${i}`} className="flex items-center gap-2">
+                <div key={`${s.label}-${i}`} className="flex items-center gap-1.5 md:gap-2">
                   <span className="font-light">{s.label}:</span>
                   <span className="font-medium">{s.value}</span>
                   {i < specs.length - 1 && (
@@ -609,7 +593,7 @@ export default function MinimalistVideoHero({
               <button
                 type="button"
                 onClick={() => (onInfoClick ? onInfoClick() : setSheetOpen(true))}
-                className="ml-1 flex h-5 w-5 items-center justify-center rounded-full border border-white/50 text-xs text-white/90 hover:bg-white/10"
+                className="ml-1 flex h-5 w-5 items-center justify-center rounded-full border border-white/50 text-[10px] md:text-xs text-white/90 hover:bg-white/10"
                 aria-label="Open more information"
                 title="More information"
                 data-analytics-id="specs-info"
@@ -621,21 +605,21 @@ export default function MinimalistVideoHero({
         </div>
       </div>
 
-      {/* Top-right utilities */}
+      {/* Top-right utilities (smaller on mobile) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.45, delay: 0.25 }}
-        className="absolute right-6 top-6 z-20 flex flex-col gap-3 lg:right-12 lg:top-12"
+        className="absolute right-4 top-4 md:right-6 md:top-6 z-20 flex flex-col gap-2.5 md:gap-3 lg:right-12 lg:top-12"
       >
         <button
           type="button"
           onClick={() => (onInfoClick ? onInfoClick() : setSheetOpen(true))}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+          className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
           aria-label="More information"
           title="More information"
         >
-          <Info className="h-5 w-5" />
+          <Info className="h-4 w-4 md:h-5 md:w-5" />
         </button>
 
         <div className="relative">
@@ -659,17 +643,17 @@ export default function MinimalistVideoHero({
                 setTimeout(() => setShareHint(null), 1500);
               }
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
+            className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
             aria-label="Share"
             title="Share"
             data-analytics-id="share"
           >
-            <Share2 className="h-5 w-5" />
+            <Share2 className="h-4 w-4 md:h-5 md:w-5" />
           </button>
           <AnimatePresence>
             {shareHint && (
               <motion.div
-                className="absolute -left-2 top-12 rounded-md bg-black/80 px-2 py-1 text-xs text-white"
+                className="absolute -left-2 top-11 md:top-12 rounded-md bg-black/80 px-2 py-1 text-[11px] md:text-xs text-white"
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
@@ -706,25 +690,25 @@ export default function MinimalistVideoHero({
         </BottomSheet>
       )}
 
-      {/* Sticky Mobile CTA */}
+      {/* Sticky Mobile CTA (already compact) */}
       <AnimatePresence>
         {stickyVisible && (
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 bg-black/70 px-4 py-3 text-white backdrop-blur-md md:hidden"
+            className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 bg-black/70 px-3 md:px-4 py-2.5 md:py-3 text-white backdrop-blur-md md:hidden"
             initial={{ y: 64, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 64, opacity: 0 }}
           >
             <div className="min-w-0">
-              <div className="truncate text-xs text-white/80">Starting from (incl. VAT)</div>
-              <div className="truncate text-base font-medium" aria-live="polite">
+              <div className="truncate text-[11px] text-white/80">Starting from (incl. VAT)</div>
+              <div className="truncate text-sm font-medium" aria-live="polite">
                 {price}
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
               <PremiumButton
                 onClick={onCarBuilder}
-                className="h-9 bg-white px-3 text-foreground hover:bg-white/90"
+                className="h-8 px-3 bg-white text-foreground hover:bg-white/90"
                 data-analytics-id="cta-build-sticky"
               >
                 Build
@@ -732,7 +716,7 @@ export default function MinimalistVideoHero({
               <PremiumButton
                 onClick={onBookTestDrive}
                 variant="outline"
-                className="h-9 border-2 border-white bg-transparent px-3 text-white hover:bg-white/10"
+                className="h-8 border-2 border-white bg-transparent px-3 text-white hover:bg-white/10"
                 data-analytics-id="cta-testdrive-sticky"
               >
                 Test Drive
