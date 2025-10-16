@@ -4,54 +4,20 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { VehicleModel } from "@/types/vehicle";
 import { PremiumButton } from "@/components/ui/premium-button";
-import YouTubeEmbed from "@/components/ui/youtube-embed";
 import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ============================================================
-   MinimalistVideoHero — Full, Single-File Version
-   - Hybrid media (video / images) with thumb strip + lightbox
-   - Variant toggle (Original / Modellista)
-   - WLTP / disclaimer bottom sheet
-   - Sticky mobile CTA bar
-   - Safe-area aware, accessible, reduced-motion & data-saver aware
-   - Lightweight analytics hooks via data-analytics-id attributes
+   MinimalistVideoHero — Full, Single-File Version (Fixes)
+   - YouTube "cover" background (no black bars on mobile)
+   - True play/pause control via YouTube JS API postMessage
+   - Hybrid media (video/images), thumb strip + lightbox
+   - Variant toggle, WLTP bottom sheet, sticky mobile CTA
 ============================================================ */
 
-export type MinimalistVideoHeroProps = {
-  vehicle?: VehicleModel & {
-    videoId?: string; // YouTube ID (e.g., "E-TmuQuQwVI")
-    priceFrom?: string | number;
-    modelYear?: number;
-  };
-  heroImages?: { src: string; alt?: string }[];
-  defaultVariant?: "original" | "modellista";
-  onBookTestDrive?: () => void;
-  onCarBuilder?: () => void;
-  onInfoClick?: () => void; // If provided, overrides internal WLTP sheet
-  onShareClick?: () => void; // If provided, overrides internal share
-};
+/* ---------------------- Utilities ---------------------- */
 
-const DEFAULT_VIDEO_ID = "E-TmuQuQwVI";
-const DEFAULT_TITLE = "TOYOTA";
-const DEFAULT_PRICE = "AED 18,090";
-
-const FALLBACK_IMAGES: { src: string; alt?: string }[] = [
-  {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/original1_01.jpg",
-    alt: "Land Cruiser 300 — Original kit",
-  },
-  {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/modellista1_01.jpg",
-    alt: "Land Cruiser 300 — Modellista kit",
-  },
-  {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/design/gallery_10.jpg",
-    alt: "Land Cruiser 300 — Exterior gallery",
-  },
-];
-
-function formatPrice(price?: string | number) {
-  if (price == null) return DEFAULT_PRICE;
+function formatPrice(price?: string | number, fallback = "AED 18,090") {
+  if (price == null) return fallback;
   if (typeof price === "number") {
     try {
       return new Intl.NumberFormat("en-AE", {
@@ -66,9 +32,93 @@ function formatPrice(price?: string | number) {
   return price;
 }
 
-/* -----------------------------------------------
-   Internal: MediaStrip (thumbnail row)
------------------------------------------------ */
+/* -------------------- CoverYouTube ---------------------
+   Background YouTube that behaves like object-fit: cover
+   + play/pause via postMessage (enablejsapi=1 required)
+-------------------------------------------------------- */
+function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; playing: boolean; className?: string }) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // send simple YT JS API commands via postMessage
+  const sendYT = (cmd: "playVideo" | "pauseVideo") => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({
+        event: "command",
+        func: cmd,
+        args: [],
+      }),
+      "*",
+    );
+  };
+
+  // Toggle playback when prop changes
+  useEffect(() => {
+    const t = setTimeout(() => {
+      playing ? sendYT("playVideo") : sendYT("pauseVideo");
+    }, 50); // slight delay to ensure player is ready
+    return () => clearTimeout(t);
+  }, [playing]);
+
+  // Build URL with required params for API + inline autoplay
+  const src = useMemo(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const params = new URLSearchParams({
+      autoplay: playing ? "1" : "0",
+      mute: "1",
+      controls: "0",
+      rel: "0",
+      showinfo: "0",
+      modestbranding: "1",
+      enablejsapi: "1",
+      playsinline: "1",
+      iv_load_policy: "3",
+      loop: "1",
+      playlist: videoId, // required for loop
+      origin,
+    });
+    return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  }, [videoId, playing]);
+
+  return (
+    <div className={`absolute inset-0 overflow-hidden ${className}`}>
+      {/* The "cover" trick:
+         - center the iframe
+         - base size: width=100vw, height=56.25vw (16:9)
+         - min constraints ensure full cover on tall viewports
+      */}
+      <iframe
+        ref={iframeRef}
+        title="Background video"
+        src={src}
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen={false}
+        frameBorder={0}
+        className="
+          absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+          w-[100vw] h-[56.25vw]
+          min-w-[177.78vh] min-h-[100vh]
+          md:min-h-screen
+          pointer-events-none
+        "
+      />
+      {/* readability overlays */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 via-black/30 to-transparent"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/70 via-black/40 to-transparent"
+      />
+    </div>
+  );
+}
+
+/* ------------------ Lightbox & Strip ------------------ */
+
 function MediaStrip({
   images,
   activeIndex,
@@ -106,9 +156,6 @@ function MediaStrip({
   );
 }
 
-/* -----------------------------------------------
-   Internal: Lightbox (full-screen gallery)
------------------------------------------------ */
 function Lightbox({
   isOpen,
   images,
@@ -146,7 +193,6 @@ function Lightbox({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Close */}
           <button
             onClick={onClose}
             aria-label="Close gallery"
@@ -155,7 +201,6 @@ function Lightbox({
             <X className="h-6 w-6" />
           </button>
 
-          {/* Image */}
           <div className="flex h-full w-full items-center justify-center p-4">
             <motion.img
               key={images[index]?.src}
@@ -169,11 +214,9 @@ function Lightbox({
             />
           </div>
 
-          {/* Prev/Next hit-areas */}
           <button onClick={onPrev} aria-label="Previous image" className="absolute left-0 top-0 h-full w-1/3" />
           <button onClick={onNext} aria-label="Next image" className="absolute right-0 top-0 h-full w-1/3" />
 
-          {/* Prev/Next icons (visual hint) */}
           <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/80">
             <ChevronLeft className="h-8 w-8" />
           </div>
@@ -186,9 +229,8 @@ function Lightbox({
   );
 }
 
-/* -----------------------------------------------
-   Internal: BottomSheet (WLTP / disclaimers)
------------------------------------------------ */
+/* --------------------- Bottom Sheet -------------------- */
+
 function BottomSheet({
   open,
   onClose,
@@ -238,9 +280,39 @@ function BottomSheet({
   );
 }
 
-/* -----------------------------------------------
-   Main Component
------------------------------------------------ */
+/* --------------------- Main Component ------------------ */
+
+export type MinimalistVideoHeroProps = {
+  vehicle?: VehicleModel & {
+    videoId?: string;
+    priceFrom?: string | number;
+    modelYear?: number;
+  };
+  heroImages?: { src: string; alt?: string }[];
+  defaultVariant?: "original" | "modellista";
+  onBookTestDrive?: () => void;
+  onCarBuilder?: () => void;
+  onInfoClick?: () => void;
+  onShareClick?: () => void;
+};
+
+const DEFAULT_VIDEO_ID = "E-TmuQuQwVI";
+const DEFAULT_TITLE = "TOYOTA";
+const FALLBACK_IMAGES: { src: string; alt?: string }[] = [
+  {
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/original1_01.jpg",
+    alt: "Land Cruiser 300 — Original kit",
+  },
+  {
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/modellista1_01.jpg",
+    alt: "Land Cruiser 300 — Modellista kit",
+  },
+  {
+    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/design/gallery_10.jpg",
+    alt: "Land Cruiser 300 — Exterior gallery",
+  },
+];
+
 export default function MinimalistVideoHero({
   vehicle,
   heroImages = FALLBACK_IMAGES,
@@ -252,7 +324,7 @@ export default function MinimalistVideoHero({
 }: MinimalistVideoHeroProps) {
   const shouldReduceMotion = useReducedMotion();
 
-  // Initial media mode: prefer image if reduced motion or data-saver
+  // Prefer Image mode when reduced motion or data-saver
   const prefersImage = useMemo(() => {
     const saveData =
       typeof navigator !== "undefined" && (navigator as any)?.connection && (navigator as any)?.connection?.saveData;
@@ -260,9 +332,9 @@ export default function MinimalistVideoHero({
   }, [shouldReduceMotion]);
 
   const [mode, setMode] = useState<"video" | "image">(prefersImage ? "image" : "video");
-  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(defaultVariant === "modellista" ? 1 : 0);
   const [videoPlaying, setVideoPlaying] = useState(!prefersImage);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
   const [stickyVisible, setStickyVisible] = useState(false);
@@ -291,7 +363,7 @@ export default function MinimalistVideoHero({
     }
   }, [images]);
 
-  // Pause video when hero goes off-screen (coarse heuristic)
+  // Pause video when hero leaves viewport
   useEffect(() => {
     if (!sectionRef.current) return;
     const el = sectionRef.current;
@@ -306,7 +378,7 @@ export default function MinimalistVideoHero({
     return () => io.disconnect();
   }, []);
 
-  // Sticky CTA visibility: show when top sentinel leaves viewport
+  // Sticky CTA visibility (when the top sentinel scrolls off)
   useEffect(() => {
     if (!topSentinelRef.current) return;
     const io = new IntersectionObserver((entries) => setStickyVisible(!entries[0].isIntersecting), { threshold: 0 });
@@ -314,7 +386,6 @@ export default function MinimalistVideoHero({
     return () => io.disconnect();
   }, []);
 
-  // Example English specs — replace with real props when available
   const specs: Array<{ label: string; value: string }> = [
     { label: "Fuel consumption (combined)", value: "4.8–5.0 L/100 km" },
     { label: "CO₂ emissions (combined)", value: "108–124 g/km" },
@@ -333,24 +404,19 @@ export default function MinimalistVideoHero({
       url.searchParams.set("media", mode);
       url.searchParams.set("image", String(activeIndex));
       if (navigator.share) {
-        await navigator.share({
-          title,
-          text: `${title} — Build & Price`,
-          url: url.toString(),
-        });
+        await navigator.share({ title, text: `${title} — Build & Price`, url: url.toString() });
       } else {
         await navigator.clipboard.writeText(url.toString());
         setShareHint("Link copied");
-        setTimeout(() => setShareHint(null), 1600);
+        setTimeout(() => setShareHint(null), 1500);
       }
     } catch {
       setShareHint("Could not share");
-      setTimeout(() => setShareHint(null), 1600);
+      setTimeout(() => setShareHint(null), 1500);
     }
   };
 
   const toggleMode = () => setMode((m) => (m === "video" ? "image" : "video"));
-
   const openLightbox = (i: number) => {
     setActiveIndex(i);
     setLightboxOpen(true);
@@ -364,31 +430,12 @@ export default function MinimalistVideoHero({
       className="relative h-screen min-h-[100svh] w-full overflow-hidden bg-background"
       data-analytics-id="hero"
     >
-      {/* Intersection sentinel for sticky-CTA */}
       <div ref={topSentinelRef} aria-hidden="true" className="absolute -top-1 h-1 w-1" />
 
       {/* Background Media */}
       <div className="absolute inset-0 z-0">
         {mode === "video" ? (
-          <>
-            <YouTubeEmbed
-              videoId={videoId}
-              autoplay={!shouldReduceMotion && videoPlaying}
-              muted
-              controls={false}
-              className="h-full w-full"
-            />
-            {/* Readability overlays */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 via-black/30 to-transparent"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-black/70 via-black/40 to-transparent"
-            />
-          </>
+          <CoverYouTube videoId={videoId} playing={!shouldReduceMotion && videoPlaying} />
         ) : (
           <>
             <img
@@ -433,9 +480,8 @@ export default function MinimalistVideoHero({
           </div>
         </motion.div>
 
-        {/* Bottom: CTAs + Specs + Media strip + Variant toggle */}
+        {/* Bottom: CTAs + Variant + Media Strip + Specs */}
         <div className="space-y-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-          {/* CTA Row */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -462,7 +508,6 @@ export default function MinimalistVideoHero({
             </PremiumButton>
           </motion.div>
 
-          {/* Variant Toggle (if first two images represent variants) */}
           {images.length >= 2 && (
             <div className="flex items-center gap-2">
               <button
@@ -494,7 +539,6 @@ export default function MinimalistVideoHero({
             </div>
           )}
 
-          {/* Media controls + Strip */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -543,7 +587,6 @@ export default function MinimalistVideoHero({
             )}
           </div>
 
-          {/* Specs Row */}
           {specs.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -565,7 +608,7 @@ export default function MinimalistVideoHero({
 
               <button
                 type="button"
-                onClick={handleInfo}
+                onClick={() => (onInfoClick ? onInfoClick() : setSheetOpen(true))}
                 className="ml-1 flex h-5 w-5 items-center justify-center rounded-full border border-white/50 text-xs text-white/90 hover:bg-white/10"
                 aria-label="Open more information"
                 title="More information"
@@ -587,7 +630,7 @@ export default function MinimalistVideoHero({
       >
         <button
           type="button"
-          onClick={handleInfo}
+          onClick={() => (onInfoClick ? onInfoClick() : setSheetOpen(true))}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
           aria-label="More information"
           title="More information"
@@ -598,7 +641,24 @@ export default function MinimalistVideoHero({
         <div className="relative">
           <button
             type="button"
-            onClick={doShare}
+            onClick={async () => {
+              if (onShareClick) return onShareClick();
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("media", mode);
+                url.searchParams.set("image", String(activeIndex));
+                if (navigator.share) {
+                  await navigator.share({ title, text: `${title} — Build & Price`, url: url.toString() });
+                } else {
+                  await navigator.clipboard.writeText(url.toString());
+                  setShareHint("Link copied");
+                  setTimeout(() => setShareHint(null), 1500);
+                }
+              } catch {
+                setShareHint("Could not share");
+                setTimeout(() => setShareHint(null), 1500);
+              }
+            }}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
             aria-label="Share"
             title="Share"
@@ -631,17 +691,17 @@ export default function MinimalistVideoHero({
         onNext={() => setActiveIndex((i) => (i + 1) % images.length)}
       />
 
-      {/* WLTP / Disclaimers Bottom Sheet (used only if onInfoClick not provided) */}
+      {/* WLTP Bottom Sheet */}
       {!onInfoClick && (
         <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Efficiency & Legal">
           <ul className="mb-3 list-disc pl-5">
             <li>Fuel consumption and CO₂ figures are based on WLTP combined cycle.</li>
             <li>Actual values may vary depending on driving style, conditions, and vehicle configuration.</li>
-            <li>Images shown may include optional accessories and may vary by market.</li>
+            <li>Images may include optional accessories and can vary by market.</li>
           </ul>
-          <p className="mb-1">
-            For full specifications and disclaimers, please refer to the official product brochure or contact your
-            nearest showroom.
+          <p>
+            For full specifications and disclaimers, please refer to the official brochure or contact your nearest
+            showroom.
           </p>
         </BottomSheet>
       )}
@@ -678,7 +738,6 @@ export default function MinimalistVideoHero({
                 Test Drive
               </PremiumButton>
             </div>
-            {/* safe-area padding */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[env(safe-area-inset-bottom)]" />
           </motion.div>
         )}
