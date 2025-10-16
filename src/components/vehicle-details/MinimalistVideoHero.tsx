@@ -300,15 +300,15 @@ const DEFAULT_VIDEO_ID = "E-TmuQuQwVI";
 const DEFAULT_TITLE = "TOYOTA";
 const FALLBACK_IMAGES: { src: string; alt?: string }[] = [
   {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/original1_01.jpg",
+    src: "https://images5.alphacoders.com/116/thumb-1920-1162016.jpg",
     alt: "Land Cruiser 300 — Original kit",
   },
   {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/modellista1_01.jpg",
+    src: "https://www.stoof-international.de/wp-content/uploads/2021/09/lc300-header.jpg",
     alt: "Land Cruiser 300 — Modellista kit",
   },
   {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/design/gallery_10.jpg",
+    src: "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-2160.jpg",
     alt: "Land Cruiser 300 — Exterior gallery",
   },
 ];
