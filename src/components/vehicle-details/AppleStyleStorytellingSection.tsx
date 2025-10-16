@@ -104,8 +104,10 @@ function pointInRect(x: number, y: number, r: DOMRect) {
 function coversViewport(el: HTMLElement, topOffsetPx = 0, tol = 6) {
   const rect = el.getBoundingClientRect();
   const vh = window.innerHeight || document.documentElement.clientHeight;
-  // Consider sticky header via topOffsetPx
-  return rect.top <= topOffsetPx + tol && rect.bottom >= vh - tol;
+  const visible = Math.min(rect.bottom, vh) - Math.max(rect.top, 0);
+  const coverage = visible / Math.min(vh, rect.height || vh);
+  // Consider sticky header via topOffsetPx; loosen threshold so lock activates when ~60% is visible
+  return coverage >= 0.6 && rect.top <= topOffsetPx + 120;
 }
 
 /* ============================================================
@@ -221,8 +223,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     const evalLock = () => {
       ticking = false;
       const fully = coversViewport(el, topOffsetPx, 10);
-      // Enable lock when section is in view AND not on last slide AND motion allowed
-      const shouldLock = fully && index < lastIndex && motionAllowed;
+      // Enable lock when section is in view AND not on last slide
+      const shouldLock = fully && index < lastIndex;
       console.log('🔒 Lock eval:', { fully, index, lastIndex, motionAllowed, shouldLock });
       setLockActive(shouldLock);
     };
