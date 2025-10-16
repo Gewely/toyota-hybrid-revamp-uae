@@ -467,10 +467,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 }} whileTap={{
                   y: 0
                 }}>
-                    <Button className="w-full" onClick={() => onGradeSelect(activeGrade.name)} aria-label={`Select ${activeGrade.name}`}>
-                      Select {activeGrade.name}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    
                   </motion.div>
                   <div className="flex gap-2">
                     <motion.div className="flex-1" whileHover={{
