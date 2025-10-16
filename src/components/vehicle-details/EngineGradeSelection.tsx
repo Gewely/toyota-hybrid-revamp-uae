@@ -393,9 +393,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   }}>
                         {active && <motion.span layoutId="grade-bg" className="absolute inset-0 rounded-full bg-primary/10" />}
                         <span className="relative z-10 font-medium">{g.name}</span>
-                        <span className={["relative z-10 rounded-full px-2 py-0.5 text-[10px]", g.badge === "Most Popular" ? "bg-orange-100 text-orange-700" : g.badge === "Luxury" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"].join(" ")}>
-                          {g.badge}
-                        </span>
+                        
                         {active && <Check className="relative z-10 h-4 w-4 text-primary" />}
                       </motion.button>;
                 })}
