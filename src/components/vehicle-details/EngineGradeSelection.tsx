@@ -10,11 +10,9 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ArrowRight, Car as CarIcon, Check, Star, Wrench } from "lucide-react";
 
 /* =========================================================
-   Luxury Light v5 — "Porcelain+" (No Sticky Anywhere)
-   - CSS-gated hero to avoid SSR mismatch
-   - Full-width mobile carousel items
-   - Smaller mobile typography and controls
-   - Clean finance copy; no floating/sticky UI
+   Luxury Light v5 — Responsive (no sticky anywhere)
+   - Mobile-first: tight spacing, small type, wrapping CTAs
+   - Desktop: 12-col split, larger type, crossfade hero
 ========================================================= */
 
 type EngineOption = {
@@ -46,7 +44,7 @@ type Grade = {
   name: string;
   description: string;
   price: number;
-  monthlyFrom: number; // base, overridden by live finance controls in UI
+  monthlyFrom: number;
   badge: "Value" | "Most Popular" | "Luxury";
   badgeColor: string;
   image: string;
@@ -95,7 +93,7 @@ const Segmented: React.FC<{
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(opt.id)}
-            className="relative shrink-0 rounded-2xl px-3 py-2 text-[12.5px] sm:text-[13px] font-medium text-foreground"
+            className="relative shrink-0 rounded-2xl px-3 py-2 text-[12px] sm:text-[13px] font-medium text-foreground"
             whileTap={{ scale: 0.98 }}
           >
             {selected && (
@@ -143,7 +141,7 @@ const GradeHero: React.FC<{ vehicleName: string; grade: Grade }> = ({ vehicleNam
 );
 
 const SpecRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex items-center justify-between text-[12.5px] sm:text-sm">
+  <div className="flex items-center justify-between text-[12px] sm:text-sm">
     <span className="text-muted-foreground">{label}</span>
     <span className="font-medium">{value}</span>
   </div>
@@ -159,7 +157,7 @@ const RangeControl: React.FC<{
   onChange: (v: number) => void;
 }> = ({ label, min, max, step, value, onChange, format }) => (
   <div className="grid gap-1">
-    <div className="flex items-center justify-between text-[12px] sm:text-xs">
+    <div className="flex items-center justify-between text-[11px] sm:text-xs">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{format ? format(value) : String(value)}</span>
     </div>
@@ -185,13 +183,12 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   onTestDrive,
   onGradeSelect,
 }) => {
-  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
-
-  // live finance controls
+  // Finance state
   const [term, setTerm] = useState<36 | 48 | 60>(60);
   const [dpPct, setDpPct] = useState(0.2);
   const [apr, setApr] = useState(0.035);
 
+  // Engine & grade
   const engines = useMemo<EngineOption[]>(
     () => [
       { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
@@ -199,9 +196,9 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     ],
     [],
   );
-
   const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
   const [activeGradeName, setActiveGradeName] = useState<string>("XLE");
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   const grades: Grade[] = useMemo(() => {
     const baseImage = vehicle.image;
@@ -319,32 +316,35 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   const monthsLabel = (t: 36 | 48 | 60) => `${t} months`;
 
   return (
-    <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-10 md:py-16">
-      <div className="toyota-container mx-auto max-w-7xl px-4 md:px-6">
+    <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-8 sm:py-10 md:py-16">
+      <div className="toyota-container mx-auto w-full max-w-[1120px] px-3 sm:px-4 md:px-6">
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mb-6 md:mb-8 text-center"
+          className="mb-5 sm:mb-6 md:mb-8 text-center"
         >
-          <h2 className="text-[22px] sm:text-3xl md:text-4xl font-bold tracking-tight">
+          <h2 className="text-[20px] sm:text-3xl md:text-4xl font-bold tracking-tight">
             Configure Your {vehicle.name}
           </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-[12.5px] sm:text-sm text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-2xl text-[12px] sm:text-sm text-muted-foreground">
             Pick an engine, compare grades, and tailor the perfect setup. Finance shown updates live.
           </p>
         </motion.div>
 
-        <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-12">
+        <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12">
           {/* Visual / Gallery */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 min-w-0">
             {/* Engine segmented control */}
-            <div className="mb-3 md:mb-4 flex items-center justify-center lg:justify-start">
+            <div className="mb-3 sm:mb-4 flex items-center justify-center lg:justify-start">
               <Segmented
                 ariaLabel="Select engine"
-                options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
+                options={engines.map((e) => ({
+                  id: e.name,
+                  label: `${e.name} · ${e.type}`,
+                }))}
                 value={selectedEngine}
                 onChange={(id) => setSelectedEngine(id)}
               />
@@ -380,8 +380,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             </div>
           </div>
 
-          {/* Decision Panel (normal flow, NOT sticky) */}
-          <div className="lg:col-span-5">
+          {/* Decision Panel (normal flow, responsive) */}
+          <div className="lg:col-span-5 min-w-0">
             <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
               <CardContent className="p-4 sm:p-6">
                 {/* Grade chips */}
@@ -392,7 +392,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                       <motion.button
                         key={g.name}
                         onClick={() => setActiveGradeName(g.name)}
-                        className="relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[12.5px] sm:text-sm"
+                        className="relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[12px] sm:text-sm"
                         whileTap={{ scale: 0.98 }}
                         aria-pressed={active}
                       >
@@ -408,7 +408,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
                 <div className="mb-3">
                   <h3 className="text-lg sm:text-xl font-semibold tracking-tight">{activeGrade.name} Grade</h3>
-                  <p className="text-[12.5px] sm:text-sm text-muted-foreground">{activeGrade.description}</p>
+                  <p className="text-[12px] sm:text-sm text-muted-foreground">{activeGrade.description}</p>
                 </div>
 
                 <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
@@ -422,8 +422,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
                 {/* Finance — interactive */}
                 <div className="mb-4 grid gap-3">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
                       <div className="text-xl sm:text-2xl font-bold">{AEDFmt.format(activeGrade.price)}</div>
                       <div
                         className="text-[12px] sm:text-xs text-muted-foreground"
@@ -436,7 +436,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {[36, 48, 60].map((t) => (
                         <Button
                           key={t}
@@ -475,7 +475,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 </div>
 
                 {/* Features */}
-                <ul className="mb-4 grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-4 text-[12.5px] sm:text-sm text-muted-foreground sm:grid-cols-2">
+                <ul className="mb-4 grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-4 text-[12px] sm:text-sm text-muted-foreground sm:grid-cols-2">
                   {activeGrade.features.slice(0, 6).map((f, i) => (
                     <motion.li
                       key={i}
@@ -489,33 +489,36 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 </ul>
 
                 {/* CTAs */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <motion.div whileHover={{ y: -1 }} whileTap={{ y: 0 }}>
-                    <Button className="w-full" onClick={() => onCarBuilder(activeGrade.name)}>
+                    <Button
+                      className="w-full h-10 sm:h-11 text-[13px] sm:text-[14px]"
+                      onClick={() => onCarBuilder(activeGrade.name)}
+                    >
                       <Wrench className="mr-2 h-4 w-4" />
                       Build your {vehicle.name}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </motion.div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <motion.div className="flex-1" whileHover={{ y: -1 }} whileTap={{ y: 0 }}>
                       <Button
                         variant="outline"
-                        className="w-full text-[13px]"
+                        className="w-full h-9 sm:h-10 text-[13px]"
                         onClick={() => onCarBuilder(activeGrade.name)}
                       >
                         <Wrench className="mr-1 h-4 w-4" /> Build
                       </Button>
                     </motion.div>
                     <motion.div className="flex-1" whileHover={{ y: -1 }} whileTap={{ y: 0 }}>
-                      <Button variant="outline" className="w-full text-[13px]" onClick={onTestDrive}>
+                      <Button variant="outline" className="w-full h-9 sm:h-10 text-[13px]" onClick={onTestDrive}>
                         <CarIcon className="mr-1 h-4 w-4" /> Drive
                       </Button>
                     </motion.div>
                   </div>
 
-                  <Button variant="ghost" className="w-full" onClick={() => setIsComparisonOpen(true)}>
+                  <Button variant="ghost" className="w-full h-9 sm:h-10" onClick={() => setIsComparisonOpen(true)}>
                     Compare all grades
                   </Button>
                 </div>
