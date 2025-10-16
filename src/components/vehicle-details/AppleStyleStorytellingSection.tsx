@@ -220,9 +220,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     let ticking = false;
     const evalLock = () => {
       ticking = false;
-      const fully = coversViewport(el, topOffsetPx, 6);
-      // lock only when fully covering viewport AND not on last slide AND motion allowed
-      setLockActive(fully && index < lastIndex && motionAllowed);
+      const fully = coversViewport(el, topOffsetPx, 10);
+      // Enable lock when section is in view AND not on last slide AND motion allowed
+      const shouldLock = fully && index < lastIndex && motionAllowed;
+      console.log('🔒 Lock eval:', { fully, index, lastIndex, motionAllowed, shouldLock });
+      setLockActive(shouldLock);
     };
     const onScrollResize = () => {
       if (!ticking) {
@@ -231,7 +233,10 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       }
     };
 
+    // Initial evaluation with slight delay to ensure DOM is ready
+    setTimeout(evalLock, 100);
     evalLock();
+    
     window.addEventListener("scroll", onScrollResize, { passive: true });
     window.addEventListener("resize", onScrollResize, { passive: true });
     window.addEventListener("orientationchange", onScrollResize);
@@ -380,9 +385,10 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       ref={sectionRef}
       className="relative bg-black text-white overflow-hidden select-none"
       style={{
-        minHeight: "100svh",
+        minHeight: "100vh",
+        height: "100vh",
         overscrollBehavior: "contain",
-        touchAction: lockActive ? "none" : "auto", // needed for consistent iOS behavior
+        touchAction: lockActive ? "none" : "auto",
         scrollSnapAlign: "start",
       }}
       aria-label="Cinematic automotive storytelling"
