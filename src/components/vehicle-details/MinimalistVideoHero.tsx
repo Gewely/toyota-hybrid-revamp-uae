@@ -67,7 +67,7 @@ const MinimalistVideoHero: React.FC<MinimalistVideoHeroProps> = ({
     { label: "CO₂ class", value: "C" },
   ];
 
-  const videoId = vehicle?.videoId ?? vehicle?.videoUrl ?? DEFAULT_VIDEO_ID;
+  const videoId = vehicle?.videoId ?? DEFAULT_VIDEO_ID;
 
   return (
     <section
