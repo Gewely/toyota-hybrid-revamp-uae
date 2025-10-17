@@ -10,6 +10,7 @@ import ColorsAccessoriesStep from "./steps/ColorsAccessoriesStep";
 import ReviewStep from "./steps/ReviewStep";
 import { contextualHaptic } from "@/utils/haptic";
 import { enhancedVariants, springConfigs } from "@/utils/animation-configs";
+import { carBuilderTokens } from "@/styles/tokens.carbuilder";
 
 interface BuilderConfig {
   modelYear: string;
@@ -125,14 +126,14 @@ const MobileStepContent: React.FC<MobileStepContentProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-background/95">
+    <div className="h-full flex flex-col bg-background">
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
-          variants={enhancedVariants.fadeInScale}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.98 }}
+          transition={carBuilderTokens.spring.luxurious}
           className="flex-1 overflow-y-auto overscroll-contain"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
@@ -140,77 +141,57 @@ const MobileStepContent: React.FC<MobileStepContentProps> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* Enhanced Continue Button */}
+      {/* Enhanced Continue Button - Premium Style */}
       {step < 4 && (
         <motion.div 
-          className="flex-shrink-0 bg-background/98 border-t border-border/20 backdrop-blur-xl"
+          className="flex-shrink-0 bg-card/95 border-t border-border/60 backdrop-blur-md supports-[backdrop-filter]:bg-card/80 shadow-xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, ...springConfigs.gentle }}
+          transition={carBuilderTokens.spring.luxurious}
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          {/* Stock Badge - Enhanced */}
-          <motion.div 
-            className="px-4 py-2"
-            variants={enhancedVariants.fadeInUp}
-          >
-            <div className="flex items-center justify-center">
-              <motion.div 
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-200"
-                whileHover={{ scale: 1.05 }}
-                transition={springConfigs.snappy}
-              >
-                <motion.div 
-                  className="w-2 h-2 bg-green-500 rounded-full"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                {getStockBadgeText()}
-              </motion.div>
-            </div>
-          </motion.div>
-
-          {/* Enhanced Button Container */}
-          <div className="px-4 pb-4">
+          <div className="px-4 py-4 flex flex-col gap-3">
+            {/* Premium Continue Button */}
             <motion.button
               onClick={handleContinueClick}
               disabled={!canContinue}
               className={`
-                w-full ${getButtonHeight()} min-h-[44px]
-                bg-gradient-to-r from-primary to-primary/90 
-                hover:from-primary/90 hover:to-primary/80
-                disabled:from-muted disabled:to-muted
-                text-primary-foreground disabled:text-muted-foreground
+                w-full ${getButtonHeight()} min-h-[48px]
+                bg-primary text-primary-foreground
+                hover:bg-primary/90
+                disabled:bg-muted disabled:text-muted-foreground
                 font-semibold rounded-xl
                 transition-all duration-200
-                shadow-lg hover:shadow-xl disabled:shadow-none
+                shadow-lg hover:shadow-xl disabled:shadow-md
                 flex items-center justify-center gap-3
                 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                 ${touchTarget}
               `}
               whileHover={canContinue ? { 
                 y: -2, 
-                scale: 1.02,
-                transition: springConfigs.snappy 
+                scale: 1.01,
+                transition: carBuilderTokens.spring.snappy 
               } : {}}
               whileTap={canContinue ? { 
                 scale: 0.98,
-                transition: { duration: 0.1 }
+                transition: carBuilderTokens.spring.snappy
               } : {}}
               aria-label={`Continue to ${getStepTitle()}`}
               role="button"
             >
-              <motion.div 
-                className="flex items-center gap-3"
-                animate={canContinue ? { x: 0 } : { x: 0 }}
-                transition={springConfigs.gentle}
-              >
-                {getStepIcon()}
-                <span className="text-base font-semibold">
-                  Continue to {getStepTitle()}
-                </span>
-                <ArrowRight className="h-5 w-5" />
-              </motion.div>
+              <span className="text-base font-semibold">
+                Continue to {getStepTitle()}
+              </span>
+              <ArrowRight className="h-5 w-5" />
             </motion.button>
+
+            {/* Stock Badge - Subtle */}
+            <div className="flex items-center justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+                {getStockBadgeText()}
+              </div>
+            </div>
           </div>
         </motion.div>
       )}

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDeviceInfo } from "@/hooks/use-device-info";
 import DesktopCarBuilder, { BuilderConfig as DesktopBuilderConfig } from "./builder/DesktopCarBuilder";
 import MobileCarBuilder, { MobileBuilderConfig } from "./builder/MobileCarBuilder";
+import { CarBuilderUIProvider } from "@/contexts/CarBuilderUIContext";
 
 /* ---------- Props ---------- */
 export interface CarBuilderProps {
@@ -134,43 +135,45 @@ const CarBuilder: React.FC<CarBuilderProps> = ({ vehicle, isOpen, onClose, initi
   }, [isOpen, initialGrade, config.grade]);
 
   const content = (
-    <AnimatePresence mode="wait">
-      {isMobile ? (
-        <MobileCarBuilder
-          key="mobile"
-          vehicle={vehicle}
-          step={step}
-          totalSteps={totalSteps}
-          config={config as MobileBuilderConfig}
-          setConfig={setConfig as React.Dispatch<React.SetStateAction<MobileBuilderConfig>>}
-          showConfirmation={showConfirmation}
-          calculateTotalPrice={calculateTotalPrice}
-          handlePayment={handlePayment}
-          goBack={goBack}
-          goNext={goNext}
-          onClose={onClose}
-          onReset={() => setShowResetDialog(true)}
-          deviceCategory={deviceCategory}
-        />
-      ) : (
-        <DesktopCarBuilder
-          key={isTablet ? "tablet" : "desktop"}
-          variant={isTablet ? "tablet" : "desktop"}
-          vehicle={vehicle}
-          step={step}
-          totalSteps={totalSteps}
-          config={config}
-          setConfig={setConfig}
-          showConfirmation={showConfirmation}
-          calculateTotalPrice={calculateTotalPrice}
-          handlePayment={handlePayment}
-          goBack={goBack}
-          goNext={goNext}
-          onClose={onClose}
-          onReset={() => setShowResetDialog(true)}
-        />
-      )}
-    </AnimatePresence>
+    <CarBuilderUIProvider>
+      <AnimatePresence mode="wait">
+        {isMobile ? (
+          <MobileCarBuilder
+            key="mobile"
+            vehicle={vehicle}
+            step={step}
+            totalSteps={totalSteps}
+            config={config as MobileBuilderConfig}
+            setConfig={setConfig as React.Dispatch<React.SetStateAction<MobileBuilderConfig>>}
+            showConfirmation={showConfirmation}
+            calculateTotalPrice={calculateTotalPrice}
+            handlePayment={handlePayment}
+            goBack={goBack}
+            goNext={goNext}
+            onClose={onClose}
+            onReset={() => setShowResetDialog(true)}
+            deviceCategory={deviceCategory}
+          />
+        ) : (
+          <DesktopCarBuilder
+            key={isTablet ? "tablet" : "desktop"}
+            variant={isTablet ? "tablet" : "desktop"}
+            vehicle={vehicle}
+            step={step}
+            totalSteps={totalSteps}
+            config={config}
+            setConfig={setConfig}
+            showConfirmation={showConfirmation}
+            calculateTotalPrice={calculateTotalPrice}
+            handlePayment={handlePayment}
+            goBack={goBack}
+            goNext={goNext}
+            onClose={onClose}
+            onReset={() => setShowResetDialog(true)}
+          />
+        )}
+      </AnimatePresence>
+    </CarBuilderUIProvider>
   );
 
   return (
