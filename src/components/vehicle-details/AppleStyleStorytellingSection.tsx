@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX, X } from "lucide-react";
 
 /* ============================================================
    Types
@@ -59,7 +59,7 @@ const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: stri
 };
 
 /* ============================================================
-   Wistia Player Hook
+   Wistia Player Hook (lazy + robust)
 ============================================================ */
 function useWistiaPlayer(videoId?: string) {
   const playerRef = useRef<any>(null);
@@ -98,16 +98,21 @@ function useWistiaPlayer(videoId?: string) {
 /* ============================================================
    Helpers
 ============================================================ */
-function pointInRect(x: number, y: number, r: DOMRect) {
-  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-}
+const isInteractive = (el: Element | null): boolean => {
+  if (!el) return false;
+  const target = el as HTMLElement;
+  if (target.dataset.interactive === "true") return true;
+  return !!target.closest(
+    'button, a, input, select, textarea, [role="button"], [role="tab"], [role="link"], [data-interactive="true"]',
+  );
+};
+
 function coversViewport(el: HTMLElement, topOffsetPx = 0, tol = 6) {
   const rect = el.getBoundingClientRect();
   const vh = window.innerHeight || document.documentElement.clientHeight;
   const visible = Math.min(rect.bottom, vh) - Math.max(rect.top, 0);
-  const coverage = visible / Math.min(vh, rect.height || vh);
-  // Consider sticky header via topOffsetPx; loosen threshold so lock activates when ~60% is visible
-  return coverage >= 0.6 && rect.top <= topOffsetPx + 120;
+  const coverage = visible / Math.min(vh, Math.max(rect.height, 1));
+  return coverage >= 0.6 && rect.top <= topOffsetPx + 120 + tol;
 }
 
 /* ============================================================
@@ -123,9 +128,7 @@ interface Props {
   onHybridTechExplore: () => void; // kept for API compatibility
   onSafetyExplore: () => void; // kept for API compatibility
   galleryImages: string[];
-  /** Height of any sticky header that occupies the top of the viewport */
   topOffsetPx?: number;
-  /** Force step-scroll even if user prefers-reduced-motion is on (debug only) */
   forceMotion?: boolean;
 }
 
@@ -209,46 +212,44 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const [index, setIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [lockActive, setLockActive] = useState(false); // recalculated live
+  const [manualUnlock, setManualUnlock] = useState(false);
 
   const active = scenes[index];
   const lastIndex = scenes.length - 1;
 
-  /* ----------------- Lock evaluator (rAF-throttled on scroll/resize + index) ----------- */
+  /* ----------------- Lock evaluator (Intersection + heuristics) ----------- */
+  const [lockActive, setLockActive] = useState(false);
+
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
 
-    let ticking = false;
-    const evalLock = () => {
-      ticking = false;
-      const fully = coversViewport(el, topOffsetPx, 10);
-      // Enable lock when section is in view AND not on last slide
-      const shouldLock = fully && index < lastIndex;
-      console.log('🔒 Lock eval:', { fully, index, lastIndex, motionAllowed, shouldLock });
-      setLockActive(shouldLock);
-    };
-    const onScrollResize = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(evalLock);
-      }
+    let raf = 0;
+    const evaluate = () => {
+      raf = 0;
+      const should = coversViewport(el, topOffsetPx) && index < lastIndex && !manualUnlock;
+      setLockActive(should);
     };
 
-    // Initial evaluation with slight delay to ensure DOM is ready
-    setTimeout(evalLock, 100);
-    evalLock();
-    
+    const onScrollResize = () => {
+      if (!raf) raf = requestAnimationFrame(evaluate);
+    };
+
+    // Initial + delayed evaluation (layout settle)
+    evaluate();
+    setTimeout(evaluate, 120);
+
     window.addEventListener("scroll", onScrollResize, { passive: true });
     window.addEventListener("resize", onScrollResize, { passive: true });
     window.addEventListener("orientationchange", onScrollResize);
 
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScrollResize as any);
       window.removeEventListener("resize", onScrollResize as any);
       window.removeEventListener("orientationchange", onScrollResize as any);
     };
-  }, [index, lastIndex, topOffsetPx, motionAllowed]);
+  }, [index, lastIndex, manualUnlock, topOffsetPx]);
 
   /* ----------------- Parallax (off for reduced motion) ----------------- */
   useEffect(() => {
@@ -268,88 +269,86 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       if (isTransitioning) return;
       setIsTransitioning(true);
       setIndex((i) => Math.max(0, Math.min(lastIndex, i + dir)));
-      setTimeout(() => setIsTransitioning(false), motionAllowed ? 700 : 200);
+      // cooldown to avoid accidental multiple steps
+      setTimeout(() => setIsTransitioning(false), motionAllowed ? 650 : 220);
     },
     [isTransitioning, lastIndex, motionAllowed],
   );
 
-  // Window-level handlers (always attached; guard inside)
-  const onWheel = useCallback(
-    (e: WheelEvent) => {
+  /* ----------------- Scoped wheel / touch / keys on the section ---------- */
+  const wheelHandlerRef = useRef<(e: WheelEvent) => void>();
+  const touchStartY = useRef<number | null>(null);
+
+  useEffect(() => {
+    wheelHandlerRef.current = (e: WheelEvent) => {
       const el = sectionRef.current;
       if (!el || !lockActive) return;
 
+      if (isInteractive(e.target as Element)) return; // don't hijack over buttons/links
+      // Only if pointer is within section bounds
       const rect = el.getBoundingClientRect();
-      // Some browsers provide clientX/Y=0 for wheel; fallback to center
       const cx = (e as any).clientX ?? rect.left + rect.width / 2;
       const cy = (e as any).clientY ?? rect.top + rect.height / 2;
-      if (!pointInRect(cx, cy, rect)) return;
+      if (cx < rect.left || cx > rect.right || cy < rect.top || cy > rect.bottom) return;
 
       e.preventDefault();
       step(e.deltaY > 0 ? 1 : -1);
-    },
-    [lockActive, step],
-  );
+    };
+  }, [lockActive, step]);
 
-  const touchStartY = useRef<number | null>(null);
-  const touchActiveInSection = useRef(false);
-
-  const onTouchStart = useCallback((e: TouchEvent) => {
+  useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const t = e.touches[0];
-    touchActiveInSection.current = pointInRect(t.clientX, t.clientY, rect);
-    touchStartY.current = t.clientY;
-  }, []);
 
-  const onTouchMove = useCallback(
-    (e: TouchEvent) => {
-      if (!lockActive || !touchActiveInSection.current || touchStartY.current === null) return;
-      const currentY = e.touches[0].clientY;
-      const deltaY = Math.abs(touchStartY.current - currentY);
-      if (deltaY > 10) e.preventDefault();
-    },
-    [lockActive],
-  );
+    const onWheel = (e: WheelEvent) => wheelHandlerRef.current?.(e);
 
-  const onTouchEnd = useCallback(
-    (e: TouchEvent) => {
-      if (!lockActive || !touchActiveInSection.current || touchStartY.current === null) return;
-      const dy = touchStartY.current - e.changedTouches[0].clientY;
-      touchStartY.current = null;
-      touchActiveInSection.current = false;
-      if (Math.abs(dy) < 50) return;
-      step(dy > 0 ? 1 : -1);
-    },
-    [lockActive, step],
-  );
-
-  const onKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+    const onTouchStart = (e: TouchEvent) => {
       if (!lockActive) return;
+      if (isInteractive(e.target as Element)) return; // let taps on CTAs through
+      touchStartY.current = e.touches[0]?.clientY ?? null;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!lockActive || touchStartY.current == null) return;
+      const currentY = e.touches[0]?.clientY ?? 0;
+      const deltaY = Math.abs((touchStartY.current ?? 0) - currentY);
+      // Allow small moves (scrolling content inside buttons), block big swipes for step
+      if (deltaY > 10) e.preventDefault();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!lockActive || touchStartY.current == null) return;
+      const endY = e.changedTouches[0]?.clientY ?? 0;
+      const dy = (touchStartY.current ?? 0) - endY;
+      touchStartY.current = null;
+      if (Math.abs(dy) < 48) return;
+      step(dy > 0 ? 1 : -1);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!lockActive) return;
+      if (isInteractive(document.activeElement)) return;
       if (!["ArrowDown", "ArrowRight", "PageDown", " ", "ArrowUp", "ArrowLeft", "PageUp"].includes(e.key)) return;
       e.preventDefault();
       const dir = e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " ? 1 : -1;
       step(dir as 1 | -1);
-    },
-    [lockActive, step],
-  );
+    };
 
-  useEffect(() => {
-    window.addEventListener("wheel", onWheel as any, { passive: false });
-    window.addEventListener("touchstart", onTouchStart as any, { passive: true });
-    window.addEventListener("touchmove", onTouchMove as any, { passive: false });
-    window.addEventListener("touchend", onTouchEnd as any, { passive: true });
+    // Important: passive:false to allow preventDefault
+    el.addEventListener("wheel", onWheel as any, { passive: false });
+    el.addEventListener("touchstart", onTouchStart as any, { passive: true });
+    el.addEventListener("touchmove", onTouchMove as any, { passive: false });
+    el.addEventListener("touchend", onTouchEnd as any, { passive: true });
     window.addEventListener("keydown", onKeyDown);
+
     return () => {
-      window.removeEventListener("wheel", onWheel as any);
-      window.removeEventListener("touchstart", onTouchStart as any);
-      window.removeEventListener("touchmove", onTouchMove as any);
-      window.removeEventListener("touchend", onTouchEnd as any);
+      el.removeEventListener("wheel", onWheel as any);
+      el.removeEventListener("touchstart", onTouchStart as any);
+      el.removeEventListener("touchmove", onTouchMove as any);
+      el.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onWheel, onTouchStart, onTouchMove, onTouchEnd, onKeyDown]);
+  }, [lockActive, step]);
 
   /* ----------------- Wistia reacts to visibility & index ----------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(lockActive ? active.backgroundVideoWistiaId : undefined);
@@ -390,17 +389,18 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         minHeight: "100vh",
         height: "100vh",
         overscrollBehavior: "contain",
-        touchAction: lockActive ? "none" : "auto",
-        scrollSnapAlign: "start",
+        // pan-y improves iOS Safari; still allows our touch listeners
+        touchAction: lockActive ? ("pan-y pinch-zoom" as any) : "auto",
+        WebkitOverflowScrolling: "touch",
       }}
       aria-label="Cinematic automotive storytelling"
       aria-live="polite"
     >
-      {/* MEDIA LAYER */}
+      {/* MEDIA LAYER (z-0, pointer-events: none so it never blocks clicks) */}
       <AnimatePresence mode="wait">
         <motion.div
           key={active.id}
-          className="absolute inset-0 will-change-transform"
+          className="absolute inset-0 z-0 pointer-events-none will-change-transform"
           initial={{ opacity: 0 }}
           animate={{
             opacity: 1,
@@ -413,7 +413,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           <img
             src={active.backgroundImage}
             alt={active.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover object-center"
             loading="eager"
             fetchPriority="high"
             decoding="async"
@@ -429,47 +429,76 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           )}
           {/* overlays */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay pointer-events-none"
+            className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay"
+            style={{ pointerEvents: "none" }}
             animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
             transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none" />
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"
+            style={{ pointerEvents: "none" }}
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20"
+            style={{ pointerEvents: "none" }}
+          />
         </motion.div>
       </AnimatePresence>
 
-      {/* SOUND TOGGLE */}
-      {active.backgroundVideoWistiaId && (
+      {/* SOUND + EXIT CONTROLS (top-left / top-right) */}
+      <div className="absolute top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] left-0 right-0 z-30 flex items-center justify-between px-4 md:px-6">
+        {active.backgroundVideoWistiaId ? (
+          <button
+            data-interactive="true"
+            onClick={() => setIsMuted((m) => !m)}
+            className="bg-black/60 text-white p-3 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+            aria-label={isMuted ? "Unmute background video" : "Mute background video"}
+          >
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+        ) : (
+          <div />
+        )}
         <button
-          onClick={() => setIsMuted((m) => !m)}
-          className="absolute top-6 left-6 z-20 bg-black/60 text-white p-3 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60"
-          aria-label={isMuted ? "Unmute background video" : "Mute background video"}
+          data-interactive="true"
+          onClick={() => setManualUnlock((v) => !v)}
+          className="bg-black/60 text-white px-3 py-2 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60 flex items-center gap-2"
+          aria-label={manualUnlock ? "Re-enter cinematic mode" : "Exit cinematic mode"}
+          title={manualUnlock ? "Re-enter cinematic" : "Exit cinematic"}
         >
-          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          <X className="w-4 h-4" />
+          <span className="text-sm">{manualUnlock ? "Re-enter" : "Exit"}</span>
         </button>
-      )}
+      </div>
 
-      {/* CONTENT LAYER */}
-      <div className="absolute bottom-0 left-0 w-full z-10 flex justify-start px-6 md:px-10 pb-[max(5.5rem,env(safe-area-inset-bottom))]">
+      {/* CONTENT LAYER (z-20) */}
+      <div className="absolute bottom-0 left-0 w-full z-20 flex justify-start px-4 md:px-10 pb-[max(5.5rem,env(safe-area-inset-bottom))]">
         <motion.div
           key={`content-${active.id}`}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -40 }}
           transition={{ duration: motionAllowed ? 0.5 : 0.18 }}
-          className="max-w-3xl text-left"
+          className="max-w-[min(92vw,60rem)]"
         >
-          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-5 py-5 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-            <h2 className="text-3xl md:text-6xl font-extralight mb-3 md:mb-4">{active.title}</h2>
-            <p className="text-base md:text-2xl text-white/90 mb-5 md:mb-6">{active.subtitle}</p>
+          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-5 py-4 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
+            <h2
+              className="font-extralight mb-2 md:mb-3 leading-tight"
+              style={{ fontSize: "clamp(1.75rem, 4.8vw, 3.5rem)" }}
+            >
+              {active.title}
+            </h2>
+            <p className="text-white/90 mb-4 md:mb-6" style={{ fontSize: "clamp(0.95rem, 2.2vw, 1.5rem)" }}>
+              {active.subtitle}
+            </p>
 
             {/* Stats */}
             {active.stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mb-5 md:mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-5 mb-4 md:mb-6">
                 {active.stats.map((s, i) => (
                   <div key={i} className="text-center">
                     <div className="flex justify-center mb-2">{s.icon}</div>
-                    <div className="text-xl md:text-3xl font-light">
+                    <div className="font-light" style={{ fontSize: "clamp(1.1rem, 3.2vw, 2rem)" }}>
                       <AnimatedNumber value={s.value} suffix={s.suffix} />
                     </div>
                     <div className="text-xs md:text-sm text-white/70">{s.label}</div>
@@ -480,20 +509,29 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
 
             {/* Features */}
             {active.features && (
-              <div className="flex flex-wrap justify-center gap-2 mb-5 md:mb-6">
+              <div className="flex flex-wrap gap-2 mb-4 md:mb-6">
                 {active.features.map((f, i) => (
-                  <Badge key={i} className="bg-white/10 text-white border-white/20" aria-label={f}>
+                  <Badge
+                    key={i}
+                    className="bg-white/10 text-white border-white/20"
+                    aria-label={f}
+                    data-interactive="true"
+                  >
                     {f}
                   </Badge>
                 ))}
               </div>
             )}
 
-            {/* CTAs */}
-            <div className="flex items-center justify-center gap-3">
+            {/* CTAs (explicitly marked interactive so gestures never swallow taps) */}
+            <div className="flex flex-wrap items-center gap-3">
               {active.cta && (
                 <Button
-                  onClick={active.cta.action}
+                  data-interactive="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    active.cta?.action();
+                  }}
                   className={`px-6 py-3 transition-transform hover:scale-[1.03] focus:ring-2 focus:ring-white/60 ${
                     active.cta.variant === "primary"
                       ? "bg-white text-black hover:bg-white/90"
@@ -506,7 +544,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
               )}
               {active.secondaryCta && (
                 <Button
-                  onClick={active.secondaryCta.action}
+                  data-interactive="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    active.secondaryCta?.action();
+                  }}
                   variant="outline"
                   className="px-6 py-3 border border-white/40 text-white hover:bg-white/10 transition-transform hover:scale-[1.03] focus:ring-2 focus:ring-white/60"
                 >
@@ -519,25 +561,29 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* PROGRESS DOTS */}
-      <div className="absolute bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] left-1/2 -translate-x-1/2 z-20 flex space-x-6">
+      {/* PROGRESS DOTS (z-30) */}
+      <div className="absolute bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] left-1/2 -translate-x-1/2 z-30 flex space-x-6">
         {scenes.map((s, i) => (
           <div key={s.id} className="flex flex-col items-center">
             <button
-              onClick={() => setIndex(i)}
+              data-interactive="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIndex(i);
+              }}
               aria-label={`Go to ${labels[i]} section`}
               aria-current={i === index ? "true" : "false"}
               className={`rounded-full mb-1 transition-all focus:outline-none focus:ring-2 focus:ring-white/60 ${
                 i === index ? "bg-white w-8 h-2" : "bg-white/40 hover:bg-white/60 w-3 h-3"
               }`}
             />
-            <span className={`text-xs ${i === index ? "text-white" : "text-white/60"}`}>{labels[i]}</span>
+            <span className={`text-[11px] ${i === index ? "text-white" : "text-white/60"}`}>{labels[i]}</span>
           </div>
         ))}
       </div>
 
       {/* PROGRESS BAR */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20 overflow-hidden">
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-30 overflow-hidden">
         <motion.div
           className="h-full bg-red-600 origin-left will-change-transform"
           animate={{ scaleX: progressRatio }}
@@ -547,9 +593,9 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       </div>
 
       {/* SCROLL HINT */}
-      {(isFirst || isLast) && motionAllowed && (
+      {(isFirst || isLast) && motionAllowed && !manualUnlock && (
         <motion.div
-          className="absolute bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+2.75rem))] left-1/2 -translate-x-1/2 z-20 text-center text-white/85 text-sm"
+          className="absolute bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+2.75rem))] left-1/2 -translate-x-1/2 z-30 text-center text-white/85 text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
