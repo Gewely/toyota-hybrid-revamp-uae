@@ -1,9 +1,20 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, Play, Sparkles, Maximize2, X, Volume2, VolumeX } from "lucide-react";
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ExternalLink, Maximize2, X, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+/* ============================================================
+   PremiumVirtualShowroom — Futuristic, fully responsive
+   - Same name + default export
+   - Mobile/desktop responsive on any screen size
+   - Safe-area aware, dvh heights, true fullscreen API
+   - Clean, premium visuals (no “Mario-era” effects)
+   - Shimmer skeleton, gesture hint, watchdog fallback
+============================================================ */
 
 interface PremiumVirtualShowroomProps {
   vehicleName: string;
@@ -12,256 +23,330 @@ interface PremiumVirtualShowroomProps {
 const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicleName }) => {
   const [isActive, setIsActive] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const isMobile = useIsMobile();
-  
+  const prefersReduced = useReducedMotion();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const watchdog = useRef<number | null>(null);
+
   // Convert vehicle name to URL format
-  const urlPath = vehicleName
-    .toLowerCase()
-    .replace(/toyota\s+/gi, "")
-    .replace(/\s+/g, "-");
-  
+  const urlPath = useMemo(
+    () =>
+      vehicleName
+        .toLowerCase()
+        .replace(/toyota\s+/gi, "")
+        .replace(/\s+/g, "-"),
+    [vehicleName],
+  );
+
   const iframeUrl = `https://www.virtualshowroom.toyota.ae/configurator/${urlPath}/en`;
 
-  const handleActivate = () => {
+  const handleActivate = useCallback(() => {
     setIsActive(true);
-  };
+    setIsLoaded(false);
+    setError(null);
 
-  const handleClose = () => {
+    // Mobile gesture hint (brief)
+    if (isMobile && !prefersReduced) {
+      setTimeout(() => setShowHint(true), 450);
+      setTimeout(() => setShowHint(false), 3000);
+    }
+
+    // Watchdog: if iframe doesn't load in time, show fallback
+    if (watchdog.current) window.clearTimeout(watchdog.current);
+    watchdog.current = window.setTimeout(() => {
+      if (!isLoaded) setError("Taking longer than usual. You can open the showroom in a new tab.");
+    }, 10000);
+  }, [iframeUrl, isMobile, prefersReduced, isLoaded]);
+
+  const handleClose = useCallback(() => {
     setIsActive(false);
     setIsFullscreen(false);
-  };
+    setShowHint(false);
+    setError(null);
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => void 0);
+    }
+  }, []);
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
+  const toggleFullscreen = useCallback(async () => {
+    if (!shellRef.current) return;
+    try {
+      if (!document.fullscreenElement) {
+        await shellRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen?.();
+        setIsFullscreen(false);
+      }
+    } catch {
+      // If blocked, open in a new tab as a graceful fallback
+      window.open(iframeUrl, "_blank", "noopener,noreferrer");
+    }
+  }, [iframeUrl]);
 
+  // ESC to close
+  useEffect(() => {
+    if (!isActive) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isActive, handleClose]);
+
+  // Cleanup watchdog
+  useEffect(() => {
+    return () => {
+      if (watchdog.current) window.clearTimeout(watchdog.current);
+    };
+  }, []);
+
+  const onIframeLoad = useCallback(() => {
+    setIsLoaded(true);
+    if (watchdog.current) window.clearTimeout(watchdog.current);
+  }, []);
+
+  /* --------------------- Immersive Shell --------------------- */
   if (isActive) {
     return (
       <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className={`${isFullscreen ? 'fixed inset-0 z-50' : 'relative w-full'} bg-black`}
+        ref={shellRef}
+        className={`${isFullscreen ? "fixed inset-0 z-[70]" : "relative w-full"} bg-black`}
+        aria-label={`${vehicleName} Virtual Showroom`}
       >
-        {/* Controls Bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Virtual Showroom
-            </Badge>
-            <h3 className="text-white font-semibold hidden sm:block">{vehicleName}</h3>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {!isMobile && (
+        {/* Controls Bar (safe-area aware) */}
+        <div
+          className="absolute top-0 left-0 right-0 z-20"
+          style={{
+            paddingTop: "max(0.5rem, env(safe-area-inset-top))",
+          }}
+        >
+          <div className="bg-gradient-to-b from-black/80 to-transparent px-3 sm:px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <Badge variant="secondary" className="bg-background/20 text-white border-white/15 truncate">
+                Virtual Showroom
+              </Badge>
+              <h3 className="text-white/90 font-medium text-sm sm:text-base truncate">{vehicleName}</h3>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2">
+              {!isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleFullscreen}
+                  className="text-white hover:bg-white/10"
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={toggleFullscreen}
+                onClick={handleClose}
                 className="text-white hover:bg-white/10"
+                aria-label="Close virtual showroom"
               >
-                <Maximize2 className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="text-white hover:bg-white/10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            </div>
           </div>
         </div>
 
-        {/* Iframe Container */}
-        <div className={`w-full ${isFullscreen ? 'h-screen' : 'h-[80vh] md:h-screen'}`}>
-          <iframe
-            src={iframeUrl}
-            className="w-full h-full border-0"
-            title={`${vehicleName} Virtual Showroom`}
-            loading="lazy"
-            allow="accelerometer; gyroscope; fullscreen"
-          />
+        {/* Iframe Container (uses dvh/safe-areas for any screen size) */}
+        <div
+          className="w-full"
+          style={{
+            // Use modern viewport units for mobile chrome show/hide; fall back via minHeight
+            height: "100dvh",
+          }}
+        >
+          <div className="relative w-full h-full">
+            {/* Shimmer skeleton while loading */}
+            <AnimatePresence>
+              {!isLoaded && (
+                <motion.div
+                  key="skeleton"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.06),rgba(255,255,255,0.12),rgba(255,255,255,0.06))] [background-size:200%_100%] animate-[shimmer_1.6s_infinite] rounded-none"
+                  style={{
+                    // Extra safety for devices with rounded corners/notches
+                    paddingBottom: "env(safe-area-inset-bottom)",
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Error/Fallback HUD */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="absolute left-1/2 -translate-x-1/2 top-16 z-30 max-w-[92vw] sm:max-w-md"
+                >
+                  <div className="backdrop-blur-md bg-black/60 border border-white/15 rounded-xl p-4 text-white">
+                    <div className="flex items-start gap-3">
+                      <Info className="h-5 w-5 shrink-0 mt-0.5" />
+                      <div className="space-y-2">
+                        <p className="text-sm leading-5">{error}</p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="bg-white text-black hover:bg-white/90"
+                            onClick={() => window.open(iframeUrl, "_blank", "noopener,noreferrer")}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Open in new tab
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-white/80 hover:bg-white/10"
+                            onClick={() => location.reload()}
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Gesture hint (mobile only, short-lived) */}
+            <AnimatePresence>
+              {showHint && (
+                <motion.div
+                  key="hint"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 z-30"
+                  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                >
+                  <div className="px-3 py-2 rounded-full text-xs sm:text-sm text-white/90 bg-black/50 backdrop-blur-md border border-white/15">
+                    Drag to rotate • Pinch to zoom
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* The Showroom */}
+            <iframe
+              ref={iframeRef}
+              src={iframeUrl}
+              title={`${vehicleName} Virtual Showroom`}
+              className="w-full h-full border-0 block"
+              loading="eager"
+              onLoad={onIframeLoad}
+              // `onError` is not reliable for cross-origin iframes; watchdog handles it.
+              allow="accelerometer; gyroscope; fullscreen; xr-spatial-tracking"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </div>
+
+        {/* Bottom safe-area spacer to avoid UI clipping on devices with gesture bars */}
+        <div
+          aria-hidden="true"
+          className="absolute left-0 right-0 bottom-0"
+          style={{ height: "env(safe-area-inset-bottom)" }}
+        />
       </motion.section>
     );
   }
 
+  /* --------------------- Launcher (Hero Card) --------------------- */
   return (
-    <section className="relative py-16 md:py-24 px-4 overflow-hidden bg-gradient-to-b from-background via-muted/20 to-background">
-      {/* Ambient background effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+    <section
+      className="relative px-4 py-12 sm:py-16 md:py-20 overflow-hidden bg-gradient-to-b from-background via-muted/20 to-background"
+      aria-label="Virtual Showroom Launcher"
+    >
+      {/* Ambient, subtle washes (performance-friendly) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 left-1/4 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-30 bg-foreground/5" />
+        <div className="absolute -bottom-28 right-1/5 w-[30rem] h-[30rem] rounded-full blur-3xl opacity-20 bg-primary/10" />
       </div>
-      
-      <div className="container mx-auto max-w-7xl relative z-10">
+
+      <div className="relative z-10 container mx-auto max-w-6xl">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 14 }}
+          whileInView={prefersReduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12 md:mb-16"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8 sm:mb-10 md:mb-12"
         >
-          <Badge variant="secondary" className="mb-4 bg-primary/10 text-primary border-primary/20">
+          <Badge variant="secondary" className="mb-3 bg-primary/10 text-primary border-primary/20">
             Interactive Experience
           </Badge>
-          <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
-            Step Into the Virtual Showroom
+          <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight">
+            Explore the {vehicleName} in a Virtual Showroom
           </h2>
-          <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Experience the {vehicleName} like never before with our immersive 360° virtual showroom
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mt-3">
+            Zero downloads, instant access, and a refined interface built for any screen size.
           </p>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
+        {/* Card */}
+        <motion.button
+          type="button"
+          onClick={handleActivate}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="relative group cursor-pointer"
-          onClick={handleActivate}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="group relative w-full text-left"
+          aria-label={`Enter ${vehicleName} virtual showroom`}
         >
-          {/* Main Card */}
-          <div className="relative bg-gradient-to-br from-card via-card to-muted/30 backdrop-blur-xl border border-border/50 rounded-3xl p-6 md:p-12 lg:p-16 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 hover:scale-[1.01]">
-            
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-accent/10" />
+          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/70 backdrop-blur-xl">
+            {/* Poster / Placeholder */}
+            <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.3/1] w-full">
+              <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/10" />
             </div>
 
-            {/* Floating sparkles */}
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute top-8 right-8 text-primary/40"
-            >
-              <Sparkles className="w-8 h-8 md:w-12 md:h-12" />
-            </motion.div>
-
-            <div className="relative z-10 flex flex-col items-center text-center space-y-6 md:space-y-8">
-              {/* Icon with pulse effect */}
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="relative"
-              >
-                <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center backdrop-blur-sm border-2 border-primary/30 shadow-lg shadow-primary/20">
-                  <Play className="w-10 h-10 md:w-14 md:h-14 text-primary" fill="currentColor" />
-                </div>
-                
-                {/* Pulse rings */}
-                <motion.div
-                  animate={{
-                    scale: [1, 1.4, 1],
-                    opacity: [0.5, 0, 0.5],
-                  }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: "easeOut"
-                  }}
-                  className="absolute inset-0 rounded-full bg-primary/30 -z-10"
-                />
-                <motion.div
-                  animate={{
-                    scale: [1, 1.6, 1],
-                    opacity: [0.3, 0, 0.3],
-                  }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: "easeOut",
-                    delay: 0.5
-                  }}
-                  className="absolute inset-0 rounded-full bg-primary/20 -z-10"
-                />
-              </motion.div>
-
-              {/* Content */}
-              <div className="space-y-3 md:space-y-4">
-                <h3 className="text-2xl md:text-4xl lg:text-5xl font-bold">
-                  Launch Virtual Experience
-                </h3>
-                <p className="text-sm md:text-lg text-muted-foreground max-w-xl mx-auto">
-                  Explore every angle, customize colors, and experience the {vehicleName} in stunning 360° detail from the comfort of your screen
-                </p>
-              </div>
-
-              {/* Features grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pt-4 md:pt-6 w-full max-w-3xl">
-                {[
-                  { label: "360° Rotation", icon: "🔄" },
-                  { label: "Color Studio", icon: "🎨" },
-                  { label: "Interior Tour", icon: "🚗" },
-                  { label: "Real-time 3D", icon: "✨" },
-                ].map((feature, i) => (
-                  <motion.div
-                    key={feature.label}
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    className="flex flex-col items-center gap-2 p-3 md:p-4 rounded-xl bg-background/50 backdrop-blur-sm border border-border/30 hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-primary/5"
+            {/* Overlay HUD */}
+            <div className="absolute inset-0 flex items-end">
+              <div className="w-full p-4 sm:p-6 md:p-8 bg-gradient-to-t from-background/80 via-background/30 to-transparent">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Virtual Showroom</p>
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold">{vehicleName}</h3>
+                  </div>
+                  <Button
+                    size={isMobile ? "default" : "lg"}
+                    className="transition-transform group-hover:translate-x-0.5"
                   >
-                    <span className="text-2xl md:text-3xl">{feature.icon}</span>
-                    <span className="text-xs md:text-sm font-medium text-muted-foreground">{feature.label}</span>
-                  </motion.div>
-                ))}
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Enter Virtual Showroom
+                  </Button>
+                </div>
               </div>
-
-              {/* CTA Button */}
-              <Button
-                size={isMobile ? "default" : "lg"}
-                className="mt-4 md:mt-6 px-6 md:px-8 py-4 md:py-6 text-base md:text-lg font-semibold group-hover:shadow-xl group-hover:shadow-primary/30 transition-all duration-300 group-hover:scale-105"
-              >
-                <ExternalLink className="mr-2 w-4 h-4 md:w-5 md:h-5" />
-                Enter Virtual Showroom
-              </Button>
-
-              {/* Additional info */}
-              <p className="text-xs md:text-sm text-muted-foreground mt-4">
-                No download required • Works on all devices • Fully interactive
-              </p>
             </div>
+          </div>
+        </motion.button>
 
-            {/* Decorative corner accents */}
-            <div className="absolute top-0 left-0 w-24 md:w-32 h-24 md:h-32 border-t-2 border-l-2 border-primary/20 rounded-tl-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute bottom-0 right-0 w-24 md:w-32 h-24 md:h-32 border-b-2 border-r-2 border-primary/20 rounded-br-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
-          </div>
-        </motion.div>
-
-        {/* Trust indicators */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="flex flex-wrap items-center justify-center gap-4 md:gap-8 mt-8 md:mt-12 text-xs md:text-sm text-muted-foreground"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span>Live 3D Rendering</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span>Powered by Toyota UAE</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <ExternalLink className="w-4 h-4 text-primary" />
-            <span>Official Virtual Showroom</span>
-          </div>
-        </motion.div>
+        {/* Trust row */}
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground">
+          <span>Optimized for mobile & desktop</span>
+          <span className="hidden sm:inline">•</span>
+          <span>Fast load with graceful fallback</span>
+          <span className="hidden sm:inline">•</span>
+          <span>Safe-area & accessibility compliant</span>
+        </div>
       </div>
     </section>
   );
