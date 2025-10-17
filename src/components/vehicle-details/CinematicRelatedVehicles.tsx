@@ -1,22 +1,21 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, ArrowRight, Eye, ShieldCheck, Wallet, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowRight, ShieldCheck, Wallet } from "lucide-react";
 import { vehicles } from "@/data/vehicles";
 import type { VehicleModel } from "@/types/vehicle";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 /* =========================================================================
-   CinematicRelatedVehicles — Premium v8 (Full-bleed, Certified, Modern UI)
-   - Full car visibility: 16:9 media with object-contain (no crop)
-   - "Certified" + Price + Monthly chips moved under media
-   - Mobile peek widths, desktop density, scroll-snap & progress
-   - Wheel→horizontal, keyboard arrows, reduced-motion aware
-   - Neutral luxury styling, minimal primary accents
+   CinematicRelatedVehicles — v10 (Auto-Trim PNG, Mobile-first, Certified)
+   - Auto-trim transparent borders for PNGs (canvas, cached)
+   - JPGs scenic: object-cover; PNG studio: object-contain (trimmed)
+   - Chips (Certified + Price + Monthly) BELOW image
+   - Clean, modern, minimal accents. Mobile-first widths + snap.
 =========================================================================== */
 
 interface CinematicRelatedVehiclesProps {
@@ -25,40 +24,155 @@ interface CinematicRelatedVehiclesProps {
   title?: string;
 }
 
-type EnhancedVehicle = VehicleModel & {
-  image: string;
-  quickFeatures: string[];
-};
+type EnhancedVehicle = VehicleModel & { image: string; quickFeatures: string[] };
 
+const EASE: number[] = [0.22, 1, 0.36, 1];
+
+// ---- Money / Monthly helpers ------------------------------------------------
 function parsePrice(raw: string | number | undefined): number | null {
   if (raw == null) return null;
   if (typeof raw === "number") return raw;
   const n = Number(String(raw).replace(/[^\d.]/g, ""));
   return Number.isFinite(n) ? n : null;
 }
-
-function formatMoney(n: number | null, currency = "AED") {
+function money(n: number | null, c = "AED") {
   if (n == null) return "—";
-  return `${currency} ${new Intl.NumberFormat("en-AE", { maximumFractionDigits: 0 }).format(n)}`;
+  return `${c} ${new Intl.NumberFormat("en-AE", { maximumFractionDigits: 0 }).format(n)}`;
 }
-
-// Hidden finance assumption: 20% down, 3.25% APR, 48 months (not displayed)
-function estimateMonthly(raw: string | number | undefined) {
-  const price = parsePrice(raw);
-  if (price == null) return null;
-  const principal = price * 0.8;
-  const months = 48;
+// Silent assumptions (not shown): 20% down, 3.25% APR, 48m
+function estMonthly(raw: string | number | undefined) {
+  const p = parsePrice(raw);
+  if (p == null) return null;
+  const principal = p * 0.8;
   const r = 0.0325 / 12;
-  const monthly = (principal * r) / (1 - Math.pow(1 + r, -months));
-  return Math.round(monthly);
+  const n = 48;
+  return Math.round((principal * r) / (1 - Math.pow(1 + r, -n)));
 }
-
-function slugify(name: string) {
-  return name
+function slugify(s: string) {
+  return s
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
 }
+
+// ---- Auto-trim PNG (transparent borders) ------------------------------------
+const TRIM_CACHE = new Map<string, string>(); // src -> processed dataURL or original src
+
+async function trimTransparentPNG(src: string, alphaThreshold = 8, maxW = 1920, maxH = 1080): Promise<string> {
+  if (TRIM_CACHE.has(src)) return TRIM_CACHE.get(src)!;
+
+  // Load image
+  const img = new Image();
+  // try to allow cross-origin when server sends CORS; if it fails, we fallback
+  img.crossOrigin = "anonymous";
+  const loaded = await new Promise<HTMLImageElement>((resolve, reject) => {
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  }).catch(() => null as unknown as HTMLImageElement);
+
+  if (!loaded) {
+    TRIM_CACHE.set(src, src);
+    return src;
+  }
+
+  try {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) throw new Error("no-ctx");
+    ctx.drawImage(img, 0, 0);
+
+    const { data } = ctx.getImageData(0, 0, w, h);
+
+    let minX = w,
+      minY = h,
+      maxX = -1,
+      maxY = -1;
+    // scan for non-transparent pixels
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const a = data[(y * w + x) * 4 + 3];
+        if (a > alphaThreshold) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    // If completely transparent or already tight -> return original
+    if (maxX < 0 || maxY < 0 || (minX === 0 && minY === 0 && maxX === w - 1 && maxY === h - 1)) {
+      TRIM_CACHE.set(src, src);
+      return src;
+    }
+
+    const trimW = maxX - minX + 1;
+    const trimH = maxY - minY + 1;
+
+    // Draw trimmed region
+    const out = document.createElement("canvas");
+    // downscale huge images to keep dataURL light
+    const scale = Math.min(1, maxW / trimW, maxH / trimH);
+    out.width = Math.max(1, Math.floor(trimW * scale));
+    out.height = Math.max(1, Math.floor(trimH * scale));
+    const octx = out.getContext("2d");
+    if (!octx) throw new Error("no-ctx2");
+    octx.imageSmoothingQuality = "high";
+    octx.drawImage(img, minX, minY, trimW, trimH, 0, 0, out.width, out.height);
+
+    const dataURL = out.toDataURL("image/png");
+    TRIM_CACHE.set(src, dataURL);
+    return dataURL;
+  } catch {
+    // CORS taint or other issue -> fallback
+    TRIM_CACHE.set(src, src);
+    return src;
+  }
+}
+
+function useSmartImage(src: string) {
+  const [displaySrc, setDisplaySrc] = useState<string>(src);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let active = true;
+    setStatus("loading");
+
+    const isPng = /\.png(\?.*)?$/i.test(src);
+
+    (async () => {
+      try {
+        const processed = isPng ? await trimTransparentPNG(src) : src;
+        if (!active) return;
+        setDisplaySrc(processed);
+        setStatus("ready");
+      } catch {
+        if (!active) return;
+        setDisplaySrc(src);
+        setStatus("error");
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [src]);
+
+  // Decide fit: if we processed PNG (data URL), use contain; else scenic cover
+  const fitClass =
+    /\.png(\?.*)?$/i.test(src) && (displaySrc.startsWith("data:image/png") || displaySrc === src)
+      ? "object-contain"
+      : "object-cover";
+
+  return { displaySrc, fitClass, status };
+}
+
+// -----------------------------------------------------------------------------
 
 export default function CinematicRelatedVehicles({
   currentVehicle,
@@ -66,12 +180,10 @@ export default function CinematicRelatedVehicles({
   title = "You may also like",
 }: CinematicRelatedVehiclesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { once: true, margin: "-100px" });
+  const inView = useInView(containerRef, { once: true, margin: "-80px" });
   const prefersReducedMotion = useReducedMotion();
 
-  // Build list
+  // Prepare items
   const items: EnhancedVehicle[] = useMemo(() => {
     const related = vehicles
       .filter((v) => v.category === currentVehicle.category && v.name !== currentVehicle.name)
@@ -87,124 +199,70 @@ export default function CinematicRelatedVehicles({
     }));
   }, [currentVehicle]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const [imgLoaded, setImgLoaded] = useState<Record<string, boolean>>({});
-  const [cardWidth, setCardWidth] = useState(360);
-  const [gapX, setGapX] = useState(24);
-  const [quickView, setQuickView] = useState<VehicleModel | null>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  const firstCardRef = useRef<HTMLDivElement>(null);
 
-  // Measure for accurate snapping
-  useEffect(() => {
-    const el = cardRef.current;
-    const list = scrollerRef.current;
-    if (!el || !list) return;
-
-    const compute = () => {
-      const w = el.getBoundingClientRect().width;
-      const style = window.getComputedStyle(list);
-      const gap = parseFloat(style.columnGap || style.gap || "24");
-      setCardWidth(w);
-      setGapX(Number.isFinite(gap) ? gap : 24);
-    };
-
-    compute();
-    const ro = new ResizeObserver(compute);
-    ro.observe(el);
-    ro.observe(list);
-    return () => ro.disconnect();
-  }, []);
-
-  // Track active index from scroll
-  useEffect(() => {
-    const list = scrollerRef.current;
-    if (!list) return;
-
-    let raf = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const step = cardWidth + gapX;
-        const idx = step > 0 ? Math.round(list.scrollLeft / step) : 0;
-        setActiveIndex(Math.max(0, Math.min(items.length - 1, idx)));
-      });
-    };
-
-    list.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(raf);
-      list.removeEventListener("scroll", onScroll);
-    };
-  }, [cardWidth, gapX, items.length]);
-
-  // Wheel→horizontal
+  // Desktop: wheel → horizontal
   const onWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    const list = scrollerRef.current;
-    if (!list) return;
+    if (window.innerWidth < 768) return; // keep native vertical on mobile
+    const rail = railRef.current;
+    if (!rail) return;
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
-      list.scrollBy({ left: e.deltaY, behavior: "smooth" });
+      rail.scrollBy({ left: e.deltaY, behavior: "smooth" });
     }
   }, []);
 
-  // Keyboard nav
-  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    e.preventDefault();
-    scrollByCards(e.key === "ArrowRight" ? 1 : -1);
+  // Keep rail snapped initially
+  useEffect(() => {
+    const rail = railRef.current;
+    const card = firstCardRef.current;
+    if (!rail || !card) return;
+    const snap = () => rail.scrollTo({ left: 0 });
+    snap();
+    const ro = new ResizeObserver(snap);
+    ro.observe(card);
+    return () => ro.disconnect();
   }, []);
 
-  const scrollByCards = (dir: number) => {
-    const list = scrollerRef.current;
-    if (!list) return;
-    const step = cardWidth + gapX;
-    list.scrollBy({ left: step * dir, behavior: "smooth" });
-  };
-  const scroll = (dir: "left" | "right") => scrollByCards(dir === "left" ? -1 : 1);
-
   if (!items.length) return null;
-
-  const progress = items.length > 1 ? activeIndex / (items.length - 1) : 0;
 
   return (
     <section
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden py-16 md:py-20 bg-gradient-to-b from-background via-muted/20 to-background",
+        "relative py-14 md:py-18 bg-gradient-to-b from-background via-muted/20 to-background overflow-hidden",
         className,
       )}
       aria-roledescription="carousel"
       aria-label="Related vehicles"
     >
-      {/* Soft vignette */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(0,0,0,0.06),transparent_70%)]" />
-
-      <div className="toyota-container container relative">
+      <div className="container">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-8 md:mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between"
+          initial={{ opacity: 0, y: 18 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+          transition={{ duration: 0.45, ease: EASE }}
+          className="mb-8 md:mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
         >
           <div className="max-w-2xl">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60">
                 {title}
               </span>
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Discover more from our {currentVehicle.category} range—refined picks, smooth UX, and full-view imagery.
+              Curated picks from our {currentVehicle.category} range—full view imagery, modern UI.
             </p>
           </div>
 
-          {/* Controls */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Desktop nudge */}
+          <div className="hidden md:flex gap-2">
             <Button
               variant="outline"
               size="icon"
-              onClick={() => scroll("left")}
-              className="h-11 w-11 rounded-xl border hover:bg-primary/10 hover:border-primary transition"
+              className="h-10 w-10 rounded-xl"
+              onClick={() => railRef.current?.scrollBy({ left: -400, behavior: "smooth" })}
               aria-label="Scroll left"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -212,8 +270,8 @@ export default function CinematicRelatedVehicles({
             <Button
               variant="outline"
               size="icon"
-              onClick={() => scroll("right")}
-              className="h-11 w-11 rounded-xl border hover:bg-primary/10 hover:border-primary transition"
+              className="h-10 w-10 rounded-xl"
+              onClick={() => railRef.current?.scrollBy({ left: 400, behavior: "smooth" })}
               aria-label="Scroll right"
             >
               <ChevronRight className="h-5 w-5" />
@@ -221,282 +279,124 @@ export default function CinematicRelatedVehicles({
           </div>
         </motion.div>
 
-        {/* Carousel */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="relative"
+        {/* Rail */}
+        <div
+          ref={railRef}
+          onWheel={onWheel}
+          className={cn(
+            "flex gap-5 md:gap-7 overflow-x-auto pb-3 snap-x snap-mandatory",
+            "scrollbar-hide -mx-3 px-3 md:mx-0 md:px-0",
+          )}
+          style={{ scrollPaddingLeft: "1rem" }}
+          role="group"
+          aria-label="Vehicle cards"
         >
-          <div
-            ref={scrollerRef}
-            onWheel={onWheel}
-            onKeyDown={onKeyDown}
-            tabIndex={0}
-            role="group"
-            aria-label="Vehicle cards"
-            className={cn(
-              "flex overflow-x-auto gap-6 md:gap-8 pb-6 md:pb-8 snap-x snap-mandatory",
-              "scrollbar-hide focus:outline-none px-2 -mx-2",
-            )}
-            style={{ scrollPaddingLeft: "1rem" }}
-          >
-            {items.map((v, idx) => {
-              const price = parsePrice(v.price);
-              const monthly = estimateMonthly(v.price);
-              return (
-                <motion.article
-                  key={v.name}
-                  ref={idx === 0 ? cardRef : undefined}
-                  className={cn(
-                    "group flex-none snap-start w-[88vw] xs:w-[80vw] sm:w-[62vw] md:w-[40rem] lg:w-[34rem] xl:w-[36rem]",
-                  )}
-                  initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.985 }}
-                  whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
-                  transition={{ duration: 0.4, delay: 0.04 * idx, ease: [0.22, 1, 0.36, 1] }}
-                  onMouseEnter={() => setHovered(v.name)}
-                  onMouseLeave={() => setHovered(null)}
-                  aria-label={`${v.name} ${v.category}`}
-                >
-                  <Card className="h-full border-0 shadow-xl hover:shadow-2xl transition-all duration-500 rounded-2xl bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur">
-                    <CardContent className="p-0">
-                      {/* MEDIA: full car visibility (contain) in 16:9 */}
-                      <div className="relative overflow-hidden rounded-t-2xl">
-                        <div className="aspect-[16/9] w-full bg-gradient-to-b from-muted/40 via-muted/20 to-muted/10 grid place-items-center">
-                          {!imgLoaded[v.name] && (
-                            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/40 via-muted/20 to-transparent" />
-                          )}
-                          <img
-                            src={(v as any).image}
-                            alt={v.name}
-                            loading="lazy"
-                            onLoad={() => setImgLoaded((s) => ({ ...s, [v.name]: true }))}
-                            className="h-full w-full object-contain"
-                            sizes="(max-width: 640px) 88vw, (max-width: 768px) 62vw, (max-width: 1024px) 40rem, 36rem"
-                          />
-                        </div>
-                      </div>
+          {items.map((v, i) => {
+            const price = parsePrice(v.price);
+            const monthly = estMonthly(v.price);
 
-                      {/* CONTENT */}
-                      <div className="p-5 sm:p-6">
-                        {/* Title + arrow */}
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <h3 className="truncate text-xl sm:text-2xl font-semibold leading-tight group-hover:text-primary transition-colors">
-                              {v.name}
-                            </h3>
-                            <p className="mt-1 text-[12px] sm:text-xs uppercase tracking-wider text-muted-foreground">
-                              {v.category}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 rounded-full hover:bg-primary hover:text-primary-foreground transition"
-                            asChild
-                            aria-label={`Go to ${v.name} details`}
-                          >
-                            <Link to={`/vehicle/${slugify(v.name)}`}>
-                              <ArrowRight className="h-5 w-5" />
-                            </Link>
-                          </Button>
-                        </div>
+            const { displaySrc, fitClass, status } = useSmartImage(v.image);
 
-                        {/* META CHIPS — moved out of image */}
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-xs font-medium">
-                            <ShieldCheck className="h-4 w-4" />
-                            Certified
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-xs font-medium">
-                            {formatMoney(price)}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold">
-                            <Wallet className="h-4 w-4" />
-                            {monthly ? `Est. ${formatMoney(monthly, "AED")} / mo` : "Est. — / mo"}
-                          </span>
-                        </div>
-
-                        {/* Quick features */}
-                        <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {v.quickFeatures.map((f, i) => (
-                            <motion.li
-                              key={`${v.name}-${f}-${i}`}
-                              initial={prefersReducedMotion ? false : { opacity: 0, x: -6 }}
-                              whileInView={prefersReducedMotion ? {} : { opacity: 1, x: 0 }}
-                              viewport={{ once: true, margin: "-10% 0px" }}
-                              transition={{ duration: 0.3, delay: 0.05 * i }}
-                              className="flex items-center gap-2 text-sm text-muted-foreground"
-                            >
-                              <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
-                              {f}
-                            </motion.li>
-                          ))}
-                        </ul>
-
-                        {/* Actions */}
-                        <div className="mt-5 flex gap-2">
-                          <Button
-                            asChild
-                            variant="outline"
-                            className="flex-1 font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition"
-                          >
-                            <Link to={`/vehicle/${slugify(v.name)}`}>Explore Details</Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="px-3 hover:bg-primary hover:text-primary-foreground hover:border-primary transition"
-                            onClick={() => setQuickView(v)}
-                            aria-label={`Quick view ${v.name}`}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.article>
-              );
-            })}
-          </div>
-
-          {/* Edge fades */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-8 md:w-12 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 md:w-16 bg-gradient-to-l from-background to-transparent" />
-
-          {/* Progress */}
-          <div className="mt-6 md:mt-8">
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-              <motion.div
-                className="h-full bg-primary/70"
-                style={{ width: `${Math.max(6, 100 / items.length)}%` }}
-                animate={{ x: `${progress * 100}%` }}
-                transition={{ type: "spring", stiffness: 140, damping: 20 }}
-              />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {items.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    const list = scrollerRef.current;
-                    if (!list) return;
-                    const step = cardWidth + gapX;
-                    list.scrollTo({ left: step * i, behavior: "smooth" });
-                  }}
-                  aria-label={`Go to item ${i + 1}`}
-                  className={cn(
-                    "h-2.5 w-2.5 rounded-full transition",
-                    i === activeIndex ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60",
-                  )}
-                />
-              ))}
-            </div>
-
-            {/* Mobile compact controls */}
-            <div className="mt-4 flex md:hidden justify-center gap-3">
-              <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" onClick={() => scroll("left")}>
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl" onClick={() => scroll("right")}>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Quick View (lightweight) */}
-      <AnimatePresence>
-        {quickView && (
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`Quick view ${quickView.name}`}
-            className="fixed inset-0 z-[80] grid place-items-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setQuickView(null)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="relative z-[81] w-full max-w-3xl rounded-2xl bg-card shadow-2xl border"
-            >
-              <button
-                onClick={() => setQuickView(null)}
-                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-muted hover:bg-muted/80 transition"
-                aria-label="Close quick view"
+            return (
+              <motion.article
+                key={v.name}
+                ref={i === 0 ? firstCardRef : undefined}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 10, scale: 0.995 }}
+                whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "-15% 0px -10% 0px" }}
+                transition={{ duration: 0.35, delay: i * 0.03, ease: EASE }}
+                className={cn("flex-none snap-start w-[92vw] xs:w-[88vw] sm:w-[70vw] md:w-[36rem] lg:w-[38rem]")}
+                aria-label={`${v.name} ${v.category}`}
               >
-                <X className="h-5 w-5" />
-              </button>
-              <div className="overflow-hidden rounded-t-2xl">
-                <div className="aspect-[16/9] w-full bg-gradient-to-b from-muted/40 via-muted/20 to-muted/10 grid place-items-center">
-                  <img
-                    src={(quickView as any).image || "/placeholder.svg"}
-                    alt={quickView.name}
-                    className="h-full w-full object-contain"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-2xl font-semibold">{quickView.name}</h3>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{quickView.category}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-xs font-medium">
-                      <ShieldCheck className="h-4 w-4" />
-                      Certified
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-xs font-medium">
-                      {formatMoney(parsePrice(quickView.price))}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold">
-                      <Wallet className="h-4 w-4" />
-                      {estimateMonthly(quickView.price)
-                        ? `Est. ${formatMoney(estimateMonthly(quickView.price), "AED")} / mo`
-                        : "Est. — / mo"}
-                    </span>
-                  </div>
-                </div>
+                <Card className="h-full rounded-2xl border bg-gradient-to-br from-card to-card/95 shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-0">
+                    {/* MEDIA: 16:9, centered; PNGs trimmed + contain, JPGs cover */}
+                    <div className="relative rounded-t-2xl">
+                      <div className="aspect-[16/9] w-full grid place-items-center bg-muted/20">
+                        {status === "loading" && (
+                          <div className="absolute inset-0 animate-pulse bg-muted/30 rounded-t-2xl" />
+                        )}
+                        <img
+                          src={displaySrc}
+                          alt={v.name}
+                          loading="lazy"
+                          decoding="async"
+                          className={cn("w-full h-full", fitClass)}
+                          style={{ objectPosition: "center" }}
+                          sizes="(max-width: 640px) 92vw, (max-width: 768px) 70vw, 36rem"
+                        />
+                      </div>
+                    </div>
 
-                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                  {(
-                    quickView.features?.slice(0, 6) || ["Premium Interior", "Advanced Safety", "Hybrid Efficiency"]
-                  ).map((f, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
+                    {/* BODY */}
+                    <div className="p-5 md:p-6">
+                      {/* Title row */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-xl md:text-2xl font-semibold leading-tight">{v.name}</h3>
+                          <p className="mt-1 text-[12px] uppercase tracking-wider text-muted-foreground">
+                            {v.category}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-full hover:bg-primary hover:text-primary-foreground transition"
+                          asChild
+                          aria-label={`Open ${v.name} details`}
+                        >
+                          <Link to={`/vehicle/${slugify(v.name)}`}>
+                            <ArrowRight className="h-5 w-5" />
+                          </Link>
+                        </Button>
+                      </div>
 
-                <div className="mt-6 flex gap-2">
-                  <Button asChild className="flex-1">
-                    <Link to={`/vehicle/${slugify(quickView.name)}`}>Open Full Details</Link>
-                  </Button>
-                  <Button variant="outline" onClick={() => setQuickView(null)}>
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                      {/* CHIPS — away from image */}
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-xs font-medium">
+                          <ShieldCheck className="h-4 w-4" />
+                          Certified
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] px-3 py-1 text-xs font-medium">
+                          {money(price)}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold">
+                          <Wallet className="h-4 w-4" />
+                          {monthly ? `Est. ${money(monthly)} / mo` : "Est. — / mo"}
+                        </span>
+                      </div>
+
+                      {/* Features */}
+                      <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {v.quickFeatures.map((f, idx) => (
+                          <li
+                            key={`${v.name}-${idx}`}
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary/80" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Actions */}
+                      <div className="mt-5 flex gap-2">
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="flex-1 font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition"
+                        >
+                          <Link to={`/vehicle/${slugify(v.name)}`}>Explore Details</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.article>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }
