@@ -32,6 +32,7 @@ import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-m
 import { OptimizedModalProvider } from '@/components/ui/optimized-modal-manager';
 import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
+import { ModalProvider } from '@/contexts/ModalProvider';
 
 // Lazy load heavy components with intelligent preloading
 const CinematicRelatedVehicles = createLazyComponent(
@@ -218,8 +219,14 @@ const VehicleDetails = () => {
   }
 
   return (
-    <OptimizedModalProvider>
-      <PerformanceErrorBoundary>
+    <ModalProvider pageContext={{
+      heroImage: vehicle.image,
+      galleryImages: galleryImages,
+      vehicleName: vehicle.name,
+      vehiclePrice: vehicle.price
+    }}>
+      <OptimizedModalProvider>
+        <PerformanceErrorBoundary>
         <UnifiedPerformanceMonitor />
         <SkipLinks />
         <ToyotaLayout
@@ -403,6 +410,7 @@ const VehicleDetails = () => {
         </ToyotaLayout>
       </PerformanceErrorBoundary>
     </OptimizedModalProvider>
+  </ModalProvider>
   );
 };
 
