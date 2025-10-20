@@ -1,18 +1,13 @@
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import { VehicleModel } from "@/types/vehicle";
-import { useModal } from "@/contexts/ModalProvider";
-import { PremiumModal } from "@/components/ui/premium-modal";
-import { modalRegistry } from "@/config/modalRegistry";
-
-// Lazy load modal components
-const SafetySuiteModal = lazy(() => import("./modals/SafetySuiteModal"));
-const ConnectivityModal = lazy(() => import("./modals/ConnectivityModal"));
-const HybridTechModal = lazy(() => import("./modals/HybridTechModal"));
-const InteriorModal = lazy(() => import("./modals/InteriorModal"));
-const OffersModal = lazy(() => import("@/components/home/OffersModal"));
-const BookTestDrive = lazy(() => import("./BookTestDrive"));
-const FinanceCalculator = lazy(() => import("./FinanceCalculator"));
-const CarBuilder = lazy(() => import("./CarBuilder"));
+import BookTestDrive from "./BookTestDrive";
+import FinanceCalculator from "./FinanceCalculator";
+import CarBuilder from "./CarBuilder";
+import OffersModal from "@/components/home/OffersModal";
+import SafetySuiteModal from "./modals/SafetySuiteModal";
+import ConnectivityModal from "./modals/ConnectivityModal";
+import HybridTechModal from "./modals/HybridTechModal";
+import InteriorModal from "./modals/InteriorModal";
 
 interface VehicleModalsProps {
   vehicle: VehicleModel;
@@ -59,8 +54,6 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
   setIsInteriorModalOpen,
   carBuilderInitialGrade
 }) => {
-  const { isOpen, close, pageContext } = useModal();
-
   const handleModalClose = (modalSetter: (open: boolean) => void) => {
     modalSetter(false);
   };
@@ -71,167 +64,59 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
   };
 
   return (
-    <Suspense fallback={null}>
-      {/* Offers Modal */}
-      <PremiumModal
-        id="offers"
+    <>
+      <OffersModal
         isOpen={isOffersModalOpen}
         onClose={() => {
           setIsOffersModalOpen(false);
           setSelectedOffer(null);
         }}
-        variant="cta"
-        title={modalRegistry['offers']?.title}
-        description={modalRegistry['offers']?.description}
-        imageSrc={typeof modalRegistry['offers']?.imageSrc === 'function' 
-          ? modalRegistry['offers'].imageSrc(pageContext) 
-          : modalRegistry['offers']?.imageSrc}
-        enableDeepLink={false}
-      >
-        <OffersModal
-          isOpen={isOffersModalOpen}
-          onClose={() => {
-            setIsOffersModalOpen(false);
-            setSelectedOffer(null);
-          }}
-          selectedOffer={selectedOffer}
-        />
-      </PremiumModal>
+        selectedOffer={selectedOffer}
+      />
 
-      {/* Test Drive Modal */}
-      <PremiumModal
-        id="test-drive"
+      <BookTestDrive
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
-        variant="form"
-        title={modalRegistry['test-drive']?.title}
-        description={modalRegistry['test-drive']?.description}
-        imageSrc={vehicle.image}
-        enableDeepLink={true}
-      >
-        <BookTestDrive
-          isOpen={isBookingOpen}
-          onClose={() => setIsBookingOpen(false)}
-          vehicle={vehicle}
-        />
-      </PremiumModal>
+        vehicle={vehicle}
+      />
 
-      {/* Finance Calculator Modal */}
-      <PremiumModal
-        id="finance"
+      <FinanceCalculator
         isOpen={isFinanceOpen}
         onClose={() => setIsFinanceOpen(false)}
-        variant="form"
-        title={modalRegistry['finance']?.title}
-        description={modalRegistry['finance']?.description}
-        imageSrc={vehicle.image}
-        enableDeepLink={true}
-      >
-        <FinanceCalculator
-          isOpen={isFinanceOpen}
-          onClose={() => setIsFinanceOpen(false)}
-          vehicle={vehicle}
-        />
-      </PremiumModal>
+        vehicle={vehicle}
+      />
 
-      {/* Car Builder Modal */}
-      <PremiumModal
-        id="car-builder"
+      <CarBuilder
         isOpen={isCarBuilderOpen}
         onClose={() => setIsCarBuilderOpen(false)}
-        variant="wizard"
-        title={modalRegistry['car-builder']?.title}
-        description={modalRegistry['car-builder']?.description}
-        imageSrc={vehicle.image}
-        enableDeepLink={true}
-        maxWidth="max-w-7xl"
-      >
-        <CarBuilder
-          isOpen={isCarBuilderOpen}
-          onClose={() => setIsCarBuilderOpen(false)}
-          vehicle={vehicle}
-          initialGrade={carBuilderInitialGrade}
-        />
-      </PremiumModal>
+        vehicle={vehicle}
+        initialGrade={carBuilderInitialGrade}
+      />
 
-      {/* Safety Suite Modal */}
-      <PremiumModal
-        id="safety-suite"
+      <SafetySuiteModal
         isOpen={isSafetyModalOpen}
         onClose={() => handleModalClose(setIsSafetyModalOpen)}
-        variant="gallery"
-        title={modalRegistry['safety-suite']?.title}
-        description={modalRegistry['safety-suite']?.description}
-        imageSrc={typeof modalRegistry['safety-suite']?.imageSrc === 'function' 
-          ? modalRegistry['safety-suite'].imageSrc(pageContext) 
-          : modalRegistry['safety-suite']?.imageSrc}
-        enableDeepLink={true}
-      >
-        <SafetySuiteModal
-          isOpen={isSafetyModalOpen}
-          onClose={() => handleModalClose(setIsSafetyModalOpen)}
-          onBookTestDrive={() => handleTestDriveFromModal(setIsSafetyModalOpen)}
-        />
-      </PremiumModal>
+        onBookTestDrive={() => handleTestDriveFromModal(setIsSafetyModalOpen)}
+      />
 
-      {/* Connectivity Modal */}
-      <PremiumModal
-        id="connectivity"
+      <ConnectivityModal
         isOpen={isConnectivityModalOpen}
         onClose={() => handleModalClose(setIsConnectivityModalOpen)}
-        variant="gallery"
-        title={modalRegistry['connectivity']?.title}
-        description={modalRegistry['connectivity']?.description}
-        imageSrc={typeof modalRegistry['connectivity']?.imageSrc === 'function' 
-          ? modalRegistry['connectivity'].imageSrc(pageContext) 
-          : modalRegistry['connectivity']?.imageSrc}
-        enableDeepLink={true}
-      >
-        <ConnectivityModal
-          isOpen={isConnectivityModalOpen}
-          onClose={() => handleModalClose(setIsConnectivityModalOpen)}
-          onBookTestDrive={() => handleTestDriveFromModal(setIsConnectivityModalOpen)}
-        />
-      </PremiumModal>
+        onBookTestDrive={() => handleTestDriveFromModal(setIsConnectivityModalOpen)}
+      />
 
-      {/* Hybrid Tech Modal */}
-      <PremiumModal
-        id="hybrid-tech"
+      <HybridTechModal
         isOpen={isHybridTechModalOpen}
         onClose={() => handleModalClose(setIsHybridTechModalOpen)}
-        variant="gallery"
-        title={modalRegistry['hybrid-tech']?.title}
-        description={modalRegistry['hybrid-tech']?.description}
-        imageSrc={typeof modalRegistry['hybrid-tech']?.imageSrc === 'function' 
-          ? modalRegistry['hybrid-tech'].imageSrc(pageContext) 
-          : modalRegistry['hybrid-tech']?.imageSrc}
-        enableDeepLink={true}
-      >
-        <HybridTechModal
-          isOpen={isHybridTechModalOpen}
-          onClose={() => handleModalClose(setIsHybridTechModalOpen)}
-          onBookTestDrive={() => handleTestDriveFromModal(setIsHybridTechModalOpen)}
-        />
-      </PremiumModal>
+        onBookTestDrive={() => handleTestDriveFromModal(setIsHybridTechModalOpen)}
+      />
 
-      {/* Interior Modal */}
       {isInteriorModalOpen && (
-        <PremiumModal
-          id="interior"
-          isOpen={isInteriorModalOpen}
+        <InteriorModal
           onClose={() => handleModalClose(setIsInteriorModalOpen)}
-          variant="gallery"
-          title={modalRegistry['interior']?.title}
-          description={modalRegistry['interior']?.description}
-          imageSrc={typeof modalRegistry['interior']?.imageSrc === 'function' 
-            ? modalRegistry['interior'].imageSrc(pageContext) 
-            : modalRegistry['interior']?.imageSrc}
-          enableDeepLink={true}
-        >
-          <InteriorModal onClose={() => handleModalClose(setIsInteriorModalOpen)} />
-        </PremiumModal>
+        />
       )}
-    </Suspense>
+    </>
   );
 };
 
