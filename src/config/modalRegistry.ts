@@ -19,14 +19,16 @@ const SafetySuiteModal = () => import('@/components/vehicle-details/modals/Safet
 const ConnectivityModal = () => import('@/components/vehicle-details/modals/ConnectivityModal').then(m => ({ default: m.default }));
 const HybridTechModal = () => import('@/components/vehicle-details/modals/HybridTechModal').then(m => ({ default: m.default }));
 const InteriorModal = () => import('@/components/vehicle-details/modals/InteriorModal').then(m => ({ default: m.default }));
+const ExteriorModal = () => import('@/components/vehicle-details/modals/ExteriorModal').then(m => ({ default: m.default }));
+const PerformanceModal = () => import('@/components/vehicle-details/modals/PerformanceModal').then(m => ({ default: m.default }));
 const OffersModal = () => import('@/components/home/OffersModal').then(m => ({ default: m.default }));
 const BookTestDrive = () => import('@/components/vehicle-details/BookTestDrive').then(m => ({ default: m.default }));
 const FinanceCalculator = () => import('@/components/vehicle-details/FinanceCalculator').then(m => ({ default: m.default }));
 const CarBuilder = () => import('@/components/vehicle-details/CarBuilder').then(m => ({ default: m.default }));
 
 export const modalRegistry: Record<string, ModalEntry> = {
-  'safety-suite': {
-    id: 'safety-suite',
+  'safety': {
+    id: 'safety',
     title: 'Toyota Safety Sense 2.0',
     description: 'Advanced safety features designed to protect you',
     variant: 'gallery',
@@ -63,6 +65,36 @@ export const modalRegistry: Record<string, ModalEntry> = {
     component: InteriorModal as any,
     imageSrc: (ctx) => ctx.galleryImages?.[3] || ctx.heroImage || '',
     priority: 30,
+    deepLinkEnabled: true,
+  },
+  'exterior': {
+    id: 'exterior',
+    title: 'Exterior Design',
+    description: 'Bold styling meets aerodynamic excellence',
+    variant: 'gallery',
+    component: ExteriorModal as any,
+    imageSrc: (ctx) => ctx.galleryImages?.[1] || ctx.heroImage || '',
+    priority: 32,
+    deepLinkEnabled: true,
+  },
+  'performance': {
+    id: 'performance',
+    title: 'Performance',
+    description: 'Unleash legendary power and capability',
+    variant: 'specs',
+    component: PerformanceModal as any,
+    imageSrc: (ctx) => ctx.galleryImages?.[2] || ctx.heroImage || '',
+    priority: 42,
+    deepLinkEnabled: true,
+  },
+  'technology': {
+    id: 'technology',
+    title: 'Technology & Connectivity',
+    description: 'Advanced tech for modern driving',
+    variant: 'gallery',
+    component: ConnectivityModal as any,
+    imageSrc: (ctx) => ctx.galleryImages?.[1] || ctx.heroImage || '',
+    priority: 36,
     deepLinkEnabled: true,
   },
   'offers': {

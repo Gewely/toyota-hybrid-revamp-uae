@@ -6,6 +6,7 @@ import { VehicleModel } from "@/types/vehicle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { openTestDrivePopup } from "@/utils/testDriveUtils";
+import { useModal } from "@/contexts/ModalProvider";
 
 /** ─────────────────────────────────────────
  *  GR tokens + matte carbon surface
@@ -67,6 +68,7 @@ const ActionPanel: React.FC<ActionPanelProps> = ({
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { isGR, toggleGR } = useGRMode();
+  const { open } = useModal();
 
   const fmt = useMemo(
     () => new Intl.NumberFormat(typeof navigator !== "undefined" ? navigator.language : "en-AE"),

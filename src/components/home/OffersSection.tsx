@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeable } from "@/hooks/use-swipeable";
+import { useModal } from "@/contexts/ModalProvider";
 
 interface Offer {
   id: string;
@@ -25,6 +26,7 @@ interface OffersSectionProps {
 const OffersSection: React.FC<OffersSectionProps> = ({ onOfferClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const isMobile = useIsMobile();
+  const { open } = useModal();
 
   const offers: Offer[] = [
     {

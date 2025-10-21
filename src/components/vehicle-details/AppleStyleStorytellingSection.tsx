@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX, X } from "lucide-react";
+import { useModal } from "@/contexts/ModalProvider";
 
 /* ============================================================
    Types
@@ -123,10 +124,6 @@ interface Props {
   setIsBookingOpen: (open: boolean) => void;
   setIsFinanceOpen: (open: boolean) => void;
   navigate: (path: string) => void;
-  onInteriorExplore: () => void;
-  onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void; // kept for API compatibility
-  onSafetyExplore: () => void; // kept for API compatibility
   galleryImages: string[];
   topOffsetPx?: number;
   forceMotion?: boolean;
@@ -140,14 +137,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   setIsBookingOpen,
   setIsFinanceOpen,
   navigate,
-  onInteriorExplore,
-  onConnectivityExplore,
-  onHybridTechExplore: _onHybridTechExplore,
-  onSafetyExplore: _onSafetyExplore,
   galleryImages,
   topOffsetPx = 0,
   forceMotion = false,
 }) => {
+  const { open } = useModal();
   const prefersReduced = useReducedMotion();
   const motionAllowed = forceMotion || !prefersReduced;
 
@@ -191,7 +185,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Step into a world where comfort meets cutting-edge technology.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
-        cta: { label: "Experience Interior", action: onInteriorExplore, variant: "primary" },
+        cta: { label: "Experience Interior", action: () => open('interior'), variant: "primary" },
         features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Premium Audio"],
       },
       {
@@ -200,11 +194,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Advanced technology that anticipates your needs.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg",
-        cta: { label: "Discover Tech", action: onConnectivityExplore, variant: "secondary" },
+        cta: { label: "Discover Tech", action: () => open('connectivity'), variant: "secondary" },
         features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
-    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, onInteriorExplore, onConnectivityExplore, galleryImages],
+    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, open, galleryImages],
   );
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
 

@@ -116,10 +116,6 @@ const VehicleDetails = () => {
       setSelectedOffer(offer);
       setModals(prev => ({ ...prev, isOffersModalOpen: true }));
     },
-    handleSafetyExplore: () => setModals(prev => ({ ...prev, isSafetyModalOpen: true })),
-    handleConnectivityExplore: () => setModals(prev => ({ ...prev, isConnectivityModalOpen: true })),
-    handleHybridTechExplore: () => setModals(prev => ({ ...prev, isHybridTechModalOpen: true })),
-    handleInteriorExplore: () => setModals(prev => ({ ...prev, isInteriorModalOpen: true })),
     handleConfigureWithGrade: (grade?: string) => {
       setCarBuilderInitialGrade(grade);
       setModals(prev => ({ ...prev, isCarBuilderOpen: true }));
@@ -287,10 +283,6 @@ const VehicleDetails = () => {
                     setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
                     navigate={navigate}
                     setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
-                    onSafetyExplore={modalHandlers.handleSafetyExplore}
-                    onConnectivityExplore={modalHandlers.handleConnectivityExplore}
-                    onHybridTechExplore={modalHandlers.handleHybridTechExplore}
-                    onInteriorExplore={modalHandlers.handleInteriorExplore}
                   />
 
                   {/* Virtual Showroom - Under Storytelling */}
@@ -312,10 +304,6 @@ const VehicleDetails = () => {
                     setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
                     navigate={navigate}
                     setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
-                    onSafetyExplore={modalHandlers.handleSafetyExplore}
-                    onConnectivityExplore={modalHandlers.handleConnectivityExplore}
-                    onHybridTechExplore={modalHandlers.handleHybridTechExplore}
-                    onInteriorExplore={modalHandlers.handleInteriorExplore}
                   />
 
                   {/* Virtual Showroom - Under Storytelling */}

@@ -8,6 +8,7 @@ import type { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ArrowRight, Car as CarIcon, Check, Star, Wrench } from "lucide-react";
+import { useModal } from "@/contexts/ModalProvider";
 
 /* =========================================================
    Luxury Light v6 — Responsive (no sticky anywhere)

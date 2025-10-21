@@ -8,10 +8,6 @@ interface StorytellingProps {
   setIsBookingOpen: (open: boolean) => void;
   navigate: (path: string) => void;
   setIsFinanceOpen: (open: boolean) => void;
-  onSafetyExplore: () => void;
-  onConnectivityExplore: () => void;
-  onHybridTechExplore: () => void;
-  onInteriorExplore: () => void;
 }
 
 const StorytellingSection: React.FC<StorytellingProps> = ({
@@ -20,10 +16,6 @@ const StorytellingSection: React.FC<StorytellingProps> = ({
   setIsBookingOpen,
   navigate,
   setIsFinanceOpen,
-  onSafetyExplore,
-  onConnectivityExplore,
-  onHybridTechExplore,
-  onInteriorExplore
 }) => {
   return (
     <AppleStyleStorytellingSection
@@ -31,10 +23,6 @@ const StorytellingSection: React.FC<StorytellingProps> = ({
       setIsBookingOpen={setIsBookingOpen}
       navigate={navigate}
       setIsFinanceOpen={setIsFinanceOpen}
-      onSafetyExplore={onSafetyExplore}
-      onConnectivityExplore={onConnectivityExplore}
-      onHybridTechExplore={onHybridTechExplore}
-      onInteriorExplore={onInteriorExplore}
       galleryImages={galleryImages}
     />
   );

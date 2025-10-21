@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { VehicleModel } from "@/types/vehicle";
 import BookTestDrive from "./BookTestDrive";
 import FinanceCalculator from "./FinanceCalculator";
@@ -8,6 +8,11 @@ import SafetySuiteModal from "./modals/SafetySuiteModal";
 import ConnectivityModal from "./modals/ConnectivityModal";
 import HybridTechModal from "./modals/HybridTechModal";
 import InteriorModal from "./modals/InteriorModal";
+import ExteriorModal from "./modals/ExteriorModal";
+import PerformanceModal from "./modals/PerformanceModal";
+import { useModal } from "@/contexts/ModalProvider";
+import { PremiumModal } from "@/components/ui/premium-modal";
+import { modalRegistry } from "@/config/modalRegistry";
 
 interface VehicleModalsProps {
   vehicle: VehicleModel;
@@ -54,6 +59,8 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
   setIsInteriorModalOpen,
   carBuilderInitialGrade
 }) => {
+  const { isOpen, close, getProps, pageContext } = useModal();
+
   const handleModalClose = (modalSetter: (open: boolean) => void) => {
     modalSetter(false);
   };
@@ -65,6 +72,7 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
 
   return (
     <>
+      {/* Legacy boolean-based modals - keep for now */}
       <OffersModal
         isOpen={isOffersModalOpen}
         onClose={() => {
@@ -116,6 +124,38 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
           onClose={() => handleModalClose(setIsInteriorModalOpen)}
         />
       )}
+
+      {/* Registry-driven modals from ModalProvider */}
+      {Object.entries(modalRegistry).map(([id, entry]) => {
+        if (!isOpen(id)) return null;
+
+        const ModalComponent = entry.component as any;
+        const imageSrc = typeof entry.imageSrc === 'function' 
+          ? entry.imageSrc(pageContext) 
+          : entry.imageSrc;
+
+        return (
+          <PremiumModal
+            key={id}
+            id={id}
+            isOpen={isOpen(id)}
+            onClose={() => close(id)}
+            variant={entry.variant}
+            title={entry.title}
+            description={entry.description}
+            imageSrc={imageSrc}
+            enableDeepLink={entry.deepLinkEnabled}
+          >
+            <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+              <ModalComponent 
+                vehicle={vehicle}
+                onClose={() => close(id)}
+                {...getProps(id)}
+              />
+            </Suspense>
+          </PremiumModal>
+        );
+      })}
     </>
   );
 };

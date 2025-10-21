@@ -1,14 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useVehicleData } from "@/hooks/use-vehicle-data";
-// Keep your original modals exactly as-is
-import InteriorModal from "./modals/InteriorModal";
-import ExteriorModal from "./modals/ExteriorModal";
-import PerformanceModal from "./modals/PerformanceModal";
-import SafetyModal from "./modals/SafetyModal";
-import TechnologyModal from "./modals/TechnologyModal";
+import { useModal } from "@/contexts/ModalProvider";
 
 /* ============================================================
    Types (aligned with your original ShowroomCard + small opts)
@@ -288,10 +283,10 @@ const DesktopGrid: React.FC<{
 };
 
 /* ============================================================
-   Main component (keeps your modal wiring exactly)
+   Main component - now using useModal hook
 ============================================================ */
 const SeamlessCinematicShowroom: React.FC = () => {
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const { open } = useModal();
   const { galleryImages } = useVehicleData();
   const isDesktop = useBreakpoint();
 
@@ -411,18 +406,7 @@ const SeamlessCinematicShowroom: React.FC = () => {
     ];
   }, [isDesktop, galleryImages]);
 
-  const handleCardClick = (id: string) => setActiveModal(id as ModalType);
-  const handleCloseModal = () => setActiveModal(null);
-
-  // Body scroll lock when modal is open (your modals stay unchanged)
-  useEffect(() => {
-    if (!activeModal) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [activeModal]);
+  const handleCardClick = (id: string) => open(id);
 
   return (
     <section className="w-full bg-[hsl(var(--neutral-50))] min-h-screen">
@@ -436,15 +420,6 @@ const SeamlessCinematicShowroom: React.FC = () => {
         // Mobile: carousel includes safety video slide
         <MobileCarousel cards={showroomCards} onCardClick={handleCardClick} />
       )}
-
-      {/* Modals — exactly your original wiring */}
-      <AnimatePresence>
-        {activeModal === "interior" && <InteriorModal onClose={handleCloseModal} />}
-        {activeModal === "exterior" && <ExteriorModal onClose={handleCloseModal} />}
-        {activeModal === "performance" && <PerformanceModal onClose={handleCloseModal} />}
-        {activeModal === "safety" && <SafetyModal onClose={handleCloseModal} />}
-        {activeModal === "technology" && <TechnologyModal onClose={handleCloseModal} />}
-      </AnimatePresence>
     </section>
   );
 };
