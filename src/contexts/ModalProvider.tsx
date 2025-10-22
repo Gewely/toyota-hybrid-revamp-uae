@@ -21,6 +21,7 @@ interface ModalContextValue {
   isOpen: (id: string) => boolean;
   getProps: (id: string) => Record<string, any>;
   pageContext: PageContext;
+  setPageContext: (context: PageContext) => void;
 }
 
 const ModalContext = createContext<ModalContextValue | undefined>(undefined);
@@ -30,8 +31,9 @@ interface ModalProviderProps {
   pageContext?: PageContext;
 }
 
-export const ModalProvider: React.FC<ModalProviderProps> = ({ children, pageContext = {} }) => {
+export const ModalProvider: React.FC<ModalProviderProps> = ({ children, pageContext: initialPageContext = {} }) => {
   const [modals, setModals] = useState<ModalState[]>([]);
+  const [pageContext, setPageContext] = useState<PageContext>(initialPageContext);
 
   const open = useCallback((id: string, props?: Record<string, any>) => {
     setModals((prev) => {
@@ -67,7 +69,7 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children, pageCont
   );
 
   return (
-    <ModalContext.Provider value={{ open, close, closeAll, isOpen, getProps, pageContext }}>
+    <ModalContext.Provider value={{ open, close, closeAll, isOpen, getProps, pageContext, setPageContext }}>
       {children}
     </ModalContext.Provider>
   );
