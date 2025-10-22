@@ -1,4 +1,4 @@
-import { ComponentType } from 'react';
+import { ComponentType, lazy } from 'react';
 import { PageContext } from '@/contexts/ModalProvider';
 
 export type ModalVariant = 'plain' | 'gallery' | 'form' | 'specs' | 'cta' | 'wizard';
@@ -15,16 +15,16 @@ export interface ModalEntry {
 }
 
 // Lazy load modal components
-const SafetySuiteModal = () => import('@/components/vehicle-details/modals/SafetySuiteModal').then(m => ({ default: m.default }));
-const ConnectivityModal = () => import('@/components/vehicle-details/modals/ConnectivityModal').then(m => ({ default: m.default }));
-const HybridTechModal = () => import('@/components/vehicle-details/modals/HybridTechModal').then(m => ({ default: m.default }));
-const InteriorModal = () => import('@/components/vehicle-details/modals/InteriorModal').then(m => ({ default: m.default }));
-const ExteriorModal = () => import('@/components/vehicle-details/modals/ExteriorModal').then(m => ({ default: m.default }));
-const PerformanceModal = () => import('@/components/vehicle-details/modals/PerformanceModal').then(m => ({ default: m.default }));
-const OffersModal = () => import('@/components/home/OffersModal').then(m => ({ default: m.default }));
-const BookTestDrive = () => import('@/components/vehicle-details/BookTestDrive').then(m => ({ default: m.default }));
-const FinanceCalculator = () => import('@/components/vehicle-details/FinanceCalculator').then(m => ({ default: m.default }));
-const CarBuilder = () => import('@/components/vehicle-details/CarBuilder').then(m => ({ default: m.default }));
+const SafetySuiteModal = lazy(() => import('@/components/vehicle-details/modals/SafetySuiteModal'));
+const ConnectivityModal = lazy(() => import('@/components/vehicle-details/modals/ConnectivityModal'));
+const HybridTechModal = lazy(() => import('@/components/vehicle-details/modals/HybridTechModal'));
+const InteriorModal = lazy(() => import('@/components/vehicle-details/modals/InteriorModal'));
+const ExteriorModal = lazy(() => import('@/components/vehicle-details/modals/ExteriorModal'));
+const PerformanceModal = lazy(() => import('@/components/vehicle-details/modals/PerformanceModal'));
+const OffersModal = lazy(() => import('@/components/home/OffersModal'));
+const BookTestDrive = lazy(() => import('@/components/vehicle-details/BookTestDrive'));
+const FinanceCalculator = lazy(() => import('@/components/vehicle-details/FinanceCalculator'));
+const CarBuilder = lazy(() => import('@/components/vehicle-details/CarBuilder'));
 
 export const modalRegistry: Record<string, ModalEntry> = {
   'safety': {
