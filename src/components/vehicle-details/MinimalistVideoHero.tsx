@@ -7,13 +7,11 @@ import { PremiumButton } from "@/components/ui/premium-button";
 import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ============================================================
-   MinimalistVideoHero — Mobile-Compact (Autoplay Fix Edition)
-   - Stable YouTube iframe (no rebuilds on play/pause)
-   - Deterministic resume/pause via IntersectionObserver + visibility
-   - Respects manual pause (won’t auto-resume if user paused)
-   - iOS-friendly viewport units (100dvh) to avoid URL bar jumps
-   - Graceful fallback to images if YT API blocked
-   - Lightbox, media strip, bottom sheet, sticky CTA
+   MinimalistVideoHero — Mobile-Compact
+   - Smaller text & controls on mobile; scale up at md:
+   - YouTube "cover" background + true play/pause (JS API)
+   - Hybrid media (video/images), thumb strip + lightbox
+   - Variant toggle, WLTP bottom sheet, sticky mobile CTA
 ============================================================ */
 
 /* ---------------------- Utilities ---------------------- */
@@ -35,30 +33,26 @@ function formatPrice(price?: string | number, fallback = "AED 18,090") {
 }
 
 /* -------------------- CoverYouTube --------------------- */
-
-function CoverYouTube({
-  videoId,
-  playing,
-  className = "",
-}: {
-  videoId: string;
-  playing: boolean;
-  className?: string;
-}) {
+function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; playing: boolean; className?: string }) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const readyRef = useRef(false);
 
   const sendYT = (cmd: "playVideo" | "pauseVideo") => {
-    const w = iframeRef.current?.contentWindow;
-    if (!w) return;
-    w.postMessage(JSON.stringify({ event: "command", func: cmd, args: [] }), "*");
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func: cmd, args: [] }), "*");
   };
 
-  // Keep src stable (autoplay only for initial boot; never rebuilt on state changes)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      playing ? sendYT("playVideo") : sendYT("pauseVideo");
+    }, 50);
+    return () => clearTimeout(t);
+  }, [playing]);
+
   const src = useMemo(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const params = new URLSearchParams({
-      autoplay: "1",
+      autoplay: playing ? "1" : "0",
       mute: "1",
       controls: "0",
       rel: "0",
@@ -72,62 +66,7 @@ function CoverYouTube({
       origin,
     });
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
-  }, [videoId]);
-
-  // Listen for YT onReady / onStateChange messages
-  useEffect(() => {
-    const onMsg = (e: MessageEvent) => {
-      if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return;
-      try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        if (data?.event === "onReady") {
-          readyRef.current = true;
-          if (playing) sendYT("playVideo");
-        }
-        if (data?.event === "onStateChange" && typeof data?.info === "number") {
-          // 1 = playing, 2 = paused, 0 = ended
-          if (data.info === 1) readyRef.current = true;
-        }
-      } catch {}
-    };
-    window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
-  }, [playing]);
-
-  // Proactively subscribe to YT events (helps some browsers)
-  useEffect(() => {
-    const w = iframeRef.current?.contentWindow;
-    if (!w) return;
-    // Tell player we’re listening
-    w.postMessage(JSON.stringify({ event: "listening", id: "bg-player" }), "*");
-    // Ask it to send onReady/onStateChange
-    w.postMessage(JSON.stringify({ event: "command", func: "addEventListener", args: ["onReady"] }), "*");
-    w.postMessage(JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }), "*");
-  }, []);
-
-  // Whenever `playing` flips, command the player (retry until ready or timeout)
-  useEffect(() => {
-    let tries = 0;
-    const t = setInterval(() => {
-      tries++;
-      if (!iframeRef.current) return;
-      if (readyRef.current || tries > 10) {
-        sendYT(playing ? "playVideo" : "pauseVideo");
-        clearInterval(t);
-      }
-    }, 200);
-    return () => clearInterval(t);
-  }, [playing]);
-
-  // Pause when tab hidden, resume when visible (if playing was desired)
-  useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === "visible" && playing) sendYT("playVideo");
-      else sendYT("pauseVideo");
-    };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
-  }, [playing]);
+  }, [videoId, playing]);
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
@@ -141,7 +80,8 @@ function CoverYouTube({
         className="
           absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           w-[100vw] h-[56.25vw]
-          min-w-[177.78vh] min-h-[100dvh]  /* d vh avoids iOS bar jumps */
+          min-w-[177.78vh] min-h-[100vh]
+          md:min-h-screen
           pointer-events-none
         "
       />
@@ -189,7 +129,6 @@ function MediaStrip({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
             loading="lazy"
-            decoding="async"
             referrerPolicy="no-referrer"
           />
         </button>
@@ -372,11 +311,9 @@ export default function MinimalistVideoHero({
     return Boolean(shouldReduceMotion || saveData);
   }, [shouldReduceMotion]);
 
-  const [mode, setMode] = useState<"video" | "image">(prefersImage ? "image" : "video"));
+  const [mode, setMode] = useState<"video" | "image">(prefersImage ? "image" : "video");
   const [activeIndex, setActiveIndex] = useState(defaultVariant === "modellista" ? 1 : 0);
   const [videoPlaying, setVideoPlaying] = useState(!prefersImage);
-  const userPausedRef = useRef(false); // remembers manual pause intent
-
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
@@ -387,7 +324,7 @@ export default function MinimalistVideoHero({
 
   const title = (vehicle?.name ?? DEFAULT_TITLE).toUpperCase();
   const price = formatPrice(vehicle?.priceFrom);
-  const videoId = (vehicle?.videoId as string) ?? (vehicle as any)?.videoUrl ?? DEFAULT_VIDEO_ID;
+  const videoId = vehicle?.videoId ?? (vehicle as any)?.videoUrl ?? DEFAULT_VIDEO_ID;
 
   const images = useMemo(
     () =>
@@ -395,10 +332,9 @@ export default function MinimalistVideoHero({
         src: im.src,
         alt: im.alt || `${title} gallery`,
       })),
-    [heroImages, title]
+    [heroImages, title],
   );
 
-  // Preload first image
   useEffect(() => {
     if (images?.[0]?.src) {
       const i = new Image();
@@ -406,45 +342,26 @@ export default function MinimalistVideoHero({
     }
   }, [images]);
 
-  // Pause/resume based on viewport visibility, respecting manual pause & motion prefs
   useEffect(() => {
     if (!sectionRef.current) return;
     const el = sectionRef.current;
     const io = new IntersectionObserver(
-      ([entry]) => {
-        const visible = entry.isIntersecting && entry.intersectionRatio > 0.15;
-        const shouldPlay = visible && mode === "video" && !shouldReduceMotion && !userPausedRef.current;
-        setVideoPlaying(shouldPlay);
+      (entries) => {
+        const visible = entries[0]?.isIntersecting;
+        if (!visible) setVideoPlaying(false);
       },
-      { threshold: [0, 0.15, 0.5], rootMargin: "0px 0px -15%" }
+      { threshold: 0.25 },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [mode, shouldReduceMotion]);
+  }, []);
 
-  // Sticky sentinel
   useEffect(() => {
     if (!topSentinelRef.current) return;
     const io = new IntersectionObserver((entries) => setStickyVisible(!entries[0].isIntersecting), { threshold: 0 });
     io.observe(topSentinelRef.current);
     return () => io.disconnect();
   }, []);
-
-  // When switching back to "video", auto-play only if user didn’t manually pause
-  useEffect(() => {
-    if (mode === "video" && !shouldReduceMotion && !userPausedRef.current) setVideoPlaying(true);
-  }, [mode, shouldReduceMotion]);
-
-  // Graceful fallback if YT never becomes ready (e.g., blocked)
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (mode === "video" && typeof window !== "undefined" && !document.hidden) {
-        // If still not playing after a while, fallback
-        setMode((m) => (m === "video" ? "image" : m));
-      }
-    }, 3000);
-    return () => clearTimeout(t);
-  }, []); // run once
 
   const specs: Array<{ label: string; value: string }> = [
     { label: "Fuel consumption (combined)", value: "4.8–5.0 L/100 km" },
@@ -487,7 +404,7 @@ export default function MinimalistVideoHero({
       ref={sectionRef as any}
       role="region"
       aria-labelledby="video-hero-heading"
-      className="relative h-[100dvh] min-h-[100svh] w-full overflow-hidden bg-background"
+      className="relative h-screen min-h-[100svh] w-full overflow-hidden bg-background"
       data-analytics-id="hero"
     >
       <div ref={topSentinelRef} aria-hidden="true" className="absolute -top-1 h-1 w-1" />
@@ -502,7 +419,6 @@ export default function MinimalistVideoHero({
               src={images[activeIndex]?.src}
               alt={images[activeIndex]?.alt || `${title} hero image`}
               className="h-full w-full object-cover"
-              decoding="async"
               draggable={false}
             />
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
@@ -627,10 +543,7 @@ export default function MinimalistVideoHero({
               {mode === "video" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    userPausedRef.current = videoPlaying; // if currently playing -> user is pausing
-                    setVideoPlaying((v) => !v);
-                  }}
+                  onClick={() => setVideoPlaying((v) => !v)}
                   className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1.5 md:px-3 md:py-2 text-xs md:text-sm text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
                   aria-label={videoPlaying ? "Pause video" : "Play video"}
                 >
@@ -692,7 +605,7 @@ export default function MinimalistVideoHero({
         </div>
       </div>
 
-      {/* Top-right utilities */}
+      {/* Top-right utilities (smaller on mobile) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -701,7 +614,7 @@ export default function MinimalistVideoHero({
       >
         <button
           type="button"
-          onClick={handleInfo}
+          onClick={() => (onInfoClick ? onInfoClick() : setSheetOpen(true))}
           className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
           aria-label="More information"
           title="More information"
@@ -712,7 +625,24 @@ export default function MinimalistVideoHero({
         <div className="relative">
           <button
             type="button"
-            onClick={doShare}
+            onClick={async () => {
+              if (onShareClick) return onShareClick();
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("media", mode);
+                url.searchParams.set("image", String(activeIndex));
+                if (navigator.share) {
+                  await navigator.share({ title, text: `${title} — Build & Price`, url: url.toString() });
+                } else {
+                  await navigator.clipboard.writeText(url.toString());
+                  setShareHint("Link copied");
+                  setTimeout(() => setShareHint(null), 1500);
+                }
+              } catch {
+                setShareHint("Could not share");
+                setTimeout(() => setShareHint(null), 1500);
+              }
+            }}
             className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
             aria-label="Share"
             title="Share"
@@ -760,7 +690,7 @@ export default function MinimalistVideoHero({
         </BottomSheet>
       )}
 
-      {/* Sticky Mobile CTA */}
+      {/* Sticky Mobile CTA (already compact) */}
       <AnimatePresence>
         {stickyVisible && (
           <motion.div
@@ -799,9 +729,3 @@ export default function MinimalistVideoHero({
     </section>
   );
 }
-
-/* Heads-up:
-   For best performance, add in your <head>:
-   <link rel="preconnect" href="https://www.youtube.com" />
-   <link rel="preconnect" href="https://i.ytimg.com" />
-*/
