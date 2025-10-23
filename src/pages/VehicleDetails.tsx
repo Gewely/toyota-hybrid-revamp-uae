@@ -29,7 +29,7 @@ import { useCoreWebVitals } from "@/utils/performance-core-vitals";
 import { createLazyComponent, preloadOnFastNetwork } from "@/utils/lazy-components";
 import { cn } from "@/lib/utils";
 import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-monitor';
-import { OptimizedModalProvider } from '@/components/ui/optimized-modal-manager';
+
 import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
 import { ModalProvider } from '@/contexts/ModalProvider';
@@ -221,7 +221,6 @@ const VehicleDetails = () => {
       vehicleName: vehicle.name,
       vehiclePrice: vehicle.price
     }}>
-      <OptimizedModalProvider>
         <PerformanceErrorBoundary>
         <UnifiedPerformanceMonitor />
         <SkipLinks />
@@ -397,7 +396,6 @@ const VehicleDetails = () => {
       />
         </ToyotaLayout>
       </PerformanceErrorBoundary>
-    </OptimizedModalProvider>
   </ModalProvider>
   );
 };
