@@ -8,12 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ============================================================
-   PremiumVirtualShowroom — Futuristic, fully responsive
+   PremiumVirtualShowroom — Luxury Edition
    - Same name + default export
-   - Mobile/desktop responsive on any screen size
-   - Safe-area aware, dvh heights, true fullscreen API
-   - Clean, premium visuals (no “Mario-era” effects)
-   - Shimmer skeleton, gesture hint, watchdog fallback
+   - Carbon-matte aesthetics + mesh glows
+   - Safe-area aware, dvh, true fullscreen (with guards)
+   - Polished HUD, accessible focus, robust skeleton/error
 ============================================================ */
 
 interface PremiumVirtualShowroomProps {
@@ -33,13 +32,16 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const watchdog = useRef<number | null>(null);
 
-  // Convert vehicle name to URL format
+  // Normalize vehicle name to expected path; strip "toyota", kebab-case
   const urlPath = useMemo(
     () =>
-      vehicleName
-        .toLowerCase()
-        .replace(/toyota\s+/gi, "")
-        .replace(/\s+/g, "-"),
+      encodeURIComponent(
+        vehicleName
+          .toLowerCase()
+          .replace(/toyota\s+/gi, "")
+          .trim()
+          .replace(/\s+/g, "-"),
+      ),
     [vehicleName],
   );
 
@@ -50,32 +52,40 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
     setIsLoaded(false);
     setError(null);
 
-    // Mobile gesture hint (brief)
     if (isMobile && !prefersReduced) {
-      setTimeout(() => setShowHint(true), 450);
-      setTimeout(() => setShowHint(false), 3000);
+      window.setTimeout(() => setShowHint(true), 350);
+      window.setTimeout(() => setShowHint(false), 2400);
     }
 
-    // Watchdog: if iframe doesn't load in time, show fallback
+    // Watchdog if the iframe takes too long
     if (watchdog.current) window.clearTimeout(watchdog.current);
     watchdog.current = window.setTimeout(() => {
       if (!isLoaded) setError("Taking longer than usual. You can open the showroom in a new tab.");
     }, 10000);
-  }, [iframeUrl, isMobile, prefersReduced, isLoaded]);
+  }, [isMobile, prefersReduced, isLoaded]);
 
   const handleClose = useCallback(() => {
     setIsActive(false);
     setIsFullscreen(false);
     setShowHint(false);
     setError(null);
-    if (document.fullscreenElement && document.exitFullscreen) {
+    if (typeof document !== "undefined" && document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen().catch(() => void 0);
     }
   }, []);
 
+  const supportsFullscreen = useMemo(
+    () => typeof document !== "undefined" && (document as any).fullscreenEnabled !== false,
+    [],
+  );
+
   const toggleFullscreen = useCallback(async () => {
     if (!shellRef.current) return;
     try {
+      if (!supportsFullscreen) {
+        window.open(iframeUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
       if (!document.fullscreenElement) {
         await shellRef.current.requestFullscreen();
         setIsFullscreen(true);
@@ -84,15 +94,16 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
         setIsFullscreen(false);
       }
     } catch {
-      // If blocked, open in a new tab as a graceful fallback
       window.open(iframeUrl, "_blank", "noopener,noreferrer");
     }
-  }, [iframeUrl]);
+  }, [iframeUrl, supportsFullscreen]);
 
   // ESC to close
   useEffect(() => {
     if (!isActive) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [isActive, handleClose]);
@@ -117,19 +128,38 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         ref={shellRef}
-        className={`${isFullscreen ? "fixed inset-0 z-[70]" : "relative w-full"} bg-black`}
+        className={`${isFullscreen ? "fixed inset-0 z-[70]" : "relative w-full"} bg-[#0a0a0a]`}
         aria-label={`${vehicleName} Virtual Showroom`}
       >
+        {/* Ambient mesh + radial glows (subtle, performance-friendly) */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div
+            className="absolute inset-0 opacity-40 mix-blend-screen"
+            style={{
+              background:
+                "radial-gradient(60% 50% at 30% 20%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.0) 60%), radial-gradient(40% 35% at 80% 85%, rgba(255,0,0,0.10) 0%, rgba(255,0,0,0.0) 60%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-[0.08]"
+            style={{
+              background:
+                "linear-gradient(transparent 97%, rgba(255,255,255,0.15) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 12px)",
+            }}
+          />
+        </div>
+
         {/* Controls Bar (safe-area aware) */}
         <div
           className="absolute top-0 left-0 right-0 z-20"
-          style={{
-            paddingTop: "max(0.5rem, env(safe-area-inset-top))",
-          }}
+          style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
         >
           <div className="bg-gradient-to-b from-black/80 to-transparent px-3 sm:px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Badge variant="secondary" className="bg-background/20 text-white border-white/15 truncate">
+              <Badge
+                variant="secondary"
+                className="bg-white/10 text-white border-white/20 backdrop-blur-md rounded-full"
+              >
                 Virtual Showroom
               </Badge>
               <h3 className="text-white/90 font-medium text-sm sm:text-base truncate">{vehicleName}</h3>
@@ -140,7 +170,7 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
                   variant="ghost"
                   size="sm"
                   onClick={toggleFullscreen}
-                  className="text-white hover:bg-white/10"
+                  className="text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40"
                   aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
                   <Maximize2 className="h-4 w-4" />
@@ -150,7 +180,7 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
                 variant="ghost"
                 size="sm"
                 onClick={handleClose}
-                className="text-white hover:bg-white/10"
+                className="text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40"
                 aria-label="Close virtual showroom"
               >
                 <X className="h-4 w-4" />
@@ -159,16 +189,10 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
           </div>
         </div>
 
-        {/* Iframe Container (uses dvh/safe-areas for any screen size) */}
-        <div
-          className="w-full"
-          style={{
-            // Use modern viewport units for mobile chrome show/hide; fall back via minHeight
-            height: "100dvh",
-          }}
-        >
+        {/* Iframe Container */}
+        <div className="w-full" style={{ height: "100dvh" }}>
           <div className="relative w-full h-full">
-            {/* Shimmer skeleton while loading */}
+            {/* Shimmer skeleton while loading (no custom keyframes needed) */}
             <AnimatePresence>
               {!isLoaded && (
                 <motion.div
@@ -176,17 +200,14 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.06),rgba(255,255,255,0.12),rgba(255,255,255,0.06))] [background-size:200%_100%] animate-[shimmer_1.6s_infinite] rounded-none"
-                  style={{
-                    // Extra safety for devices with rounded corners/notches
-                    paddingBottom: "env(safe-area-inset-bottom)",
-                  }}
+                  className="absolute inset-0 rounded-none bg-gradient-to-br from-white/10 via-white/5 to-transparent animate-pulse"
+                  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
                   aria-hidden="true"
                 />
               )}
             </AnimatePresence>
 
-            {/* Error/Fallback HUD */}
+            {/* Error HUD */}
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -195,8 +216,9 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   className="absolute left-1/2 -translate-x-1/2 top-16 z-30 max-w-[92vw] sm:max-w-md"
+                  aria-live="polite"
                 >
-                  <div className="backdrop-blur-md bg-black/60 border border-white/15 rounded-xl p-4 text-white">
+                  <div className="backdrop-blur-md bg-black/60 border border-white/15 rounded-2xl p-4 text-white shadow-xl">
                     <div className="flex items-start gap-3">
                       <Info className="h-5 w-5 shrink-0 mt-0.5" />
                       <div className="space-y-2">
@@ -227,7 +249,7 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
               )}
             </AnimatePresence>
 
-            {/* Gesture hint (mobile only, short-lived) */}
+            {/* Gesture hint (mobile only) */}
             <AnimatePresence>
               {showHint && (
                 <motion.div
@@ -238,14 +260,14 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
                   className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 z-30"
                   style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
                 >
-                  <div className="px-3 py-2 rounded-full text-xs sm:text-sm text-white/90 bg-black/50 backdrop-blur-md border border-white/15">
+                  <div className="px-3 py-2 rounded-full text-xs sm:text-sm text-white/90 bg-black/50 backdrop-blur-md border border-white/15 shadow-lg">
                     Drag to rotate • Pinch to zoom
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* The Showroom */}
+            {/* Showroom Iframe */}
             <iframe
               ref={iframeRef}
               src={iframeUrl}
@@ -253,14 +275,13 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
               className="w-full h-full border-0 block"
               loading="eager"
               onLoad={onIframeLoad}
-              // `onError` is not reliable for cross-origin iframes; watchdog handles it.
               allow="accelerometer; gyroscope; fullscreen; xr-spatial-tracking"
               referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
         </div>
 
-        {/* Bottom safe-area spacer to avoid UI clipping on devices with gesture bars */}
+        {/* Bottom safe-area spacer */}
         <div
           aria-hidden="true"
           className="absolute left-0 right-0 bottom-0"
@@ -272,32 +293,39 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
 
   /* --------------------- Launcher (Hero Card) --------------------- */
   return (
-    <section
-      className="relative px-4 py-12 sm:py-16 md:py-20 overflow-hidden bg-gradient-to-b from-background via-muted/20 to-background"
-      aria-label="Virtual Showroom Launcher"
-    >
-      {/* Ambient, subtle washes (performance-friendly) */}
+    <section className="relative px-4 py-12 sm:py-16 md:py-20 overflow-hidden" aria-label="Virtual Showroom Launcher">
+      {/* Carbon matte + mesh glows */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-1/4 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-30 bg-foreground/5" />
-        <div className="absolute -bottom-28 right-1/5 w-[30rem] h-[30rem] rounded-full blur-3xl opacity-20 bg-primary/10" />
+        <div className="absolute inset-0 bg-[#0a0a0a]" />
+        <div className="absolute -top-28 left-1/4 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-25 bg-white/10" />
+        <div className="absolute -bottom-32 right-1/6 w-[34rem] h-[34rem] rounded-full blur-3xl opacity-20 bg-red-500/20" />
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            background: "repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0 1px, transparent 1px 14px)",
+          }}
+        />
       </div>
 
       <div className="relative z-10 container mx-auto max-w-6xl">
         <motion.div
-          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 14 }}
+          initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 16 }}
           whileInView={prefersReduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
           className="text-center mb-8 sm:mb-10 md:mb-12"
         >
-          <Badge variant="secondary" className="mb-3 bg-primary/10 text-primary border-primary/20">
+          <Badge
+            variant="secondary"
+            className="mb-3 bg-white/10 text-white border-white/20 backdrop-blur-md rounded-full"
+          >
             Interactive Experience
           </Badge>
-          <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight">
-            Explore the {vehicleName} in a Virtual Showroom
+          <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white">
+            Explore the <span className="text-white/80">{vehicleName}</span> in our Virtual Showroom
           </h2>
-          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mt-3">
-            Zero downloads, instant access, and a refined interface built for any screen size.
+          <p className="text-sm sm:text-base md:text-lg text-white/60 max-w-2xl mx-auto mt-3">
+            Instant access, precision controls, and a refined interface designed for every screen.
           </p>
         </motion.div>
 
@@ -309,26 +337,32 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="group relative w-full text-left"
+          className="group relative w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-3xl"
           aria-label={`Enter ${vehicleName} virtual showroom`}
         >
-          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/70 backdrop-blur-xl">
+          <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)]">
             {/* Poster / Placeholder */}
             <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.3/1] w-full">
-              <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/10" />
+              <div
+                className="w-full h-full"
+                style={{
+                  background:
+                    "radial-gradient(120% 120% at 50% 100%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 40%, rgba(0,0,0,0.0) 70%), linear-gradient(135deg, rgba(255,0,0,0.16) 0%, rgba(255,0,0,0.0) 48%)",
+                }}
+              />
             </div>
 
             {/* Overlay HUD */}
             <div className="absolute inset-0 flex items-end">
-              <div className="w-full p-4 sm:p-6 md:p-8 bg-gradient-to-t from-background/80 via-background/30 to-transparent">
+              <div className="w-full p-4 sm:p-6 md:p-8 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Virtual Showroom</p>
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold">{vehicleName}</h3>
+                    <p className="text-xs sm:text-sm text-white/60">Virtual Showroom</p>
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white">{vehicleName}</h3>
                   </div>
                   <Button
                     size={isMobile ? "default" : "lg"}
-                    className="transition-transform group-hover:translate-x-0.5"
+                    className="bg-white text-black hover:bg-white/90 transition-transform group-hover:translate-x-0.5"
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
                     Enter Virtual Showroom
@@ -336,11 +370,20 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({ vehicle
                 </div>
               </div>
             </div>
+
+            {/* Subtle top shine on hover */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-hidden
+              style={{
+                background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.00) 20%)",
+              }}
+            />
           </div>
         </motion.button>
 
         {/* Trust row */}
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-white/60">
           <span>Optimized for mobile & desktop</span>
           <span className="hidden sm:inline">•</span>
           <span>Fast load with graceful fallback</span>
