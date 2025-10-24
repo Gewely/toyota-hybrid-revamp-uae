@@ -80,10 +80,6 @@ const VehicleDetails = () => {
     isFinanceOpen: false,
     isCarBuilderOpen: false,
     isOffersModalOpen: false,
-    isSafetyModalOpen: false,
-    isConnectivityModalOpen: false,
-    isHybridTechModalOpen: false,
-    isInteriorModalOpen: false,
     isGradeComparisonOpen: false
   });
   
@@ -384,14 +380,6 @@ const VehicleDetails = () => {
         setIsOffersModalOpen={(value) => modalHandlers.updateModal('isOffersModalOpen', value)}
         selectedOffer={selectedOffer}
         setSelectedOffer={setSelectedOffer}
-        isSafetyModalOpen={modals.isSafetyModalOpen}
-        setIsSafetyModalOpen={(value) => modalHandlers.updateModal('isSafetyModalOpen', value)}
-        isConnectivityModalOpen={modals.isConnectivityModalOpen}
-        setIsConnectivityModalOpen={(value) => modalHandlers.updateModal('isConnectivityModalOpen', value)}
-        isHybridTechModalOpen={modals.isHybridTechModalOpen}
-        setIsHybridTechModalOpen={(value) => modalHandlers.updateModal('isHybridTechModalOpen', value)}
-        isInteriorModalOpen={modals.isInteriorModalOpen}
-        setIsInteriorModalOpen={(value) => modalHandlers.updateModal('isInteriorModalOpen', value)}
         carBuilderInitialGrade={carBuilderInitialGrade}
       />
         </ToyotaLayout>

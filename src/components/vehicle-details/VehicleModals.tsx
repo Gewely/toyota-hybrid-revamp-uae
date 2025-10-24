@@ -4,14 +4,8 @@ import BookTestDrive from "./BookTestDrive";
 import FinanceCalculator from "./FinanceCalculator";
 import CarBuilder from "./CarBuilder";
 import OffersModal from "@/components/home/OffersModal";
-import SafetySuiteModal from "./modals/SafetySuiteModal";
-import ConnectivityModal from "./modals/ConnectivityModal";
-import HybridTechModal from "./modals/HybridTechModal";
-import InteriorModal from "./modals/InteriorModal";
-import ExteriorModal from "./modals/ExteriorModal";
-import PerformanceModal from "./modals/PerformanceModal";
 import { useModal } from "@/contexts/ModalProvider";
-import { PremiumModal } from "@/components/ui/premium-modal";
+import { PremiumModalV2 } from "@/components/ui/premium-modal-v2";
 import { modalRegistry } from "@/config/modalRegistry";
 
 interface VehicleModalsProps {
@@ -26,14 +20,6 @@ interface VehicleModalsProps {
   setIsOffersModalOpen: (open: boolean) => void;
   selectedOffer: any;
   setSelectedOffer: (offer: any) => void;
-  isSafetyModalOpen: boolean;
-  setIsSafetyModalOpen: (open: boolean) => void;
-  isConnectivityModalOpen: boolean;
-  setIsConnectivityModalOpen: (open: boolean) => void;
-  isHybridTechModalOpen: boolean;
-  setIsHybridTechModalOpen: (open: boolean) => void;
-  isInteriorModalOpen: boolean;
-  setIsInteriorModalOpen: (open: boolean) => void;
   carBuilderInitialGrade?: string;
 }
 
@@ -49,30 +35,13 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
   setIsOffersModalOpen,
   selectedOffer,
   setSelectedOffer,
-  isSafetyModalOpen,
-  setIsSafetyModalOpen,
-  isConnectivityModalOpen,
-  setIsConnectivityModalOpen,
-  isHybridTechModalOpen,
-  setIsHybridTechModalOpen,
-  isInteriorModalOpen,
-  setIsInteriorModalOpen,
   carBuilderInitialGrade
 }) => {
   const { isOpen, close, getProps, pageContext } = useModal();
 
-  const handleModalClose = (modalSetter: (open: boolean) => void) => {
-    modalSetter(false);
-  };
-
-  const handleTestDriveFromModal = (modalSetter: (open: boolean) => void) => {
-    modalSetter(false);
-    setIsBookingOpen(true);
-  };
-
   return (
     <>
-      {/* Legacy boolean-based modals - keep for now */}
+      {/* Legacy boolean-based modals */}
       <OffersModal
         isOpen={isOffersModalOpen}
         onClose={() => {
@@ -101,30 +70,6 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
         initialGrade={carBuilderInitialGrade}
       />
 
-      <SafetySuiteModal
-        isOpen={isSafetyModalOpen}
-        onClose={() => handleModalClose(setIsSafetyModalOpen)}
-        onBookTestDrive={() => handleTestDriveFromModal(setIsSafetyModalOpen)}
-      />
-
-      <ConnectivityModal
-        isOpen={isConnectivityModalOpen}
-        onClose={() => handleModalClose(setIsConnectivityModalOpen)}
-        onBookTestDrive={() => handleTestDriveFromModal(setIsConnectivityModalOpen)}
-      />
-
-      <HybridTechModal
-        isOpen={isHybridTechModalOpen}
-        onClose={() => handleModalClose(setIsHybridTechModalOpen)}
-        onBookTestDrive={() => handleTestDriveFromModal(setIsHybridTechModalOpen)}
-      />
-
-      {isInteriorModalOpen && (
-        <InteriorModal
-          onClose={() => handleModalClose(setIsInteriorModalOpen)}
-        />
-      )}
-
       {/* Registry-driven modals from ModalProvider */}
       {Object.entries(modalRegistry).map(([id, entry]) => {
         if (!isOpen(id)) return null;
@@ -135,7 +80,7 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
           : entry.imageSrc;
 
         return (
-          <PremiumModal
+          <PremiumModalV2
             key={id}
             id={id}
             isOpen={isOpen(id)}
@@ -144,16 +89,19 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
             title={entry.title}
             description={entry.description}
             imageSrc={imageSrc}
-            enableDeepLink={entry.deepLinkEnabled}
           >
             <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
               <ModalComponent 
                 vehicle={vehicle}
                 onClose={() => close(id)}
+                onTestDrive={() => {
+                  close(id);
+                  setIsBookingOpen(true);
+                }}
                 {...getProps(id)}
               />
             </Suspense>
-          </PremiumModal>
+          </PremiumModalV2>
         );
       })}
     </>
