@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Ruler, Disc, Droplets, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VehicleModel } from '@/types/vehicle';
+import { ImageViewer360 } from '../interactive/ImageViewer360';
+import { ColorPickerInteractive } from '../interactive/ColorPickerInteractive';
 
 interface ShowroomExteriorContentProps {
   vehicle: VehicleModel;
@@ -33,20 +35,19 @@ export const ShowroomExteriorContent: React.FC<ShowroomExteriorContentProps> = (
 
   return (
     <div className="space-y-6 pb-6">
-      {/* 360° Viewer */}
-      <div className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
-        <motion.img
-          src="https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-1536.jpg"
-          alt="Exterior 360 view"
-          className="w-full h-full object-cover"
-          style={{ transform: `rotateY(${rotation}deg)` }}
-          drag="x"
-          onDrag={(_, info) => setRotation((prev) => prev + info.offset.x * 0.1)}
-        />
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur">
-          Drag to rotate 360°
-        </div>
-      </div>
+      {/* Interactive 360° Viewer with Color Picker */}
+      <ImageViewer360 
+        images={[
+          'https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-1536.jpg',
+          'https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-1440w.jpg',
+          'https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-1536.jpg'
+        ]}
+        title="Exterior 360° View"
+        description="Drag horizontally to rotate"
+      />
+
+      {/* Interactive Color Picker */}
+      <ColorPickerInteractive onColorChange={(color) => console.log('Color changed:', color)} />
 
       {/* Dimensions */}
       <div className="grid grid-cols-4 gap-3">

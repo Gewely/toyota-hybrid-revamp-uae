@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useInView, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import AnimatedCounter from "@/components/ui/animated-counter";
 import { openTestDrivePopup } from "@/utils/testDriveUtils";
 import { OptimizedMotionImage } from "@/components/ui/optimized-motion-image";
 import { optimizedSprings } from "@/utils/animation-performance";
+
+const Vehicle3DModel = lazy(() => import('./3d/Vehicle3DModel').then(m => ({ default: m.Vehicle3DModel })));
 
 interface EnhancedHeroSectionProps {
   vehicle: VehicleModel;
@@ -35,10 +37,14 @@ const EnhancedHeroSection: React.FC<EnhancedHeroSectionProps> = ({
   const [showVideo, setShowVideo] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [show3D, setShow3D] = useState(false);
   const isMobile = useIsMobile();
   const heroRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
+  
+  // 3D rotation based on scroll
+  const rotation3D = useTransform(scrollYProgress, [0, 0.5], [0, 180]);
 
   // Subtle zoom/pan parallax
   const y = useTransform(scrollYProgress, [0, 0.3], [0, prefersReducedMotion ? 0 : -60]);

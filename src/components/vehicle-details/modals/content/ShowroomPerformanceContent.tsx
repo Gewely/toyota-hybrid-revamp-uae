@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Gauge, Zap, Fuel, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VehicleModel } from '@/types/vehicle';
+import { PerformanceGraph } from '../interactive/PerformanceGraph';
+import { DriveModeSelectorAnimated } from '../interactive/DriveModeSelectorAnimated';
 
 interface ShowroomPerformanceContentProps {
   vehicle: VehicleModel;
@@ -66,16 +68,14 @@ export const ShowroomPerformanceContent: React.FC<ShowroomPerformanceContentProp
         </div>
       </div>
 
-      {/* Power Curve Visualization */}
+      {/* Interactive Performance Graph */}
       <div className="p-6 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
         <h4 className="font-semibold text-foreground mb-3">Power & Torque Curves</h4>
-        <div className="aspect-[2/1] rounded-lg bg-card flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <Zap className="w-12 h-12 mx-auto mb-2 text-primary" />
-            <p className="text-sm">Interactive power curve visualization</p>
-          </div>
-        </div>
+        <PerformanceGraph />
       </div>
+
+      {/* Drive Mode Selector */}
+      <DriveModeSelectorAnimated onModeChange={(mode) => console.log('Mode changed:', mode)} />
 
       {/* Towing Capacity */}
       <div className="p-4 rounded-xl bg-muted/30">

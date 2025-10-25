@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { LayoutGrid, Users, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VehicleModel } from '@/types/vehicle';
+import { ImageViewer360 } from '../interactive/ImageViewer360';
 
 interface ShowroomInteriorContentProps {
   vehicle: VehicleModel;
@@ -46,11 +47,24 @@ export const ShowroomInteriorContent: React.FC<ShowroomInteriorContentProps> = (
 
   return (
     <div className="space-y-6 pb-6">
+      {/* Interactive 360° Interior Tour */}
+      <ImageViewer360 
+        images={[
+          'https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg',
+          'https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-1536.jpg',
+          'https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg'
+        ]}
+        title="Interior 360° View"
+        description="Drag to explore the luxurious cabin"
+      />
+
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-border pb-2">
         {tabs.map((tab) => (
-          <button
+          <motion.button
             key={tab.id}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
               activeTab === tab.id
@@ -60,7 +74,7 @@ export const ShowroomInteriorContent: React.FC<ShowroomInteriorContentProps> = (
           >
             <tab.icon className="w-4 h-4" />
             <span className="text-sm font-medium">{tab.label}</span>
-          </button>
+          </motion.button>
         ))}
       </div>
 
@@ -71,22 +85,22 @@ export const ShowroomInteriorContent: React.FC<ShowroomInteriorContentProps> = (
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="aspect-video rounded-xl overflow-hidden mb-4">
-          <img
-            src="https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg"
-            alt={`Interior ${activeTab}`}
-            className="w-full h-full object-cover"
-          />
-        </div>
 
         <div className="grid grid-cols-2 gap-3">
           {features[activeTab].map((feature, idx) => (
-            <div key={idx} className="p-3 rounded-lg border border-border bg-card">
+            <motion.div 
+              key={idx} 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.05 }}
+              whileHover={{ scale: 1.02, y: -2 }}
+              className="p-3 rounded-lg border border-border bg-card"
+            >
               <h4 className="font-semibold text-sm text-foreground mb-1">{feature.title}</h4>
               <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                 {feature.badge}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.div>

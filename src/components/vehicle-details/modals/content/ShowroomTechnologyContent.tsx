@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Smartphone, Wifi, Usb, Radio, Cloud, Bluetooth } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VehicleModel } from '@/types/vehicle';
+import { InfotainmentSimulator } from '../interactive/InfotainmentSimulator';
 
 interface ShowroomTechnologyContentProps {
   vehicle: VehicleModel;
@@ -38,19 +39,8 @@ export const ShowroomTechnologyContent: React.FC<ShowroomTechnologyContentProps>
 
   return (
     <div className="space-y-6 pb-6">
-      {/* Infotainment Screen Preview */}
-      <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-black">
-        <img
-          src="https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg"
-          alt="Infotainment system"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <h3 className="text-xl font-bold text-white mb-1">9" HD Touchscreen</h3>
-          <p className="text-white/90 text-sm">Intuitive interface with voice control</p>
-        </div>
-      </div>
+      {/* Interactive Infotainment Simulator */}
+      <InfotainmentSimulator />
 
       {/* Tech Ecosystem Diagram */}
       <div>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Shield, CheckCircle2, XCircle, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VehicleModel } from '@/types/vehicle';
+import { SafetyDiagram } from '../interactive/SafetyDiagram';
 
 interface ShowroomSafetyContentProps {
   vehicle: VehicleModel;
@@ -42,22 +43,8 @@ export const ShowroomSafetyContent: React.FC<ShowroomSafetyContentProps> = ({
 
   return (
     <div className="space-y-6 pb-6">
-      {/* Safety Video/Image */}
-      <div className="relative aspect-video rounded-xl overflow-hidden bg-black">
-        <img
-          src="https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-1536.jpg"
-          alt="Safety features"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-5 h-5 text-white" />
-            <span className="text-white text-sm font-semibold">Toyota Safety Sense 2.5</span>
-          </div>
-          <h3 className="text-xl font-bold text-white">Advanced Protection</h3>
-        </div>
-      </div>
+      {/* Interactive Safety Diagram */}
+      <SafetyDiagram />
 
       {/* Certifications */}
       <div className="grid grid-cols-3 gap-3">
