@@ -332,17 +332,26 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({
         </motion.div>
 
         {/* Card with poster */}
-        <motion.button
-          type="button"
-          onClick={handleActivate}
+        <motion.div
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="group relative w-full text-left"
-          aria-label={`Enter ${vehicleName} virtual showroom`}
+          className="group relative w-full"
         >
-          <div className="relative overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)]">
+          <div 
+            onClick={handleActivate}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleActivate();
+              }
+            }}
+            className="relative overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] cursor-pointer"
+            aria-label={`Enter ${vehicleName} virtual showroom`}
+          >
             {/* Poster */}
             <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.3/1] w-full">
               {heroPoster ? (
@@ -361,25 +370,22 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({
             </div>
 
             {/* Overlay HUD */}
-            <div className="absolute inset-0 flex items-end">
+            <div className="absolute inset-0 flex items-end pointer-events-none">
               <div className="w-full p-4 sm:p-6 md:p-8 bg-gradient-to-t from-white/90 via-white/40 to-transparent">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <p className="text-xs sm:text-sm text-black/60">Virtual Showroom</p>
                     <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold">{vehicleName}</h3>
                   </div>
-                  <Button
-                    size={isMobile ? "default" : "lg"}
-                    className="bg-[#EB0A1E] text-white hover:opacity-90 transition-transform group-hover:translate-x-0.5"
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
+                  <span className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-[#EB0A1E] text-white rounded-lg font-semibold transition-transform group-hover:translate-x-0.5 pointer-events-auto">
+                    <ExternalLink className="h-4 w-4" />
                     Enter Virtual Showroom
-                  </Button>
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </motion.button>
+        </motion.div>
 
         {/* Trust row */}
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-black/60">
