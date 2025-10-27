@@ -13,12 +13,6 @@ import VehicleGradeComparison from "./VehicleGradeComparison";
 
 /* =========================================================
    Luxury Light v6 — Responsive (no sticky anywhere)
-   - Desktop: grades grid (no horizontal scroll) + decision panel
-   - Mobile: grades carousel + compact decision panel w/ accordions
-   - Reduced red usage (neutral/dark accents)
-   - Finance Programs: Drive-on Lease, Hire Purchase, Cash Back
-   - Program-aware controls (terms & sliders)
-   - Perf: lazy images, debounced sliders, restrained motion
 ========================================================= */
 
 type EngineOption = {
@@ -72,7 +66,6 @@ function roundToStep(n: number, step = 10) {
   return Math.round(n / step) * step;
 }
 
-// Standard amortized payment (Hire Purchase / Cash Back)
 function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: number; termMonths: number }): number {
   const { downPaymentPct, annualRate, termMonths } = opts;
   const principal = price * (1 - downPaymentPct);
@@ -83,7 +76,6 @@ function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: nu
   return roundToStep(pmt);
 }
 
-// Simplified lease: monthly = depreciation + finance charge (moneyFactor ≈ APR/24)
 function leaseMonthly(
   price: number,
   opts: { downPaymentPct: number; annualRate: number; termMonths: number; residualPct: number },
@@ -107,8 +99,7 @@ function useDebouncedNumber(value: number, delay = 150) {
 }
 
 function track(event: string, payload?: Record<string, unknown>) {
-  // no-op analytics shim; replace with your real tracker
-  // console.info("[track]", event, payload);
+  // replace with your real tracker
 }
 
 /* ---------------------- Reusable UI ---------------------- */
@@ -220,7 +211,6 @@ const PaymentDonut: React.FC<{
   const total = Math.max(1, a + b);
   const aPct = (a / total) * 100;
   const bPct = 100 - aPct;
-  // Donut via two circles with stroke-dasharray
   const R = 18;
   const C = 2 * Math.PI * R;
   const aLen = (aPct / 100) * C;
@@ -241,7 +231,6 @@ const PaymentDonut: React.FC<{
           strokeDashoffset={C * 0.25}
           strokeLinecap="round"
         />
-        {/* second segment */}
         <circle
           cx="24"
           cy="24"
@@ -264,11 +253,11 @@ const PaymentDonut: React.FC<{
   );
 };
 
-const Collapsible: React.FC<{
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}> = ({ title, children, defaultOpen }) => {
+const Collapsible: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({
+  title,
+  children,
+  defaultOpen,
+}) => {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
     <div className="border rounded-xl">
@@ -309,20 +298,22 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 }) => {
   const prefersReducedMotion = useReducedMotion();
 
+  // ✅ FIX: define comparison modal state BEFORE it’s used
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+
   // Finance program & raw state (debounced values drive calculations)
   const [program, setProgram] = useState<FinanceProgram>("hp");
   const [term, setTerm] = useState<24 | 36 | 48 | 60>(60);
   const [dpPctRaw, setDpPctRaw] = useState(0.2);
   const [aprRaw, setAprRaw] = useState(0.035);
-  const [residualPctRaw, setResidualPctRaw] = useState(0.45); // Lease only
-  const [cashbackPctRaw, setCashbackPctRaw] = useState(0.05); // Cash Back only
+  const [residualPctRaw, setResidualPctRaw] = useState(0.45);
+  const [cashbackPctRaw, setCashbackPctRaw] = useState(0.05);
 
   const dpPct = useDebouncedNumber(dpPctRaw);
   const apr = useDebouncedNumber(aprRaw);
   const residualPct = useDebouncedNumber(residualPctRaw);
   const cashbackPct = useDebouncedNumber(cashbackPctRaw);
 
-  // Program-aware defaults and term guard
   useEffect(() => {
     if (program === "lease") {
       if (![24, 36, 48].includes(term)) setTerm(36);
@@ -346,7 +337,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program],
   );
 
-  // Engines (example set)
   const engines = useMemo<EngineOption[]>(
     () => [
       { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
@@ -356,7 +346,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   );
   const [selectedEngine, setSelectedEngine] = useState<string>(engines[0]?.name ?? "");
 
-  // Monthly calc handler (program-aware)
   const liveMonthly = useCallback(
     (price: number) => {
       if (program === "lease") {
@@ -371,7 +360,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program, term, dpPct, apr, residualPct, cashbackPct],
   );
 
-  // Grades from vehicle data (preserve your images/shape)
   const [activeGradeName, setActiveGradeName] = useState<string>("XLE");
   const grades: Grade[] = useMemo(() => {
     const baseImage = (vehicle as any).image || (vehicle as any).heroImage || "";
@@ -494,7 +482,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   const activeGrade = grades.find((g) => g.name === activeGradeName) ?? grades[0];
 
-  // Keep active grade valid when engine switches
   useEffect(() => {
     if (!grades.some((g) => g.name === activeGradeName)) {
       setActiveGradeName(grades[0]?.name ?? "");
@@ -503,6 +490,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   const termLabel = (t: 24 | 36 | 48 | 60) => (t === 24 ? "2 yrs" : t === 36 ? "3 yrs" : t === 48 ? "4 yrs" : "5 yrs");
   const monthsLabel = (t: 24 | 36 | 48 | 60) => `${t} months`;
+
   const PROGRAM_OPTS = [
     { id: "lease", label: "Drive-on Lease" },
     { id: "hp", label: "Hire Purchase" },
@@ -510,12 +498,9 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   ] as const;
 
   const priceForDisplay =
-    program === "cashback"
-      ? Math.max(0, activeGrade.price * (cashbackPct || 0)) * -1 + activeGrade.price
-      : activeGrade.price;
+    program === "cashback" ? Math.max(0, activeGrade.price * (1 - (cashbackPct || 0))) : activeGrade.price;
   const estMonthly = liveMonthly(activeGrade.price);
 
-  // Preload first few images for better hover/LCP
   useEffect(() => {
     grades.slice(0, 3).forEach((g) => {
       if (!g?.image) return;
@@ -526,10 +511,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   return (
     <section className="relative bg-gradient-to-b from-[#FAFAFC] via-muted/20 to-background py-10 sm:py-14 md:py-20 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-70">
-        {/* Subtle porcelain wash; avoids heavy painted blobs */}
-      </div>
-
       <div className="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8">
         {/* Title */}
         <div className="mb-8 sm:mb-10 md:mb-12 text-center">
@@ -553,7 +534,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           </motion.p>
         </div>
 
-        {/* Engine selector + info */}
+        {/* Engine selector */}
         <div className="mb-6 sm:mb-8 flex flex-col items-center gap-2">
           <Segmented
             ariaLabel="Select engine"
@@ -566,13 +547,12 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           />
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5" />
-            <span>Power/Torque vary by engine. Efficiency shown is NEDC/WLTP equivalent (illustrative).</span>
+            <span>Power/Torque vary by engine. Efficiency shown is illustrative.</span>
           </div>
         </div>
 
-        {/* ============ DESKTOP (≥lg): Grades grid + decision panel ============ */}
+        {/* Desktop grid */}
         <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8">
-          {/* Grades grid (left) */}
           <div className="lg:col-span-7">
             <div className="grid grid-cols-3 gap-6">
               {grades.map((g, idx) => {
@@ -643,7 +623,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             </div>
           </div>
 
-          {/* Decision panel (right) */}
           <div className="lg:col-span-5">
             <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
               <CardContent className="p-5 sm:p-6">
@@ -661,7 +640,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
                 <Separator className="my-4" />
 
-                {/* Program switcher */}
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-[12px] sm:text-sm text-muted-foreground">Finance Program</div>
                   <Segmented
@@ -675,7 +653,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   />
                 </div>
 
-                {/* Payment summary + helper */}
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
                     <div className="text-2xl sm:text-3xl font-bold leading-none">{AEDFmt.format(priceForDisplay)}</div>
@@ -698,7 +675,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                       </div>
                     )}
                   </div>
-                  {/* Compact donut: HP = Principal vs Interest; Lease = Depreciation vs Finance */}
                   {program === "lease" ? (
                     <PaymentDonut a={60} b={40} label="Lease: Depreciation vs Finance" />
                   ) : (
@@ -706,9 +682,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   )}
                 </div>
 
-                {/* Finance Controls */}
                 <div className="mb-4 grid gap-3">
-                  {/* Term chips */}
                   <div className="flex flex-wrap items-center gap-2">
                     {allowedTerms.map((t) => (
                       <Button
@@ -729,7 +703,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     ))}
                   </div>
 
-                  {/* Down payment */}
                   <RangeControl
                     label="Down payment"
                     min={program === "lease" ? 0 : 0.1}
@@ -743,7 +716,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     format={(v) => `${Math.round(v * 100)}%`}
                   />
 
-                  {/* APR */}
                   <RangeControl
                     label={program === "lease" ? "APR (for MF calc)" : "APR"}
                     min={0.02}
@@ -757,7 +729,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     format={(v) => `${(v * 100).toFixed(2)}%`}
                   />
 
-                  {/* Residual for Lease */}
                   {program === "lease" && (
                     <RangeControl
                       label="Residual value"
@@ -773,7 +744,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     />
                   )}
 
-                  {/* Cashback for Cash Back */}
                   {program === "cashback" && (
                     <RangeControl
                       label="Cashback"
@@ -790,14 +760,12 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   )}
                 </div>
 
-                {/* Features */}
                 <ul className="mb-4 grid list-disc grid-cols-2 gap-x-6 gap-y-1 pl-4 text-[12px] sm:text-sm text-muted-foreground">
                   {activeGrade.features.slice(0, 6).map((f, i) => (
                     <li key={i}>{f}</li>
                   ))}
                 </ul>
 
-                {/* CTAs */}
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button
@@ -850,9 +818,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           </div>
         </div>
 
-        {/* ============ MOBILE (<lg): Carousel + compact decision ============ */}
+        {/* Mobile */}
         <div className="block lg:hidden">
-          {/* Grades carousel */}
           <div className="mb-6">
             <Carousel className="w-full" opts={{ loop: true, align: "center" }}>
               <CarouselContent className="-ml-4">
@@ -910,7 +877,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             </Carousel>
           </div>
 
-          {/* Compact decision panel */}
           <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
             <CardContent className="p-4 sm:p-5">
               <div className="mb-2">
@@ -938,7 +904,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 />
               </div>
 
-              {/* Payment summary */}
               <div className="mb-4">
                 <div className="text-2xl font-bold">{AEDFmt.format(priceForDisplay)}</div>
                 <div className="text-[12px] text-muted-foreground">
@@ -946,7 +911,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 </div>
               </div>
 
-              {/* Accordions for controls */}
               <div className="grid gap-3">
                 <Collapsible title="Term & Down Payment" defaultOpen>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -1015,14 +979,12 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                 </Collapsible>
               </div>
 
-              {/* Features */}
               <ul className="mt-4 mb-4 grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-4 text-[13px] text-muted-foreground sm:grid-cols-2">
                 {activeGrade.features.slice(0, 6).map((f, i) => (
                   <li key={i}>{f}</li>
                 ))}
               </ul>
 
-              {/* CTAs */}
               <div className="flex flex-col gap-2">
                 <Button
                   variant="outline"
@@ -1056,33 +1018,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             </CardContent>
           </Card>
         </div>
-
-        {/* Grade chips (shared quick switch below everything on desktop; optional) */}
-        <div className="mt-10 hidden lg:block">
-          <div className="mx-auto max-w-3xl flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {grades.map((g) => {
-              const active = g.name === activeGrade.name;
-              return (
-                <motion.button
-                  key={g.name}
-                  onClick={() => {
-                    setActiveGradeName(g.name);
-                    onGradeSelect(g.name);
-                  }}
-                  className="relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[12px] sm:text-sm"
-                  whileTap={{ scale: prefersReducedMotion ? 1 : 0.98 }}
-                  aria-pressed={active}
-                >
-                  {active && (
-                    <motion.span layoutId="grade-bg" className="absolute inset-0 rounded-full bg-zinc-900/10" />
-                  )}
-                  <span className="relative z-10 font-medium">{g.name}</span>
-                  {active && <Check className="relative z-10 h-4 w-4 text-zinc-900" />}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Comparison Modal / Sheet */}
@@ -1101,13 +1036,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
       />
     </section>
   );
-
-  // Local state for comparison
-  function setIsComparisonOpen(v: boolean) {
-    _setIsComparisonOpen(v);
-  }
-  const [_isComparisonOpen, _setIsComparisonOpen] = useState(false);
-  const isComparisonOpen = _isComparisonOpen;
 };
 
 export default EngineGradeSelection;
