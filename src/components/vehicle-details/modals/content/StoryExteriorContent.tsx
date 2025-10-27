@@ -4,6 +4,8 @@ import { Palette, Wind, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { VehicleModel } from '@/types/vehicle';
+import { ColorPickerInteractive } from '../interactive/ColorPickerInteractive';
+import { ImageViewer360 } from '../interactive/ImageViewer360';
 
 interface StoryExteriorContentProps {
   vehicle: VehicleModel;
@@ -39,52 +41,23 @@ export const StoryExteriorContent: React.FC<StoryExteriorContentProps> = ({
 }) => {
   const [selectedColor, setSelectedColor] = useState(0);
 
+  const exteriorImages = [
+    "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-1536.jpg",
+    "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-005-2160.jpg",
+    "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-1536.jpg"
+  ];
+
   return (
     <div className="space-y-8 pb-6">
-      {/* Hero Exterior Image */}
-      <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
-        <img
-          src="https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-1536.jpg"
-          alt="Exterior design"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-        <div className="absolute bottom-6 left-6 right-6">
-          <h3 className="text-3xl font-bold text-white mb-2">Sculpted for Performance</h3>
-          <p className="text-white/90">Every curve designed with purpose</p>
-        </div>
+      {/* 360 Exterior Viewer */}
+      <div className="mb-6">
+        <ImageViewer360 images={exteriorImages} title="Exterior 360° View" />
       </div>
 
-      {/* Color Selector */}
+      {/* Interactive Color Selector */}
       <div>
         <h3 className="text-xl font-semibold mb-4 text-foreground">Exterior Colors</h3>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
-          {colors.map((color, idx) => (
-            <button
-              key={idx}
-              onClick={() => setSelectedColor(idx)}
-              className="relative group"
-            >
-              <div
-                className={`w-full aspect-square rounded-xl border-4 transition ${
-                  selectedColor === idx
-                    ? 'border-primary scale-105'
-                    : 'border-border hover:border-primary/50'
-                }`}
-                style={{ backgroundColor: color.code }}
-              />
-              {color.popular && (
-                <Badge className="absolute -top-2 -right-2 text-xs">Popular</Badge>
-              )}
-              <p className="text-xs text-center mt-2 text-foreground font-medium group-hover:text-primary transition">
-                {color.name}
-              </p>
-            </button>
-          ))}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Selected: <span className="font-semibold text-foreground">{colors[selectedColor].name}</span>
-        </p>
+        <ColorPickerInteractive onColorChange={(color) => console.log('Selected:', color)} />
       </div>
 
       {/* Design Features */}

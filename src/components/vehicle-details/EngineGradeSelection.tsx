@@ -353,8 +353,22 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     label: "Cash Back"
   }] as const;
   const priceForDisplay = program === "cashback" ? Math.max(0, activeGrade.price * (1 - cashbackPct)) : activeGrade.price;
-  return <section className="bg-[linear-gradient(180deg,#FAFAFC_0%,#F4F6F8_100%)] py-8 sm:py-10 md:py-16">
-      <div className="toyota-container mx-auto w-full max-w-[1120px] px-3 sm:px-4 md:px-6">
+  return <section className="relative bg-gradient-to-b from-background via-muted/20 to-background py-12 sm:py-16 md:py-24 overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
+          animate={{ x: [0, 40, 0], y: [0, -40, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 -left-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"
+          animate={{ x: [0, -40, 0], y: [0, 40, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
+
+      <div className="toyota-container relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8">
         {/* Title */}
         <motion.div initial={{
         opacity: 0,
@@ -366,62 +380,155 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         once: true
       }} transition={{
         duration: 0.5
-      }} className="mb-5 sm:mb-6 md:mb-8 text-center">
-          <h2 className="text-[20px] sm:text-3xl md:text-4xl font-bold tracking-tight">
+      }} className="mb-8 sm:mb-10 md:mb-12 text-center">
+          <motion.h2 
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground to-muted-foreground"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             Configure Your {vehicle.name}
-          </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-[12px] sm:text-sm text-muted-foreground">
-            Pick an engine, compare grades, and tailor the perfect setup. Finance updates live by program.
-          </p>
+          </motion.h2>
+          <motion.p 
+            className="mx-auto mt-3 max-w-3xl text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            Select your engine, explore premium grades, and experience luxury in every detail.
+          </motion.p>
         </motion.div>
 
-        <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12">
-          {/* Visual / Gallery */}
-          <div className="lg:col-span-7 min-w-0">
-            {/* Engine segmented control */}
-            <div className="mb-3 sm:mb-4 flex items-center justify-center lg:justify-start">
-              <Segmented ariaLabel="Select engine" options={engines.map(e => ({
-              id: e.name,
-              label: `${e.name} · ${e.type}`
-            }))} value={selectedEngine} onChange={id => setSelectedEngine(id)} />
-            </div>
+        {/* Engine selector */}
+        <motion.div 
+          className="mb-8 sm:mb-10 flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Segmented ariaLabel="Select engine" options={engines.map(e => ({
+            id: e.name,
+            label: `${e.name} · ${e.type}`
+          }))} value={selectedEngine} onChange={id => setSelectedEngine(id)} />
+        </motion.div>
 
-            {/* Grade visual */}
-            <div className="block lg:hidden">
-              <Carousel className="w-full" opts={{
-              loop: true,
-              align: "start"
-            }}>
-                <CarouselContent>
-                  {grades.map(g => <CarouselItem key={g.name} className="basis-full">
-                      <GradeHero vehicleName={vehicle.name} grade={g} />
-                    </CarouselItem>)}
-                </CarouselContent>
-                <CarouselPrevious className="left-2" />
-                <CarouselNext className="right-2" />
-              </Carousel>
+        {/* DESKTOP: Wide horizontal carousel */}
+        <div className="hidden lg:block">
+          <motion.div 
+            className="relative mb-10"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+          >
+            <div className="flex items-center gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent [&::-webkit-scrollbar]:h-2">
+              {grades.map((g, idx) => {
+                const isActive = g.name === activeGrade.name;
+                return (
+                  <motion.div
+                    key={g.name}
+                    onClick={() => setActiveGradeName(g.name)}
+                    className="flex-shrink-0 w-[420px] snap-center cursor-pointer group"
+                    initial={{ opacity: 0, x: 50 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                  >
+                    <Card className={`overflow-hidden rounded-3xl border-2 transition-all duration-300 ${
+                      isActive 
+                        ? 'border-primary shadow-2xl shadow-primary/20 ring-4 ring-primary/10' 
+                        : 'border-border hover:border-primary/50 shadow-lg hover:shadow-xl'
+                    }`}>
+                      <CardContent className="p-0">
+                        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-muted to-muted/50">
+                          <motion.img
+                            src={g.image}
+                            alt={`${vehicle.name} ${g.name}`}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            whileHover={{ scale: 1.1 }}
+                            transition={{ duration: 0.6 }}
+                          />
+                          {g.badge && (
+                            <div className="absolute left-4 top-4">
+                              <Badge className={`${g.badgeColor} shadow-lg`}>
+                                {g.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />} {g.badge}
+                              </Badge>
+                            </div>
+                          )}
+                          {isActive && (
+                            <motion.div
+                              className="absolute inset-0 bg-primary/10"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          )}
+                        </div>
+                        <div className="p-5">
+                          <h3 className="text-xl font-bold mb-2">{g.name} Grade</h3>
+                          <p className="text-sm text-muted-foreground mb-3">{g.description}</p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-2xl font-bold text-primary">{AEDFmt.format(g.price)}</div>
+                              <div className="text-xs text-muted-foreground">or {AEDFmt.format(g.monthlyFrom)}/mo</div>
+                            </div>
+                            {isActive && <Check className="h-6 w-6 text-primary" />}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
+          </motion.div>
+        </div>
 
-            <div className="hidden lg:block">
-              <AnimatePresence mode="wait">
-                <motion.div key={`${selectedEngine}-${activeGrade.name}`} initial={{
-                opacity: 0,
-                y: 8
-              }} animate={{
-                opacity: 1,
-                y: 0
-              }} exit={{
-                opacity: 0,
-                y: -8
-              }} transition={{
-                duration: 0.4
-              }}>
-                  <GradeHero vehicleName={vehicle.name} grade={activeGrade} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
+        {/* MOBILE: Carousel */}
+        <div className="block lg:hidden mb-8">
+          <Carousel className="w-full" opts={{ loop: true, align: "center" }}>
+            <CarouselContent className="-ml-4">
+              {grades.map((g, idx) => {
+                const isActive = g.name === activeGrade.name;
+                return (
+                  <CarouselItem key={g.name} className="pl-4 basis-[85%] sm:basis-[70%]" onClick={() => setActiveGradeName(g.name)}>
+                    <Card className={`overflow-hidden rounded-3xl border-2 transition-all ${
+                      isActive ? 'border-primary shadow-xl' : 'border-border'
+                    }`}>
+                      <CardContent className="p-0">
+                        <div className="relative aspect-[4/3] overflow-hidden">
+                          <img src={g.image} alt={`${vehicle.name} ${g.name}`} className="w-full h-full object-cover" />
+                          {g.badge && (
+                            <div className="absolute left-3 top-3">
+                              <Badge className={g.badgeColor}>
+                                {g.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />} {g.badge}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="text-lg font-bold mb-1">{g.name}</h3>
+                          <p className="text-xs text-muted-foreground mb-2">{g.description}</p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xl font-bold text-primary">{AEDFmt.format(g.price)}</div>
+                              <div className="text-xs text-muted-foreground">{AEDFmt.format(g.monthlyFrom)}/mo</div>
+                            </div>
+                            {isActive && <Check className="h-5 w-5 text-primary" />}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2" />
+          </Carousel>
+        </div>
 
+        <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12 mt-8">
           {/* Decision Panel */}
           <div className="lg:col-span-5 min-w-0">
             <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">

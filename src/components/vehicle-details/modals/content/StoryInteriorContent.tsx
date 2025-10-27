@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, ZoomIn, Armchair, Wind, Volume2, Palette } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { VehicleModel } from '@/types/vehicle';
+import { ColorPickerInteractive } from '../interactive/ColorPickerInteractive';
+import { ImageViewer360 } from '../interactive/ImageViewer360';
 
 interface StoryInteriorContentProps {
   vehicle: VehicleModel;
@@ -43,47 +45,9 @@ export const StoryInteriorContent: React.FC<StoryInteriorContentProps> = ({
 
   return (
     <div className="space-y-8 pb-6">
-      {/* Hero Image Gallery */}
-      <div className="relative aspect-video rounded-2xl overflow-hidden bg-neutral-900">
-        <motion.img
-          key={currentImage}
-          src={interiorImages[currentImage]}
-          alt={`Interior view ${currentImage + 1}`}
-          className="w-full h-full object-cover"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        {/* Navigation */}
-        <button
-          onClick={prevImage}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur transition"
-          aria-label="Previous image"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          onClick={nextImage}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-full backdrop-blur transition"
-          aria-label="Next image"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* Thumbnails */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-          {interiorImages.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentImage(idx)}
-              className={`w-2 h-2 rounded-full transition ${
-                idx === currentImage ? 'bg-white w-8' : 'bg-white/60'
-              }`}
-              aria-label={`View image ${idx + 1}`}
-            />
-          ))}
-        </div>
+      {/* 360 Interior Viewer */}
+      <div className="mb-6">
+        <ImageViewer360 images={interiorImages} title="Interior 360° View" />
       </div>
 
       {/* Luxury Features */}
@@ -106,31 +70,10 @@ export const StoryInteriorContent: React.FC<StoryInteriorContentProps> = ({
         </div>
       </div>
 
-      {/* Material Selector */}
+      {/* Interactive Color Picker */}
       <div>
         <h3 className="text-xl font-semibold mb-4 text-foreground">Interior Materials</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {materials.map((material, idx) => (
-            <button
-              key={idx}
-              disabled={!material.available}
-              className={`p-4 rounded-xl border-2 transition ${
-                material.available
-                  ? 'border-border hover:border-primary cursor-pointer'
-                  : 'border-border opacity-50 cursor-not-allowed'
-              }`}
-            >
-              <div
-                className="w-full aspect-square rounded-lg mb-2"
-                style={{ backgroundColor: material.color }}
-              />
-              <p className="text-sm font-medium text-foreground">{material.name}</p>
-              {!material.available && (
-                <Badge variant="secondary" className="mt-1 text-xs">Coming Soon</Badge>
-              )}
-            </button>
-          ))}
-        </div>
+        <ColorPickerInteractive onColorChange={(color) => console.log('Selected:', color)} />
       </div>
 
       {/* Comfort Stats */}
