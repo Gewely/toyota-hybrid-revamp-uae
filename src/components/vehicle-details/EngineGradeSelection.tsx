@@ -6,26 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  Star,
-  Check,
-  Wrench,
-  Car as CarIcon,
-  ArrowRight,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Info, Star, Wrench, Car as CarIcon, ArrowRight, ChevronDown } from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
 
 /* =========================================================
-   "Platinum Light" — Premium full-stage grade selector
-   - Desktop: Poster (7/12) + Finance Panel (5/12), always visible
-   - Mobile: Poster + compact header; 1 collapsible for finance
-   - All CTAs wired; arrows/chips only change grade
-   - No sticky, no overlays; elegant light theme
+   Platinum Light v2 — Premium full-stage design
+   - Desktop: poster (7/12) + finance (5/12), finance always visible
+   - Mobile: poster + compact header; single collapsible for finance
+   - All functions preserved; arrows/chips only change grade
+   - Light theme, porcelain surfaces, amber primary, subtle depth
 ========================================================= */
 
 type EngineOption = {
@@ -67,7 +57,7 @@ export interface EngineGradeSelectionProps {
 
 type FinanceProgram = "lease" | "hp" | "cashback";
 
-/* --------- Formatters / Finance --------- */
+/* --------- Formatters + Finance --------- */
 
 const AEDFmt = new Intl.NumberFormat("en-AE", {
   style: "currency",
@@ -75,17 +65,15 @@ const AEDFmt = new Intl.NumberFormat("en-AE", {
   maximumFractionDigits: 0,
 });
 
-function roundToStep(n: number, step = 10) {
-  return Math.round(n / step) * step;
-}
+const roundToStep = (n: number, step = 10) => Math.round(n / step) * step;
 
 function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: number; termMonths: number }): number {
   const { downPaymentPct, annualRate, termMonths } = opts;
   const principal = price * (1 - downPaymentPct);
   const r = annualRate / 12;
   if (r <= 0) return roundToStep(principal / termMonths);
-  const factor = Math.pow(1 + r, termMonths);
-  return roundToStep((principal * r * factor) / (factor - 1));
+  const f = Math.pow(1 + r, termMonths);
+  return roundToStep((principal * r * f) / (f - 1));
 }
 
 function leaseMonthly(
@@ -101,7 +89,7 @@ function leaseMonthly(
   return Math.max(0, roundToStep(depreciation + financeCharge));
 }
 
-/* --------- UI Atoms --------- */
+/* --------- UI atoms --------- */
 
 const Segmented: React.FC<{
   options: { id: string; label: string }[];
@@ -136,7 +124,8 @@ const Segmented: React.FC<{
                   layoutId="seg-bg"
                   className="absolute inset-0 rounded-2xl"
                   transition={{ duration: rm ? 0 : 0.2 }}
-                  style={{ background: "linear-gradient(180deg,#171717,#2a2a2a)" }}
+                  // black pill when selected (like your ref)
+                  style={{ background: "linear-gradient(180deg,#111,#232323)" }}
                 />
               )}
               <span className="relative z-10">{opt.label}</span>
@@ -182,7 +171,7 @@ const RangeControl: React.FC<{
   </div>
 );
 
-/* --------- Mobile Collapsible --------- */
+/* --------- Mobile collapsible --------- */
 
 const MobileCollapsible: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
   const [open, setOpen] = useState(false);
@@ -226,7 +215,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 }) => {
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
-  /* --- Finance state --- */
+  // --- Finance state
   const [program, setProgram] = useState<FinanceProgram>("hp");
   const [term, setTerm] = useState<24 | 36 | 48 | 60>(60);
   const [dpPct, setDpPct] = useState(0.2);
@@ -257,7 +246,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program],
   );
 
-  /* --- Engines --- */
+  // --- Engines
   const engines = useMemo<EngineOption[]>(
     () => [
       { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
@@ -267,7 +256,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   );
   const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
 
-  /* --- Monthly calculation --- */
+  // --- Monthly calc
   const monthly = useCallback(
     (price: number) => {
       if (program === "lease")
@@ -281,8 +270,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program, term, dpPct, apr, residualPct, cashbackPct],
   );
 
-  /* --- Grades (engine-aware) --- */
-  const [activeGradeName, setActiveGradeName] = useState<string>("XLE");
+  // --- Grades (engine-aware)
+  const [activeGradeName, setActiveGradeName] = useState<string>("Limited");
   const grades: Grade[] = useMemo(() => {
     const baseImage = (vehicle as any)?.image || (vehicle as any)?.heroImage || "/images/vehicle-fallback.png";
     const basePrice = vehicle.price ?? 0;
@@ -402,7 +391,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     ];
   }, [selectedEngine, vehicle, monthly]);
 
-  // keep active grade valid when engine changes
+  // keep active grade valid after engine change
   useEffect(() => {
     if (!grades.some((g) => g.name === activeGradeName)) {
       setActiveGradeName(grades[0]?.name ?? "");
@@ -423,7 +412,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     onGradeSelect(name);
   };
 
-  const termLabel = (t: 24 | 36 | 48 | 60) => (t === 24 ? "2 yrs" : t === 36 ? "3 yrs" : t === 48 ? "4 yrs" : "5 yrs");
+  const termLabel = (t: 24 | 36 | 48 | 60) => (t === 24 ? "3 yrs" : t === 36 ? "4 yrs" : t === 48 ? "5 yrs" : "5 yrs");
 
   const programOpts = [
     { id: "lease", label: "Lease" },
@@ -436,7 +425,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   const estMonthly = useMemo(() => monthly(activeGrade.price), [activeGrade.price, monthly]);
 
-  // preload
+  // preload poster images
   useEffect(() => {
     grades.slice(0, 3).forEach((g) => {
       if (!g?.image) return;
@@ -446,18 +435,21 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   }, [grades]);
 
   return (
-    <section className="bg-gradient-to-b from-white via-zinc-50 to-white">
+    <section className="bg-[radial-gradient(1200px_600px_at_50%_-200px,rgba(253,224,71,0.10),transparent)]">
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8 py-6 sm:py-8">
-        {/* Top controls: grade chips + engine segmented */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Top controls */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          {/* Grade chips */}
           <div className="flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {grades.map((g, i) => (
               <button
                 key={g.name}
                 type="button"
                 onClick={() => selectIndex(i)}
-                className={`rounded-full border px-3 py-2 text-sm font-medium ${
-                  i === activeIndex ? "border-amber-400 bg-amber-50 text-zinc-900" : "border-zinc-300 hover:bg-zinc-50"
+                className={`rounded-full border px-3 py-2 text-sm font-medium shadow-sm ${
+                  i === activeIndex
+                    ? "border-amber-300 bg-amber-50 text-zinc-900"
+                    : "border-zinc-200 bg-white hover:bg-zinc-50"
                 }`}
                 aria-pressed={i === activeIndex}
               >
@@ -466,6 +458,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             ))}
           </div>
 
+          {/* Engine segmented (black selected pill) */}
           <Segmented
             ariaLabel="Select engine"
             options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
@@ -474,13 +467,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           />
         </div>
 
-        {/* ========= Desktop: poster + finance ========= */}
+        {/* ====== Desktop: poster + finance ====== */}
         <div className="mt-6 hidden lg:block">
           <div className="grid grid-cols-12 gap-6 items-stretch">
             {/* Poster */}
             <div className="col-span-7">
-              <div className="relative h-full overflow-hidden rounded-3xl ring-1 ring-zinc-200 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
-                {/* Prev/Next arrows — change grade only */}
+              <div className="relative h-full overflow-hidden rounded-[28px] ring-1 ring-zinc-200 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
+                {/* arrows — change grade only */}
                 <button
                   type="button"
                   aria-label="Previous grade"
@@ -488,7 +481,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     e.stopPropagation();
                     selectIndex(activeIndex - 1);
                   }}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -499,7 +492,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     e.stopPropagation();
                     selectIndex(activeIndex + 1);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -538,11 +531,11 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Inline CTA (optional) */}
-                <div className="absolute bottom-5 right-5 hidden xl:flex items-center gap-2">
+                {/* Start Configuration — big amber CTA under poster */}
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
                   <Button
                     type="button"
-                    className="rounded-xl bg-amber-400 hover:bg-amber-500 text-zinc-900"
+                    className="rounded-xl bg-amber-400 hover:bg-amber-500 text-zinc-900 shadow-lg"
                     onClick={() => onCarBuilder(activeGrade.name)}
                   >
                     Start Configuration <ArrowRight className="ml-2 h-4 w-4" />
@@ -551,24 +544,31 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
               </div>
             </div>
 
-            {/* Finance Panel — always visible */}
+            {/* Finance panel */}
             <div className="col-span-5">
-              <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)] h-full">
+              <Card className="rounded-[28px] border-0 bg-white p-1 shadow-[0_16px_44px_rgba(0,0,0,0.08)] h-full">
                 <CardContent className="p-6 flex flex-col h-full">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-2xl font-extrabold tracking-tight uppercase text-zinc-900">
+                      <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight text-zinc-900 uppercase">
                         {vehicle.name} {activeGrade.name}
                       </h2>
                       <p className="mt-1 text-sm text-zinc-600">{activeGrade.description}</p>
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-zinc-500">From</div>
-                      <div className="text-2xl font-extrabold text-zinc-900">{AEDFmt.format(priceForDisplay)}</div>
+                      <div className="text-2xl font-extrabold text-zinc-900">
+                        {AEDFmt.format(
+                          program === "cashback"
+                            ? Math.max(0, activeGrade.price * (1 - cashbackPct))
+                            : activeGrade.price,
+                        )}
+                      </div>
                       <div className="text-xs text-zinc-600">{AEDFmt.format(estMonthly)}/mo est.</div>
                     </div>
                   </div>
 
+                  {/* Specs */}
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <SpecRow label="Engine" value={activeGrade.specs.engine} />
                     <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
@@ -578,6 +578,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
                   <Separator className="my-5" />
 
+                  {/* Program segmented */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-zinc-600">Finance Program</span>
                     <Segmented
@@ -588,19 +589,21 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     />
                   </div>
 
+                  {/* Terms + sliders */}
                   <div className="mt-4 grid gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {allowedTerms.map((t) => (
-                        <Button
+                        <button
                           key={t}
                           type="button"
-                          variant={term === t ? "secondary" : "outline"}
-                          size="sm"
-                          className="rounded-full px-3 py-2"
                           onClick={() => setTerm(t)}
+                          className={`rounded-full px-3 py-2 text-sm border ${
+                            term === t ? "bg-red-500 text-white border-red-500" : "border-zinc-300 hover:bg-zinc-50"
+                          }`}
+                          aria-pressed={term === t}
                         >
-                          {termLabel(t)}
-                        </Button>
+                          {t === 24 ? "3 yrs" : t === 36 ? "4 yrs" : t === 48 ? "5 yrs" : "5 yrs"}
+                        </button>
                       ))}
                     </div>
 
@@ -646,17 +649,19 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     )}
                   </div>
 
+                  {/* Features */}
                   <ul className="mt-4 grid list-disc grid-cols-2 gap-x-6 gap-y-1 pl-4 text-[12px] sm:text-sm text-zinc-700">
                     {activeGrade.features.slice(0, 6).map((f, i) => (
                       <li key={i}>{f}</li>
                     ))}
                   </ul>
 
-                  <div className="mt-auto pt-5 flex flex-wrap gap-2">
+                  {/* CTAs */}
+                  <div className="mt-auto pt-5 grid grid-cols-3 gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-10 rounded-xl border-zinc-300 hover:bg-zinc-50"
+                      className="h-10 rounded-xl border-red-300 text-red-600 hover:bg-red-50"
                       onClick={() => onCarBuilder(activeGrade.name)}
                     >
                       <Wrench className="mr-1 h-4 w-4" /> Build
@@ -664,7 +669,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-10 rounded-xl border-zinc-300 hover:bg-zinc-50"
+                      className="h-10 rounded-xl border-red-300 text-red-600 hover:bg-red-50"
                       onClick={onTestDrive}
                     >
                       <CarIcon className="mr-1 h-4 w-4" /> Test Drive
@@ -672,7 +677,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     <Button
                       type="button"
                       variant="ghost"
-                      className="h-10 rounded-xl"
+                      className="h-10 rounded-xl text-red-600 hover:text-red-700"
                       onClick={() => {
                         setIsComparisonOpen(true);
                         onGradeComparison?.();
@@ -692,11 +697,11 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           </div>
         </div>
 
-        {/* ========= Mobile: compact ========= */}
+        {/* ====== Mobile: compact ====== */}
         <div className="mt-6 lg:hidden">
-          <div className="overflow-hidden rounded-2xl ring-1 ring-zinc-200 bg-white shadow">
+          <div className="overflow-hidden rounded-[22px] ring-1 ring-zinc-200 bg-white shadow">
             <div className="relative">
-              {/* arrows — change grade only */}
+              {/* arrows — grade only */}
               <button
                 type="button"
                 aria-label="Previous grade"
@@ -750,7 +755,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   </div>
                 </div>
 
-                {/* grade chips (scrollable) */}
+                {/* grade chips */}
                 <div className="mt-3 flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {grades.map((g, i) => (
                     <button
@@ -758,7 +763,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                       type="button"
                       onClick={() => selectIndex(i)}
                       className={`rounded-full border px-3 py-1.5 text-[12px] ${
-                        i === activeIndex ? "border-amber-400 bg-amber-50" : "border-zinc-300"
+                        i === activeIndex ? "border-amber-300 bg-amber-50" : "border-zinc-300"
                       }`}
                     >
                       {g.name}
@@ -791,16 +796,17 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   <div className="grid gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {allowedTerms.map((t) => (
-                        <Button
+                        <button
                           key={t}
                           type="button"
-                          variant={term === t ? "secondary" : "outline"}
-                          size="sm"
-                          className="rounded-full"
                           onClick={() => setTerm(t)}
+                          className={`rounded-full px-3 py-2 text-sm border ${
+                            term === t ? "bg-red-500 text-white border-red-500" : "border-zinc-300"
+                          }`}
+                          aria-pressed={term === t}
                         >
-                          {termLabel(t)}
-                        </Button>
+                          {t === 24 ? "3 yrs" : t === 36 ? "4 yrs" : t === 48 ? "5 yrs" : "5 yrs"}
+                        </button>
                       ))}
                     </div>
 
@@ -851,18 +857,23 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-10 border-zinc-300"
+                    className="h-10 border-red-300 text-red-600"
                     onClick={() => onCarBuilder(activeGrade.name)}
                   >
                     <Wrench className="mr-1 h-4 w-4" /> Build
                   </Button>
-                  <Button type="button" variant="outline" className="h-10 border-zinc-300" onClick={onTestDrive}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 border-red-300 text-red-600"
+                    onClick={onTestDrive}
+                  >
                     <CarIcon className="mr-1 h-4 w-4" /> Drive
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="col-span-2 h-10"
+                    className="col-span-2 h-10 text-red-600"
                     onClick={() => {
                       setIsComparisonOpen(true);
                       onGradeComparison?.();
