@@ -21,11 +21,11 @@ import type { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
 
 /* =========================================================
-   SHOWROOM V8 (Light) — Full Stage per Grade
-   - Desktop: Poster (left, 7 cols) + Finance Panel (right, 5 cols)
-   - Mobile: Poster + short summary; advanced finance in one collapsible
-   - No click on poster/card; only explicit CTAs fire actions
-   - All functions preserved; finance linked to grade in real time
+   "Platinum Light" — Premium full-stage grade selector
+   - Desktop: Poster (7/12) + Finance Panel (5/12), always visible
+   - Mobile: Poster + compact header; 1 collapsible for finance
+   - All CTAs wired; arrows/chips only change grade
+   - No sticky, no overlays; elegant light theme
 ========================================================= */
 
 type EngineOption = {
@@ -67,17 +67,18 @@ export interface EngineGradeSelectionProps {
 
 type FinanceProgram = "lease" | "hp" | "cashback";
 
+/* --------- Formatters / Finance --------- */
+
 const AEDFmt = new Intl.NumberFormat("en-AE", {
   style: "currency",
   currency: "AED",
   maximumFractionDigits: 0,
 });
 
-/* --------------- Finance helpers --------------- */
-
 function roundToStep(n: number, step = 10) {
   return Math.round(n / step) * step;
 }
+
 function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: number; termMonths: number }): number {
   const { downPaymentPct, annualRate, termMonths } = opts;
   const principal = price * (1 - downPaymentPct);
@@ -86,6 +87,7 @@ function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: nu
   const factor = Math.pow(1 + r, termMonths);
   return roundToStep((principal * r * factor) / (factor - 1));
 }
+
 function leaseMonthly(
   price: number,
   opts: { downPaymentPct: number; annualRate: number; termMonths: number; residualPct: number },
@@ -94,12 +96,12 @@ function leaseMonthly(
   const capCost = price * (1 - downPaymentPct);
   const residual = price * residualPct;
   const depreciation = (capCost - residual) / termMonths;
-  const moneyFactor = annualRate / 24;
+  const moneyFactor = annualRate / 24; // APR(decimal)/24
   const financeCharge = (capCost + residual) * moneyFactor;
   return Math.max(0, roundToStep(depreciation + financeCharge));
 }
 
-/* --------------- UI atoms --------------- */
+/* --------- UI Atoms --------- */
 
 const Segmented: React.FC<{
   options: { id: string; label: string }[];
@@ -134,7 +136,7 @@ const Segmented: React.FC<{
                   layoutId="seg-bg"
                   className="absolute inset-0 rounded-2xl"
                   transition={{ duration: rm ? 0 : 0.2 }}
-                  style={{ background: "linear-gradient(180deg,#161616,#2a2a2a)" }}
+                  style={{ background: "linear-gradient(180deg,#171717,#2a2a2a)" }}
                 />
               )}
               <span className="relative z-10">{opt.label}</span>
@@ -180,8 +182,39 @@ const RangeControl: React.FC<{
   </div>
 );
 
+/* --------- Mobile Collapsible --------- */
+
+const MobileCollapsible: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4 rounded-xl border">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <span>{title}</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="px-3 pb-3"
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 /* =============================
-   Main
+   Main Component
 ============================= */
 
 const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
@@ -193,7 +226,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 }) => {
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
-  /* Finance state (simple & always visible on desktop) */
+  /* --- Finance state --- */
   const [program, setProgram] = useState<FinanceProgram>("hp");
   const [term, setTerm] = useState<24 | 36 | 48 | 60>(60);
   const [dpPct, setDpPct] = useState(0.2);
@@ -224,7 +257,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program],
   );
 
-  /* Engines (kept minimal) */
+  /* --- Engines --- */
   const engines = useMemo<EngineOption[]>(
     () => [
       { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
@@ -234,24 +267,24 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   );
   const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
 
-  /* Monthly calc */
-  const calcMonthly = useCallback(
+  /* --- Monthly calculation --- */
+  const monthly = useCallback(
     (price: number) => {
       if (program === "lease")
         return leaseMonthly(price, { termMonths: term, downPaymentPct: dpPct, annualRate: apr, residualPct });
       if (program === "cashback") {
-        const eff = Math.max(0, price * (1 - cashbackPct));
-        return hpMonthly(eff, { termMonths: term, downPaymentPct: dpPct, annualRate: apr });
+        const effective = Math.max(0, price * (1 - cashbackPct));
+        return hpMonthly(effective, { termMonths: term, downPaymentPct: dpPct, annualRate: apr });
       }
       return hpMonthly(price, { termMonths: term, downPaymentPct: dpPct, annualRate: apr });
     },
     [program, term, dpPct, apr, residualPct, cashbackPct],
   );
 
-  /* Grades */
+  /* --- Grades (engine-aware) --- */
   const [activeGradeName, setActiveGradeName] = useState<string>("XLE");
   const grades: Grade[] = useMemo(() => {
-    const baseImage = (vehicle as any).image || (vehicle as any).heroImage || "";
+    const baseImage = (vehicle as any)?.image || (vehicle as any)?.heroImage || "/images/vehicle-fallback.png";
     const basePrice = vehicle.price ?? 0;
 
     const build = (
@@ -276,7 +309,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   ? "Adventure-focused capability with TRD hardware."
                   : "Ultimate off-road performance with premium finish.",
         price,
-        monthlyFrom: calcMonthly(price),
+        monthlyFrom: monthly(price),
         badge,
         badgeColor,
         image: baseImage,
@@ -367,7 +400,15 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         },
       ),
     ];
-  }, [selectedEngine, vehicle, calcMonthly]);
+  }, [selectedEngine, vehicle, monthly]);
+
+  // keep active grade valid when engine changes
+  useEffect(() => {
+    if (!grades.some((g) => g.name === activeGradeName)) {
+      setActiveGradeName(grades[0]?.name ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grades]);
 
   const activeIndex = Math.max(
     0,
@@ -392,9 +433,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
 
   const priceForDisplay =
     program === "cashback" ? Math.max(0, activeGrade.price * (1 - cashbackPct)) : activeGrade.price;
-  const estMonthly = calcMonthly(activeGrade.price);
 
-  /* Preload */
+  const estMonthly = useMemo(() => monthly(activeGrade.price), [activeGrade.price, monthly]);
+
+  // preload
   useEffect(() => {
     grades.slice(0, 3).forEach((g) => {
       if (!g?.image) return;
@@ -406,7 +448,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   return (
     <section className="bg-gradient-to-b from-white via-zinc-50 to-white">
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8 py-6 sm:py-8">
-        {/* Top controls: grade chips + engine segmented (single row) */}
+        {/* Top controls: grade chips + engine segmented */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {grades.map((g, i) => (
@@ -432,13 +474,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           />
         </div>
 
-        {/* Desktop: Full stage per grade */}
+        {/* ========= Desktop: poster + finance ========= */}
         <div className="mt-6 hidden lg:block">
           <div className="grid grid-cols-12 gap-6 items-stretch">
-            {/* Poster (7/12) */}
+            {/* Poster */}
             <div className="col-span-7">
               <div className="relative h-full overflow-hidden rounded-3xl ring-1 ring-zinc-200 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
-                {/* Prev/Next arrows (do nothing except change grade) */}
+                {/* Prev/Next arrows — change grade only */}
                 <button
                   type="button"
                   aria-label="Previous grade"
@@ -462,28 +504,28 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   <ChevronRight className="h-5 w-5" />
                 </button>
 
+                {/* Badge + price chip */}
+                <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
+                  {activeGrade.badge && (
+                    <Badge className={`${activeGrade.badgeColor}`}>
+                      {activeGrade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />}
+                      {activeGrade.badge}
+                    </Badge>
+                  )}
+                  <div className="rounded-full bg-white/95 backdrop-blur border px-3 py-1 text-[12px] font-semibold shadow-sm">
+                    {AEDFmt.format(activeGrade.price)}
+                  </div>
+                </div>
+
+                {/* Poster image */}
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeGrade.name}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.25 }}
                   >
-                    {/* Badge + price overlay (top) */}
-                    <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
-                      {activeGrade.badge && (
-                        <Badge className={`${activeGrade.badgeColor}`}>
-                          {activeGrade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />}
-                          {activeGrade.badge}
-                        </Badge>
-                      )}
-                      <div className="rounded-full bg-white/95 backdrop-blur border px-3 py-1 text-[12px] font-semibold shadow-sm">
-                        {AEDFmt.format(activeGrade.price)}
-                      </div>
-                    </div>
-
-                    {/* Poster image (centered) */}
                     <div className="aspect-[16/9] w-full">
                       <img
                         src={activeGrade.image}
@@ -495,10 +537,21 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     </div>
                   </motion.div>
                 </AnimatePresence>
+
+                {/* Inline CTA (optional) */}
+                <div className="absolute bottom-5 right-5 hidden xl:flex items-center gap-2">
+                  <Button
+                    type="button"
+                    className="rounded-xl bg-amber-400 hover:bg-amber-500 text-zinc-900"
+                    onClick={() => onCarBuilder(activeGrade.name)}
+                  >
+                    Start Configuration <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
-            {/* Finance Panel (5/12) — ALWAYS VISIBLE */}
+            {/* Finance Panel — always visible */}
             <div className="col-span-5">
               <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)] h-full">
                 <CardContent className="p-6 flex flex-col h-full">
@@ -639,11 +692,11 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           </div>
         </div>
 
-        {/* Mobile: compact (no long scroller) */}
+        {/* ========= Mobile: compact ========= */}
         <div className="mt-6 lg:hidden">
           <div className="overflow-hidden rounded-2xl ring-1 ring-zinc-200 bg-white shadow">
             <div className="relative">
-              {/* arrows */}
+              {/* arrows — change grade only */}
               <button
                 type="button"
                 aria-label="Previous grade"
@@ -697,7 +750,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   </div>
                 </div>
 
-                {/* concise chips */}
+                {/* grade chips (scrollable) */}
                 <div className="mt-3 flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {grades.map((g, i) => (
                     <button
@@ -713,13 +766,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   ))}
                 </div>
 
-                {/* compact specs */}
+                {/* concise specs */}
                 <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
                   <SpecRow label="Engine" value={activeGrade.specs.engine} />
                   <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
                 </div>
 
-                {/* single collapsible for finance (keeps mobile short) */}
+                {/* single collapsible keeps mobile short */}
                 <MobileCollapsible title="Finance Options">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-[13px] text-zinc-600">Program</span>
@@ -824,7 +877,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         </div>
       </div>
 
-      {/* Comparison */}
+      {/* Comparison modal/sheet */}
       <VehicleGradeComparison
         isOpen={isComparisonOpen}
         onClose={() => setIsComparisonOpen(false)}
@@ -839,36 +892,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         onTestDrive={onTestDrive}
       />
     </section>
-  );
-};
-
-/* ---- Compact mobile collapsible ---- */
-const MobileCollapsible: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mt-4 rounded-xl border">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        <span>{title}</span>
-        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="px-3 pb-3"
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
   );
 };
 
