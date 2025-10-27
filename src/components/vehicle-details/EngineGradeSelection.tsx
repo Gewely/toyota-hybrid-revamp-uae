@@ -1,22 +1,31 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Info, Star, Check, Wrench, Car as CarIcon, ChevronDown, ArrowRight } from "lucide-react";
+import {
+  Info,
+  Star,
+  Check,
+  Wrench,
+  Car as CarIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+} from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
 import VehicleGradeComparison from "./VehicleGradeComparison";
 
 /* =========================================================
-   Luxury Light v7 — "Showroom Porcelain" (No Dark Mode)
-   - Hero: big uppercase headline + amber CTA, right poster
-   - Desktop: 7/5 grid (Grade tiles + Decision panel)
-   - Mobile: poster-style carousel + compact decision panel
-   - Zero sticky; card click only selects (Build stops propagation)
+   Showroom Light — Full-Stage per Grade
+   - Desktop: one grade per screen (poster + finance side-by-side)
+   - Grade navigation: prev/next arrows + chips; finance updates with grade
+   - Mobile: compact poster + summary; controls in collapsibles
+   - No sticky; no dark theme; card click never triggers Build
 ========================================================= */
 
 type EngineOption = {
@@ -64,12 +73,11 @@ const AEDFmt = new Intl.NumberFormat("en-AE", {
   maximumFractionDigits: 0,
 });
 
-/* ---------------------- Helpers & Finance ---------------------- */
+/* ---------------------- Finance ---------------------- */
 
 function roundToStep(n: number, step = 10) {
   return Math.round(n / step) * step;
 }
-
 function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: number; termMonths: number }): number {
   const { downPaymentPct, annualRate, termMonths } = opts;
   const principal = price * (1 - downPaymentPct);
@@ -78,7 +86,6 @@ function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: nu
   const factor = Math.pow(1 + r, termMonths);
   return roundToStep((principal * r * factor) / (factor - 1));
 }
-
 function leaseMonthly(
   price: number,
   opts: { downPaymentPct: number; annualRate: number; termMonths: number; residualPct: number },
@@ -92,20 +99,14 @@ function leaseMonthly(
   return Math.max(0, roundToStep(depreciation + financeCharge));
 }
 
-function useDebouncedNumber(value: number, delay = 150) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
+/* ---------------------- Small helpers ---------------------- */
 
-function track(_event: string, _payload?: Record<string, unknown>) {
-  // wire up your analytics here if needed
-}
-
-/* ---------------------- Reusable UI ---------------------- */
+const SpecRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex items-center justify-between text-[12px] sm:text-sm">
+    <span className="text-zinc-600">{label}</span>
+    <span className="font-medium text-zinc-900">{value}</span>
+  </div>
+);
 
 const Segmented: React.FC<{
   options: { id: string; label: string }[];
@@ -113,7 +114,7 @@ const Segmented: React.FC<{
   onChange: (id: string) => void;
   ariaLabel?: string;
 }> = ({ options, value, onChange, ariaLabel }) => {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReduced = useReducedMotion();
   return (
     <div
       role="radiogroup"
@@ -132,13 +133,13 @@ const Segmented: React.FC<{
               className={`relative shrink-0 rounded-2xl px-3 py-2 text-[12px] sm:text-[13px] font-semibold ${
                 selected ? "text-white" : "text-zinc-900"
               }`}
-              whileTap={{ scale: prefersReducedMotion ? 1 : 0.98 }}
+              whileTap={{ scale: prefersReduced ? 1 : 0.98 }}
             >
               {selected && (
                 <motion.span
                   layoutId="seg-bg"
                   className="absolute inset-0 rounded-2xl"
-                  transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
+                  transition={{ duration: prefersReduced ? 0 : 0.25 }}
                   style={{ background: "linear-gradient(180deg,#161616,#2a2a2a)" }}
                 />
               )}
@@ -151,46 +152,20 @@ const Segmented: React.FC<{
   );
 };
 
-const SpecRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex items-center justify-between text-[12px] sm:text-sm">
-    <span className="text-zinc-600">{label}</span>
-    <span className="font-medium text-zinc-900">{value}</span>
-  </div>
-);
-
 const RangeControl: React.FC<{
   label: string;
   min: number;
   max: number;
   step: number;
   value: number;
-  format?: (v: number) => string;
   onChange: (v: number) => void;
+  format?: (v: number) => string;
 }> = ({ label, min, max, step, value, onChange, format }) => {
-  const [input, setInput] = useState<number>(value);
-  useEffect(() => setInput(value), [value]);
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
         <span className="text-zinc-600">{label}</span>
-        <div className="flex items-center gap-2">
-          <input
-            aria-label={`${label} numeric input`}
-            className="h-7 w-20 rounded-md border px-2 text-right text-[11px] sm:text-xs"
-            type="number"
-            step={step}
-            min={min}
-            max={max}
-            value={Number.isFinite(input) ? input : 0}
-            onChange={(e) => setInput(Number(e.target.value))}
-            onBlur={() => {
-              const clamped = Math.min(max, Math.max(min, Number(input)));
-              setInput(clamped);
-              onChange(clamped);
-            }}
-          />
-          <span className="font-medium text-zinc-900">{format ? format(value) : String(value)}</span>
-        </div>
+        <span className="font-medium text-zinc-900">{format ? format(value) : String(value)}</span>
       </div>
       <input
         type="range"
@@ -206,138 +181,6 @@ const RangeControl: React.FC<{
   );
 };
 
-const PaymentDonut: React.FC<{ a: number; b: number; label: string }> = ({ a, b, label }) => {
-  const total = Math.max(1, a + b);
-  const aPct = (a / total) * 100;
-  const bPct = 100 - aPct;
-  const R = 18;
-  const C = 2 * Math.PI * R;
-  const aLen = (aPct / 100) * C;
-  const bLen = C - aLen;
-  return (
-    <div className="flex items-center gap-3">
-      <svg width="48" height="48" viewBox="0 0 48 48" aria-label={`${label} breakdown`}>
-        <circle cx="24" cy="24" r={R} fill="none" stroke="hsl(0 0% 90%)" strokeWidth="6" />
-        <circle
-          cx="24"
-          cy="24"
-          r={R}
-          fill="none"
-          stroke="hsl(0 0% 15%)"
-          strokeWidth="6"
-          strokeDasharray={`${aLen} ${C - aLen}`}
-          strokeDashoffset={C * 0.25}
-          strokeLinecap="round"
-        />
-        <circle
-          cx="24"
-          cy="24"
-          r={R}
-          fill="none"
-          stroke="hsl(38 92% 50%)"
-          strokeWidth="6"
-          strokeDasharray={`${bLen} ${C - bLen}`}
-          strokeDashoffset={C * 0.25 + aLen}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="text-[11px] sm:text-xs">
-        <div className="font-medium text-zinc-900">{label}</div>
-        <div className="text-zinc-600">
-          A {aPct.toFixed(0)}% · B {bPct.toFixed(0)}%
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ---------------------- Grade Tile (bug-safe) ---------------------- */
-
-const GradeTile: React.FC<{
-  vehicleName: string;
-  grade: Grade;
-  selected: boolean;
-  onSelect: () => void;
-  onBuild: () => void;
-}> = ({ vehicleName, grade, selected, onSelect, onBuild }) => {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className="group w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/30 rounded-3xl"
-      aria-pressed={selected}
-    >
-      <Card
-        className={`overflow-hidden rounded-3xl border-2 transition-all duration-300 ${
-          selected
-            ? "border-amber-400/80 shadow-2xl shadow-amber-200/40 ring-4 ring-amber-200/40"
-            : "border-zinc-200 hover:border-amber-300 shadow-lg hover:shadow-xl"
-        }`}
-      >
-        <CardContent className="p-0">
-          <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-zinc-50 to-white">
-            <img
-              src={grade.image}
-              alt={`${vehicleName} ${grade.name}`}
-              className="h-full w-full object-cover object-center"
-              loading="lazy"
-              decoding="async"
-            />
-
-            {grade.badge && (
-              <div className="absolute left-4 top-4">
-                <Badge className={`${grade.badgeColor} shadow`}>{grade.badge}</Badge>
-              </div>
-            )}
-
-            {/* price chip */}
-            <div className="absolute right-4 top-4">
-              <div className="rounded-full bg-white/95 backdrop-blur border px-3 py-1 text-[12px] font-semibold shadow-sm">
-                {AEDFmt.format(grade.price)}
-              </div>
-            </div>
-
-            {/* hover build (desktop only) */}
-            <div className="pointer-events-none absolute inset-0 hidden items-end justify-end p-4 group-hover:flex">
-              <Button
-                variant="outline"
-                size="sm"
-                className="pointer-events-auto rounded-full border-zinc-300 bg-white/95 backdrop-blur"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onBuild();
-                }}
-              >
-                <Wrench className="mr-1 h-4 w-4" /> Build
-              </Button>
-            </div>
-
-            {/* bottom info band */}
-            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-white/95 via-white/60 to-transparent">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-extrabold tracking-wide text-zinc-900 uppercase">{grade.name}</h3>
-                  <p className="mt-1 line-clamp-2 text-sm text-zinc-700">{grade.description}</p>
-                </div>
-                {selected && <Check className="h-5 w-5 text-amber-500" aria-label="Selected" />}
-              </div>
-              <div className="mt-2 text-xs text-zinc-700">from {AEDFmt.format(grade.monthlyFrom)}/mo (est.)</div>
-            </div>
-
-            {selected && <div className="absolute inset-0 ring-2 ring-amber-300/70 pointer-events-none" />}
-          </div>
-        </CardContent>
-      </Card>
-    </button>
-  );
-};
-
 /* =============================
    Main Component
 ============================= */
@@ -349,51 +192,41 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   onGradeSelect,
   onGradeComparison,
 }) => {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReduced = useReducedMotion();
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
-  // anchor for "Explore the model"
-  const gradesRef = useRef<HTMLDivElement | null>(null);
-
-  // Finance state
+  // Programs & finance state
   const [program, setProgram] = useState<FinanceProgram>("hp");
   const [term, setTerm] = useState<24 | 36 | 48 | 60>(60);
-  const [dpPctRaw, setDpPctRaw] = useState(0.2);
-  const [aprRaw, setAprRaw] = useState(0.035);
-  const [residualPctRaw, setResidualPctRaw] = useState(0.45);
-  const [cashbackPctRaw, setCashbackPctRaw] = useState(0.05);
+  const [dpPct, setDpPct] = useState(0.2);
+  const [apr, setApr] = useState(0.035);
+  const [residualPct, setResidualPct] = useState(0.45);
+  const [cashbackPct, setCashbackPct] = useState(0.05);
 
-  const dpPct = useDebouncedNumber(dpPctRaw);
-  const apr = useDebouncedNumber(aprRaw);
-  const residualPct = useDebouncedNumber(residualPctRaw);
-  const cashbackPct = useDebouncedNumber(cashbackPctRaw);
-
-  // program-aware defaults & term guard
   useEffect(() => {
     if (program === "lease") {
       if (![24, 36, 48].includes(term)) setTerm(36);
-      setDpPctRaw((v) => (v !== 0.1 ? 0.1 : v));
-      setAprRaw((v) => (v !== 0.029 ? 0.029 : v));
-      setResidualPctRaw((v) => (v !== 0.45 ? 0.45 : v));
+      setDpPct(0.1);
+      setApr(0.029);
+      setResidualPct(0.45);
     } else if (program === "hp") {
       if (![36, 48, 60].includes(term)) setTerm(60);
-      setDpPctRaw((v) => (v !== 0.2 ? 0.2 : v));
-      setAprRaw((v) => (v !== 0.035 ? 0.035 : v));
+      setDpPct(0.2);
+      setApr(0.035);
     } else {
       if (![36, 48, 60].includes(term)) setTerm(60);
-      setDpPctRaw((v) => (v !== 0.2 ? 0.2 : v));
-      setAprRaw((v) => (v !== 0.0325 ? 0.0325 : v));
-      setCashbackPctRaw((v) => (v !== 0.05 ? 0.05 : v));
+      setDpPct(0.2);
+      setApr(0.0325);
+      setCashbackPct(0.05);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [program]);
+  }, [program, term]);
 
   const allowedTerms = useMemo(
     () => (program === "lease" ? ([24, 36, 48] as const) : ([36, 48, 60] as const)),
     [program],
   );
 
-  // engines
+  // Engines (kept minimal in UI; focus is on grade stage)
   const engines = useMemo<EngineOption[]>(
     () => [
       { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
@@ -401,14 +234,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     ],
     [],
   );
-  const [selectedEngine, setSelectedEngine] = useState<string>(engines[0]?.name ?? "");
+  const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
 
-  // monthly calc
-  const liveMonthly = useCallback(
+  // Monthly calc (program aware)
+  const monthly = useCallback(
     (price: number) => {
-      if (program === "lease") {
+      if (program === "lease")
         return leaseMonthly(price, { termMonths: term, downPaymentPct: dpPct, annualRate: apr, residualPct });
-      }
       if (program === "cashback") {
         const effective = Math.max(0, price * (1 - cashbackPct));
         return hpMonthly(effective, { termMonths: term, downPaymentPct: dpPct, annualRate: apr });
@@ -418,12 +250,11 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program, term, dpPct, apr, residualPct, cashbackPct],
   );
 
-  // grades
+  // Grades
   const [activeGradeName, setActiveGradeName] = useState<string>("XLE");
   const grades: Grade[] = useMemo(() => {
     const baseImage = (vehicle as any).image || (vehicle as any).heroImage || "";
     const basePrice = vehicle.price ?? 0;
-
     const build = (
       name: string,
       delta: number,
@@ -446,7 +277,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                   ? "Adventure-focused capability with TRD hardware."
                   : "Ultimate off-road performance with premium finish.",
         price,
-        monthlyFrom: liveMonthly(price),
+        monthlyFrom: monthly(price),
         badge,
         badgeColor,
         image: baseImage,
@@ -454,7 +285,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         specs,
       };
     };
-
     if (selectedEngine === "4.0L") {
       return [
         build(
@@ -489,7 +319,6 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         ),
       ];
     }
-
     return [
       build(
         "SE",
@@ -537,18 +366,22 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         },
       ),
     ];
-  }, [selectedEngine, vehicle, liveMonthly]);
+  }, [selectedEngine, vehicle, monthly]);
 
-  const activeGrade = grades.find((g) => g.name === activeGradeName) ?? grades[0];
+  const activeIndex = Math.max(
+    0,
+    grades.findIndex((g) => g.name === activeGradeName),
+  );
+  const activeGrade = grades[activeIndex] ?? grades[0];
 
-  useEffect(() => {
-    if (!grades.some((g) => g.name === activeGradeName)) {
-      setActiveGradeName(grades[0]?.name ?? "");
-    }
-  }, [grades, activeGradeName]);
+  const selectIndex = (idx: number) => {
+    const clamped = (idx + grades.length) % grades.length;
+    const name = grades[clamped].name;
+    setActiveGradeName(name);
+    onGradeSelect(name);
+  };
 
   const termLabel = (t: 24 | 36 | 48 | 60) => (t === 24 ? "2 yrs" : t === 36 ? "3 yrs" : t === 48 ? "4 yrs" : "5 yrs");
-  const monthsLabel = (t: 24 | 36 | 48 | 60) => `${t} months`;
 
   const PROGRAM_OPTS = [
     { id: "lease", label: "Drive-on Lease" },
@@ -557,10 +390,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   ] as const;
 
   const priceForDisplay =
-    program === "cashback" ? Math.max(0, activeGrade.price * (1 - (cashbackPct || 0))) : activeGrade.price;
-  const estMonthly = liveMonthly(activeGrade.price);
+    program === "cashback" ? Math.max(0, activeGrade.price * (1 - cashbackPct)) : activeGrade.price;
+  const estMonthly = monthly(activeGrade.price);
 
-  // preload first few images
+  // Preload a couple of images
   useEffect(() => {
     grades.slice(0, 3).forEach((g) => {
       if (!g?.image) return;
@@ -572,162 +405,108 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   /* ---------------------- UI ---------------------- */
 
   return (
-    <section className="relative bg-gradient-to-b from-white via-zinc-50 to-white">
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8">
-        {/* HERO — light, showroom-inspired */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center py-10 sm:py-14 md:py-16">
-          {/* Left copy */}
-          <div className="lg:col-span-6">
-            <p className="text-sm font-semibold tracking-[0.2em] text-zinc-600 uppercase">Configure your</p>
-            <h1 className="mt-2 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[0.95] tracking-tight uppercase text-zinc-900">
-              {vehicle.name} {activeGrade?.name ?? ""}
-            </h1>
-
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
-              <Button
-                className="h-12 rounded-xl px-5 text-base font-bold bg-amber-400 hover:bg-amber-500 text-zinc-900"
-                onClick={() => onCarBuilder(activeGrade?.name)}
+    <section className="bg-gradient-to-b from-white via-zinc-50 to-white">
+      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8 py-6 sm:py-8">
+        {/* Grade nav row (chips + engine segmented) */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {grades.map((g, i) => (
+              <button
+                key={g.name}
+                onClick={() => selectIndex(i)}
+                className={`rounded-full border px-3 py-2 text-sm font-medium ${
+                  i === activeIndex ? "border-amber-400 bg-amber-50 text-zinc-900" : "border-zinc-300 hover:bg-zinc-50"
+                }`}
+                aria-pressed={i === activeIndex}
               >
-                {/* inline package icon to avoid lucide version issues */}
-                <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                  <path d="M3.29 7L12 12l8.71-5M12 22V12" />
-                </svg>
-                Start Configuration
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-12 rounded-xl px-5 text-base font-bold border-zinc-300 hover:bg-zinc-50"
-                onClick={() => {
-                  gradesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                Explore the Model
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Engine selector */}
-            <div className="mt-8">
-              <Segmented
-                ariaLabel="Select engine"
-                options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
-                value={selectedEngine}
-                onChange={(id) => {
-                  setSelectedEngine(id);
-                  track("engine_select", { engine: id });
-                }}
-              />
-              <div className="mt-2 flex items-center gap-2 text-xs text-zinc-600">
-                <Info className="h-3.5 w-3.5" />
-                <span>Figures are illustrative and may vary by market.</span>
-              </div>
-            </div>
+                {g.name}
+              </button>
+            ))}
           </div>
 
-          {/* Right poster */}
-          <div className="lg:col-span-6">
-            <div className="relative">
-              <div className="absolute -inset-6 rounded-[32px] bg-gradient-to-tr from-amber-200/40 to-white blur-2xl" />
-              <div className="relative overflow-hidden rounded-[28px] bg-white ring-1 ring-zinc-200 shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
-                <div className="aspect-[16/9]">
-                  <img
-                    src={activeGrade?.image}
-                    alt={`${vehicle.name} poster`}
-                    className="h-full w-full object-contain"
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <Segmented
+            ariaLabel="Select engine"
+            options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
+            value={selectedEngine}
+            onChange={(id) => setSelectedEngine(id)}
+          />
         </div>
 
-        {/* ====== CONTENT: DESKTOP grid / MOBILE carousel + Decision Panel ====== */}
-        <div id="grades-start" ref={gradesRef} className="py-8 sm:py-10">
-          {/* Desktop */}
-          <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8">
-            {/* Grade grid */}
-            <div className="lg:col-span-7">
-              <div className="grid grid-cols-3 gap-6">
-                {grades.map((g) => (
-                  <GradeTile
-                    key={g.name}
-                    vehicleName={vehicle.name}
-                    grade={g}
-                    selected={g.name === activeGrade.name}
-                    onSelect={() => {
-                      setActiveGradeName(g.name);
-                      onGradeSelect(g.name);
-                    }}
-                    onBuild={() => onCarBuilder(g.name)}
-                  />
-                ))}
-              </div>
-            </div>
+        {/* ===== Desktop: FULL-STAGE per grade ===== */}
+        <div className="mt-6 hidden lg:block">
+          <div className="relative overflow-hidden rounded-3xl ring-1 ring-zinc-200 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
+            {/* nav arrows */}
+            <button
+              aria-label="Previous grade"
+              onClick={() => selectIndex(activeIndex - 1)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              aria-label="Next grade"
+              onClick={() => selectIndex(activeIndex + 1)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
 
-            {/* Decision panel */}
-            <div className="lg:col-span-5">
-              <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
-                <CardContent className="p-5 sm:p-6">
-                  <div className="mb-2">
-                    <h3 className="text-xl font-semibold tracking-tight text-zinc-900">{activeGrade.name}</h3>
-                    <p className="text-sm text-zinc-600">{activeGrade.description}</p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeGrade.name + program + term + dpPct + apr + residualPct + cashbackPct}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: prefersReduced ? 0 : 0.3 }}
+                className="grid grid-cols-12 gap-0"
+              >
+                {/* Finance / details */}
+                <div className="col-span-5 p-8">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        {activeGrade.badge && (
+                          <Badge className={`${activeGrade.badgeColor}`}>
+                            {activeGrade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />}{" "}
+                            {activeGrade.badge}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-zinc-500">Grade</span>
+                      </div>
+                      <h2 className="mt-2 text-4xl font-extrabold tracking-tight uppercase">{activeGrade.name}</h2>
+                      <p className="mt-1 text-sm text-zinc-600">{activeGrade.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-zinc-500">From</div>
+                      <div className="text-2xl font-extrabold text-zinc-900">{AEDFmt.format(priceForDisplay)}</div>
+                      <div className="text-xs text-zinc-600">{AEDFmt.format(estMonthly)}/mo est.</div>
+                    </div>
                   </div>
 
-                  <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+                  <Separator className="my-5" />
+
+                  <div className="grid grid-cols-2 gap-3">
                     <SpecRow label="Engine" value={activeGrade.specs.engine} />
                     <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
                     <SpecRow label="Transmission" value={activeGrade.specs.transmission} />
                     <SpecRow label="Economy" value={activeGrade.specs.fuelEconomy} />
                   </div>
 
-                  <Separator className="my-4" />
-
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="text-[12px] sm:text-sm text-zinc-600">Finance Program</div>
+                  <div className="mt-5 flex items-center justify-between">
+                    <span className="text-sm text-zinc-600">Finance Program</span>
                     <Segmented
                       ariaLabel="Select finance program"
-                      options={PROGRAM_OPTS as unknown as { id: string; label: string }[]}
+                      options={[
+                        { id: "lease", label: "Lease" },
+                        { id: "hp", label: "Hire Purchase" },
+                        { id: "cashback", label: "Cash Back" },
+                      ]}
                       value={program}
-                      onChange={(id) => {
-                        setProgram(id as FinanceProgram);
-                        track("program_select", { program: id });
-                      }}
+                      onChange={(id) => setProgram(id as FinanceProgram)}
                     />
                   </div>
 
-                  <div className="mb-4 flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-2xl sm:text-3xl font-extrabold leading-none text-zinc-900">
-                        {AEDFmt.format(priceForDisplay)}
-                      </div>
-                      <div className="mt-1 text-[12px] sm:text-xs text-zinc-600" aria-live="polite" aria-atomic="true">
-                        From {AEDFmt.format(estMonthly)}/mo <span className="opacity-70">(est.)</span>
-                      </div>
-                      {program === "cashback" && (
-                        <div className="mt-1 text-[11px] sm:text-xs text-emerald-700">
-                          Cashback: {Math.round((cashbackPct || 0) * 100)}% (
-                          {AEDFmt.format(activeGrade.price * (cashbackPct || 0))})
-                        </div>
-                      )}
-                      {program === "lease" && (
-                        <div className="mt-1 text-[11px] sm:text-xs text-zinc-700">
-                          Residual: {Math.round((residualPct || 0) * 100)}% of MSRP
-                        </div>
-                      )}
-                    </div>
-                    {program === "lease" ? (
-                      <PaymentDonut a={60} b={40} label="Lease: Depreciation vs Finance" />
-                    ) : (
-                      <PaymentDonut a={75} b={25} label="HP: Principal vs Interest" />
-                    )}
-                  </div>
-
-                  <div className="mb-4 grid gap-3">
+                  <div className="mt-4 grid gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {allowedTerms.map((t) => (
                         <Button
@@ -735,15 +514,9 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                           variant={term === t ? "secondary" : "outline"}
                           size="sm"
                           className="rounded-full px-3 py-2"
-                          onClick={() => {
-                            setTerm(t);
-                            track("term_change", { term: t });
-                          }}
+                          onClick={() => setTerm(t)}
                         >
-                          <div className="leading-tight text-left">
-                            <div className="text-[11px] sm:text-xs font-semibold">{termLabel(t)}</div>
-                            <div className="text-[10px] opacity-70">{monthsLabel(t)}</div>
-                          </div>
+                          {termLabel(t)}
                         </Button>
                       ))}
                     </div>
@@ -753,24 +526,18 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                       min={program === "lease" ? 0 : 0.1}
                       max={0.5}
                       step={0.05}
-                      value={dpPctRaw}
-                      onChange={(v) => {
-                        setDpPctRaw(v);
-                        track("dp_change", { v });
-                      }}
+                      value={dpPct}
+                      onChange={setDpPct}
                       format={(v) => `${Math.round(v * 100)}%`}
                     />
 
                     <RangeControl
-                      label={program === "lease" ? "APR (for MF calc)" : "APR"}
+                      label={program === "lease" ? "APR (MF base)" : "APR"}
                       min={0.02}
                       max={0.06}
                       step={0.0025}
-                      value={aprRaw}
-                      onChange={(v) => {
-                        setAprRaw(v);
-                        track("apr_change", { v });
-                      }}
+                      value={apr}
+                      onChange={setApr}
                       format={(v) => `${(v * 100).toFixed(2)}%`}
                     />
 
@@ -780,74 +547,50 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                         min={0.25}
                         max={0.65}
                         step={0.01}
-                        value={residualPctRaw}
-                        onChange={(v) => {
-                          setResidualPctRaw(v);
-                          track("residual_change", { v });
-                        }}
+                        value={residualPct}
+                        onChange={setResidualPct}
                         format={(v) => `${Math.round(v * 100)}%`}
                       />
                     )}
-
                     {program === "cashback" && (
                       <RangeControl
                         label="Cashback"
                         min={0}
                         max={0.1}
                         step={0.01}
-                        value={cashbackPctRaw}
-                        onChange={(v) => {
-                          setCashbackPctRaw(v);
-                          track("cashback_change", { v });
-                        }}
+                        value={cashbackPct}
+                        onChange={setCashbackPct}
                         format={(v) => `${Math.round(v * 100)}%`}
                       />
                     )}
                   </div>
 
-                  <ul className="mb-4 grid list-disc grid-cols-2 gap-x-6 gap-y-1 pl-4 text-[12px] sm:text-sm text-zinc-700">
+                  <ul className="mt-4 grid list-disc grid-cols-2 gap-x-6 gap-y-1 pl-4 text-[12px] sm:text-sm text-zinc-700">
                     {activeGrade.features.slice(0, 6).map((f, i) => (
                       <li key={i}>{f}</li>
                     ))}
                   </ul>
 
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        variant="outline"
-                        className="w-full h-10 text-[13px] border-zinc-300 hover:bg-zinc-50"
-                        onClick={() => {
-                          onCarBuilder(activeGrade.name);
-                          track("cta_build_click", {
-                            grade: activeGrade.name,
-                            price: activeGrade.price,
-                            program,
-                            term,
-                            dpPct,
-                            apr,
-                          });
-                        }}
-                      >
-                        <Wrench className="mr-1 h-4 w-4" /> Build
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full h-10 text-[13px] border-zinc-300 hover:bg-zinc-50"
-                        onClick={() => {
-                          onTestDrive();
-                          track("cta_testdrive_click", { grade: activeGrade.name });
-                        }}
-                      >
-                        <CarIcon className="mr-1 h-4 w-4" /> Test Drive
-                      </Button>
-                    </div>
-
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-10 rounded-xl border-zinc-300 hover:bg-zinc-50"
+                      onClick={() => onCarBuilder(activeGrade.name)}
+                    >
+                      <Wrench className="mr-1 h-4 w-4" /> Build
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-10 rounded-xl border-zinc-300 hover:bg-zinc-50"
+                      onClick={onTestDrive}
+                    >
+                      <CarIcon className="mr-1 h-4 w-4" /> Test Drive
+                    </Button>
                     <Button
                       variant="ghost"
-                      className="w-full h-10"
+                      className="h-10 rounded-xl"
                       onClick={() => {
                         setIsComparisonOpen(true);
-                        track("compare_open", { engine: selectedEngine });
                         onGradeComparison?.();
                       }}
                     >
@@ -855,88 +598,123 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     </Button>
                   </div>
 
-                  <p className="mt-4 text-center text-[10.5px] sm:text-[11px] leading-tight text-zinc-600">
-                    * Illustrative estimates. Actual offers subject to credit approval & program terms.
+                  <p className="mt-3 text-[11px] text-zinc-600">
+                    <Info className="inline-block -mt-1 mr-1 h-3.5 w-3.5" />
+                    Figures are illustrative and may vary by market.
                   </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </div>
 
-          {/* Mobile */}
-          <div className="block lg:hidden">
-            <div className="mb-6">
-              <Carousel className="w-full" opts={{ loop: true, align: "center" }}>
-                <CarouselContent className="-ml-4">
-                  {grades.map((g) => (
-                    <CarouselItem key={g.name} className="pl-4 basis-[85%] sm:basis-[70%]">
-                      <GradeTile
-                        vehicleName={vehicle.name}
-                        grade={g}
-                        selected={g.name === activeGrade.name}
-                        onSelect={() => {
-                          setActiveGradeName(g.name);
-                          onGradeSelect(g.name);
-                        }}
-                        onBuild={() => onCarBuilder(g.name)}
+                {/* Poster */}
+                <div className="col-span-7">
+                  <div className="relative h-full w-full bg-gradient-to-tr from-amber-100/40 to-transparent">
+                    <div className="aspect-[16/9] w-full">
+                      <img
+                        src={activeGrade.image}
+                        alt={`${vehicle.name} ${activeGrade.name}`}
+                        className="h-full w-full object-contain"
+                        loading="eager"
+                        decoding="async"
                       />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="left-2" />
-                <CarouselNext className="right-2" />
-              </Carousel>
+                    </div>
+                    {/* CTA overlay (bottom-right) */}
+                    <div className="absolute bottom-5 right-5 hidden xl:flex items-center gap-2">
+                      <Button
+                        className="rounded-xl bg-amber-400 hover:bg-amber-500 text-zinc-900"
+                        onClick={() => onCarBuilder(activeGrade.name)}
+                      >
+                        Start Configuration <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* ===== Mobile: compact ===== */}
+        <div className="mt-6 lg:hidden">
+          {/* Stage poster */}
+          <div className="overflow-hidden rounded-2xl ring-1 ring-zinc-200 bg-white shadow">
+            <div className="relative">
+              {activeGrade.badge && (
+                <div className="absolute left-3 top-3 z-10">
+                  <Badge className={`${activeGrade.badgeColor}`}>
+                    {activeGrade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />} {activeGrade.badge}
+                  </Badge>
+                </div>
+              )}
+              <img
+                src={activeGrade.image}
+                alt={`${vehicle.name} ${activeGrade.name}`}
+                className="w-full h-auto object-contain"
+                loading="eager"
+                decoding="async"
+              />
             </div>
 
-            <Card className="rounded-3xl border-0 bg-white p-1 shadow-[0_16px_40px_rgba(0,0,0,0.07)]">
-              <CardContent className="p-4 sm:p-5">
-                <div className="mb-2">
-                  <h3 className="text-lg font-semibold text-zinc-900">{activeGrade.name}</h3>
-                  <p className="text-[13px] text-zinc-600">{activeGrade.description}</p>
-                </div>
-
-                <div className="mb-3 grid grid-cols-2 gap-3 text-[13px]">
-                  <SpecRow label="Engine" value={activeGrade.specs.engine} />
-                  <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
-                  <SpecRow label="Transmission" value={activeGrade.specs.transmission} />
-                  <SpecRow label="Economy" value={activeGrade.specs.fuelEconomy} />
-                </div>
-
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[13px] text-zinc-600">Finance Program</span>
-                  <Segmented
-                    ariaLabel="Select finance program"
-                    options={PROGRAM_OPTS as unknown as { id: string; label: string }[]}
-                    value={program}
-                    onChange={(id) => {
-                      setProgram(id as FinanceProgram);
-                      track("program_select", { program: id });
-                    }}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <div className="text-2xl font-extrabold text-zinc-900">{AEDFmt.format(priceForDisplay)}</div>
-                  <div className="text-[12px] text-zinc-600">
-                    From {AEDFmt.format(estMonthly)}/mo <span className="opacity-70">(est.)</span>
+            <Card className="border-0 shadow-none">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-extrabold uppercase">{activeGrade.name}</h2>
+                    <p className="text-xs text-zinc-600">{activeGrade.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-zinc-500">From</div>
+                    <div className="text-lg font-extrabold">{AEDFmt.format(priceForDisplay)}</div>
+                    <div className="text-xs text-zinc-600">{AEDFmt.format(estMonthly)}/mo</div>
                   </div>
                 </div>
 
-                <div className="grid gap-3">
-                  <MobileCollapsible title="Term & Down Payment" defaultOpen>
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                {/* concise chips */}
+                <div className="mt-3 flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {grades.map((g, i) => (
+                    <button
+                      key={g.name}
+                      onClick={() => selectIndex(i)}
+                      className={`rounded-full border px-3 py-1.5 text-[12px] ${
+                        i === activeIndex ? "border-amber-400 bg-amber-50" : "border-zinc-300"
+                      }`}
+                    >
+                      {g.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* compact specs */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
+                  <SpecRow label="Engine" value={activeGrade.specs.engine} />
+                  <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
+                </div>
+
+                {/* collapsible finance (closed by default) */}
+                <MobileCollapsible title="Finance Options">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-[13px] text-zinc-600">Program</span>
+                    <Segmented
+                      ariaLabel="Select finance program"
+                      options={[
+                        { id: "lease", label: "Lease" },
+                        { id: "hp", label: "HP" },
+                        { id: "cashback", label: "Cash" },
+                      ]}
+                      value={program}
+                      onChange={(id) => setProgram(id as FinanceProgram)}
+                    />
+                  </div>
+
+                  <div className="grid gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       {allowedTerms.map((t) => (
                         <Button
                           key={t}
                           variant={term === t ? "secondary" : "outline"}
                           size="sm"
-                          className="rounded-full px-3 py-2"
+                          className="rounded-full"
                           onClick={() => setTerm(t)}
                         >
-                          <div className="leading-tight text-left">
-                            <div className="text-[11px] font-semibold">{termLabel(t)}</div>
-                            <div className="text-[10px] opacity-70">{monthsLabel(t)}</div>
-                          </div>
+                          {termLabel(t)}
                         </Button>
                       ))}
                     </div>
@@ -945,75 +723,58 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                       min={program === "lease" ? 0 : 0.1}
                       max={0.5}
                       step={0.05}
-                      value={dpPctRaw}
-                      onChange={setDpPctRaw}
+                      value={dpPct}
+                      onChange={setDpPct}
                       format={(v) => `${Math.round(v * 100)}%`}
                     />
-                  </MobileCollapsible>
-
-                  <MobileCollapsible title="Rate & Program Options">
                     <RangeControl
-                      label={program === "lease" ? "APR (for MF calc)" : "APR"}
+                      label={program === "lease" ? "APR (MF)" : "APR"}
                       min={0.02}
                       max={0.06}
                       step={0.0025}
-                      value={aprRaw}
-                      onChange={setAprRaw}
+                      value={apr}
+                      onChange={setApr}
                       format={(v) => `${(v * 100).toFixed(2)}%`}
                     />
                     {program === "lease" && (
-                      <div className="mt-3">
-                        <RangeControl
-                          label="Residual value"
-                          min={0.25}
-                          max={0.65}
-                          step={0.01}
-                          value={residualPctRaw}
-                          onChange={setResidualPctRaw}
-                          format={(v) => `${Math.round(v * 100)}%`}
-                        />
-                      </div>
+                      <RangeControl
+                        label="Residual"
+                        min={0.25}
+                        max={0.65}
+                        step={0.01}
+                        value={residualPct}
+                        onChange={setResidualPct}
+                        format={(v) => `${Math.round(v * 100)}%`}
+                      />
                     )}
                     {program === "cashback" && (
-                      <div className="mt-3">
-                        <RangeControl
-                          label="Cashback"
-                          min={0}
-                          max={0.1}
-                          step={0.01}
-                          value={cashbackPctRaw}
-                          onChange={setCashbackPctRaw}
-                          format={(v) => `${Math.round(v * 100)}%`}
-                        />
-                      </div>
+                      <RangeControl
+                        label="Cashback"
+                        min={0}
+                        max={0.1}
+                        step={0.01}
+                        value={cashbackPct}
+                        onChange={setCashbackPct}
+                        format={(v) => `${Math.round(v * 100)}%`}
+                      />
                     )}
-                  </MobileCollapsible>
-                </div>
+                  </div>
+                </MobileCollapsible>
 
-                <ul className="mt-4 mb-4 grid list-disc grid-cols-1 gap-x-6 gap-y-1 pl-4 text-[13px] text-zinc-700 sm:grid-cols-2">
-                  {activeGrade.features.slice(0, 6).map((f, i) => (
-                    <li key={i}>{f}</li>
-                  ))}
-                </ul>
-
-                <div className="flex flex-col gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
-                    className="w-full h-10 text-[13px] border-zinc-300 hover:bg-zinc-50"
+                    className="h-10 border-zinc-300"
                     onClick={() => onCarBuilder(activeGrade.name)}
                   >
                     <Wrench className="mr-1 h-4 w-4" /> Build
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 text-[13px] border-zinc-300 hover:bg-zinc-50"
-                    onClick={onTestDrive}
-                  >
-                    <CarIcon className="mr-1 h-4 w-4" /> Test Drive
+                  <Button variant="outline" className="h-10 border-zinc-300" onClick={onTestDrive}>
+                    <CarIcon className="mr-1 h-4 w-4" /> Drive
                   </Button>
                   <Button
                     variant="ghost"
-                    className="w-full h-10"
+                    className="col-span-2 h-10"
                     onClick={() => {
                       setIsComparisonOpen(true);
                       onGradeComparison?.();
@@ -1022,17 +783,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     Compare all grades
                   </Button>
                 </div>
-
-                <p className="mt-4 text-center text-[11px] leading-tight text-zinc-600">
-                  * Illustrative estimates. Actual offers subject to credit approval & program terms.
-                </p>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
 
-      {/* Comparison */}
+      {/* Comparison modal/sheet */}
       <VehicleGradeComparison
         isOpen={isComparisonOpen}
         onClose={() => setIsComparisonOpen(false)}
@@ -1050,17 +807,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   );
 };
 
-/* Compact mobile collapsible (light theme) */
-const MobileCollapsible: React.FC<{
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}> = ({ title, children, defaultOpen }) => {
-  const [open, setOpen] = useState(!!defaultOpen);
+/* ------------ Mobile collapsible ------------ */
+const MobileCollapsible: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="border rounded-xl bg-white">
+    <div className="mt-4 rounded-xl border">
       <button
-        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-zinc-900"
+        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
