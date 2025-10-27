@@ -1,22 +1,24 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, Info, Star, Wrench, Car as CarIcon, ArrowRight, ChevronDown } from "lucide-react";
-import type { VehicleModel } from "@/types/vehicle";
-import VehicleGradeComparison from "./VehicleGradeComparison";
-
-/* =========================================================
-   Platinum Light v2 — Premium full-stage design
-   - Desktop: poster (7/12) + finance (5/12), finance always visible
-   - Mobile: poster + compact header; single collapsible for finance
-   - All functions preserved; arrows/chips only change grade
-   - Light theme, porcelain surfaces, amber primary, subtle depth
-========================================================= */
+import {
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Star,
+  Wrench,
+  ArrowRight,
+  Zap,
+  Gauge,
+  Fuel,
+  Settings,
+  X,
+  Check,
+} from "lucide-react";
 
 type EngineOption = {
   name: string;
@@ -48,7 +50,7 @@ type Grade = {
 };
 
 export interface EngineGradeSelectionProps {
-  vehicle: VehicleModel;
+  vehicle: any;
   onCarBuilder: (gradeName?: string) => void;
   onTestDrive: () => void;
   onGradeSelect: (gradeName: string) => void;
@@ -56,8 +58,6 @@ export interface EngineGradeSelectionProps {
 }
 
 type FinanceProgram = "lease" | "hp" | "cashback";
-
-/* --------- Formatters + Finance --------- */
 
 const AEDFmt = new Intl.NumberFormat("en-AE", {
   style: "currency",
@@ -68,7 +68,9 @@ const AEDFmt = new Intl.NumberFormat("en-AE", {
 const roundToStep = (n: number, step = 10) => Math.round(n / step) * step;
 
 function hpMonthly(price: number, opts: { downPaymentPct: number; annualRate: number; termMonths: number }): number {
-  const { downPaymentPct, annualRate, termMonths } = opts;
+  const downPaymentPct = opts.downPaymentPct;
+  const annualRate = opts.annualRate;
+  const termMonths = opts.termMonths;
   const principal = price * (1 - downPaymentPct);
   const r = annualRate / 12;
   if (r <= 0) return roundToStep(principal / termMonths);
@@ -80,142 +82,27 @@ function leaseMonthly(
   price: number,
   opts: { downPaymentPct: number; annualRate: number; termMonths: number; residualPct: number },
 ): number {
-  const { downPaymentPct, annualRate, termMonths, residualPct } = opts;
+  const downPaymentPct = opts.downPaymentPct;
+  const annualRate = opts.annualRate;
+  const termMonths = opts.termMonths;
+  const residualPct = opts.residualPct;
   const capCost = price * (1 - downPaymentPct);
   const residual = price * residualPct;
   const depreciation = (capCost - residual) / termMonths;
-  const moneyFactor = annualRate / 24; // APR(decimal)/24
+  const moneyFactor = annualRate / 24;
   const financeCharge = (capCost + residual) * moneyFactor;
   return Math.max(0, roundToStep(depreciation + financeCharge));
 }
 
-/* --------- UI atoms --------- */
+const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = (props) => {
+  const vehicle = props.vehicle;
+  const onCarBuilder = props.onCarBuilder;
+  const onTestDrive = props.onTestDrive;
+  const onGradeSelect = props.onGradeSelect;
+  const onGradeComparison = props.onGradeComparison;
 
-const Segmented: React.FC<{
-  options: { id: string; label: string }[];
-  value: string;
-  onChange: (id: string) => void;
-  ariaLabel?: string;
-}> = ({ options, value, onChange, ariaLabel }) => {
-  const rm = useReducedMotion();
-  return (
-    <div
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className="inline-flex items-center gap-1 rounded-3xl bg-white p-1 shadow-sm ring-1 ring-black/5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    >
-      <AnimatePresence initial={false}>
-        {options.map((opt) => {
-          const selected = value === opt.id;
-          return (
-            <motion.button
-              key={opt.id}
-              role="radio"
-              aria-checked={selected}
-              type="button"
-              onClick={() => onChange(opt.id)}
-              className={`relative shrink-0 rounded-2xl px-3 py-2 text-[12px] sm:text-[13px] font-semibold ${
-                selected ? "text-white" : "text-zinc-900"
-              }`}
-              whileTap={{ scale: rm ? 1 : 0.98 }}
-            >
-              {selected && (
-                <motion.span
-                  layoutId="seg-bg"
-                  className="absolute inset-0 rounded-2xl"
-                  transition={{ duration: rm ? 0 : 0.2 }}
-                  // black pill when selected (like your ref)
-                  style={{ background: "linear-gradient(180deg,#111,#232323)" }}
-                />
-              )}
-              <span className="relative z-10">{opt.label}</span>
-            </motion.button>
-          );
-        })}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const SpecRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex items-center justify-between text-[12px] sm:text-sm">
-    <span className="text-zinc-600">{label}</span>
-    <span className="font-medium text-zinc-900">{value}</span>
-  </div>
-);
-
-const RangeControl: React.FC<{
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (v: number) => void;
-  format?: (v: number) => string;
-}> = ({ label, min, max, step, value, onChange, format }) => (
-  <div className="grid gap-2">
-    <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
-      <span className="text-zinc-600">{label}</span>
-      <span className="font-medium text-zinc-900">{format ? format(value) : String(value)}</span>
-    </div>
-    <input
-      type="range"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value))}
-      className="w-full accent-zinc-900"
-      aria-label={label}
-    />
-  </div>
-);
-
-/* --------- Mobile collapsible --------- */
-
-const MobileCollapsible: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mt-4 rounded-xl border">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        <span>{title}</span>
-        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="px-3 pb-3"
-          >
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-/* =============================
-   Main Component
-============================= */
-
-const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
-  vehicle,
-  onCarBuilder,
-  onTestDrive,
-  onGradeSelect,
-  onGradeComparison,
-}) => {
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
-
-  // --- Finance state
+  const [financeDrawerOpen, setFinanceDrawerOpen] = useState(false);
   const [program, setProgram] = useState<FinanceProgram>("hp");
   const [term, setTerm] = useState<24 | 36 | 48 | 60>(60);
   const [dpPct, setDpPct] = useState(0.2);
@@ -241,12 +128,13 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     }
   }, [program, term]);
 
-  const allowedTerms = useMemo(
-    () => (program === "lease" ? ([24, 36, 48] as const) : ([36, 48, 60] as const)),
-    [program],
-  );
+  const allowedTerms = useMemo(() => {
+    if (program === "lease") {
+      return [24, 36, 48] as const;
+    }
+    return [36, 48, 60] as const;
+  }, [program]);
 
-  // --- Engines
   const engines = useMemo<EngineOption[]>(
     () => [
       { name: "3.5L", power: "295 HP", torque: "263 lb-ft", type: "V6 Dynamic Force", efficiency: "9.2L/100km" },
@@ -254,13 +142,14 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     ],
     [],
   );
+
   const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
 
-  // --- Monthly calc
   const monthly = useCallback(
     (price: number) => {
-      if (program === "lease")
+      if (program === "lease") {
         return leaseMonthly(price, { termMonths: term, downPaymentPct: dpPct, annualRate: apr, residualPct });
+      }
       if (program === "cashback") {
         const effective = Math.max(0, price * (1 - cashbackPct));
         return hpMonthly(effective, { termMonths: term, downPaymentPct: dpPct, annualRate: apr });
@@ -270,10 +159,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [program, term, dpPct, apr, residualPct, cashbackPct],
   );
 
-  // --- Grades (engine-aware)
   const [activeGradeName, setActiveGradeName] = useState<string>("Limited");
+
   const grades: Grade[] = useMemo(() => {
-    const baseImage = (vehicle as any)?.image || (vehicle as any)?.heroImage || "/images/vehicle-fallback.png";
+    const baseImage = vehicle?.image || vehicle?.heroImage || "/images/vehicle-fallback.png";
     const basePrice = vehicle.price ?? 0;
 
     const build = (
@@ -313,7 +202,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           "TRD Off-Road",
           20000,
           "Value",
-          "bg-blue-100 text-blue-700",
+          "bg-blue-500/10 text-blue-400 border-blue-400/30",
           ["Crawl Control", "Multi-Terrain Select", "Skid Plates", "TRD Wheels", "Locking Rear Diff", "Hill Descent"],
           {
             engine: "4.0L V6 1GR-FE",
@@ -328,7 +217,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           "TRD Pro",
           50000,
           "Most Popular",
-          "bg-orange-100 text-orange-700",
+          "bg-amber-500/10 text-amber-400 border-amber-400/30",
           ["Fox Racing Shocks", "TRD Pro Wheels", "Premium Interior", "LED Light Bar", "Skid Plates", "TRD Intake"],
           {
             engine: "4.0L V6 1GR-FE",
@@ -347,7 +236,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         "SE",
         0,
         "Value",
-        "bg-blue-100 text-blue-700",
+        "bg-blue-500/10 text-blue-400 border-blue-400/30",
         ["LED Headlights", "Smart Key", '8" Display', "Toyota Safety Sense", '17" Alloys', "Rear Camera"],
         {
           engine: "3.5L V6 Dynamic Force",
@@ -362,7 +251,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         "XLE",
         20000,
         "Most Popular",
-        "bg-orange-100 text-orange-700",
+        "bg-amber-500/10 text-amber-400 border-amber-400/30",
         ["Sunroof", "Premium Audio", "Heated Seats", "Wireless Charging", "360° Camera", "Power Tailgate"],
         {
           engine: "3.5L V6 Dynamic Force",
@@ -377,7 +266,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         "Limited",
         40000,
         "Luxury",
-        "bg-purple-100 text-purple-700",
+        "bg-purple-500/10 text-purple-400 border-purple-400/30",
         ["Leather Interior", "JBL", "Head-up Display", "Adaptive Cruise", "Premium Paint", "Ventilated Seats"],
         {
           engine: "3.5L V6 Dynamic Force",
@@ -391,13 +280,11 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     ];
   }, [selectedEngine, vehicle, monthly]);
 
-  // keep active grade valid after engine change
   useEffect(() => {
     if (!grades.some((g) => g.name === activeGradeName)) {
       setActiveGradeName(grades[0]?.name ?? "");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grades]);
+  }, [grades, activeGradeName]);
 
   const activeIndex = Math.max(
     0,
@@ -412,20 +299,10 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     onGradeSelect(name);
   };
 
-  const termLabel = (t: 24 | 36 | 48 | 60) => (t === 24 ? "3 yrs" : t === 36 ? "4 yrs" : t === 48 ? "5 yrs" : "5 yrs");
-
-  const programOpts = [
-    { id: "lease", label: "Lease" },
-    { id: "hp", label: "Hire Purchase" },
-    { id: "cashback", label: "Cash Back" },
-  ] as const;
-
   const priceForDisplay =
     program === "cashback" ? Math.max(0, activeGrade.price * (1 - cashbackPct)) : activeGrade.price;
-
   const estMonthly = useMemo(() => monthly(activeGrade.price), [activeGrade.price, monthly]);
 
-  // preload poster images
   useEffect(() => {
     grades.slice(0, 3).forEach((g) => {
       if (!g?.image) return;
@@ -435,474 +312,387 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
   }, [grades]);
 
   return (
-    <section className="bg-[radial-gradient(1200px_600px_at_50%_-200px,rgba(253,224,71,0.10),transparent)]">
-      <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 md:px-8 py-6 sm:py-8">
-        {/* Top controls */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          {/* Grade chips */}
-          <div className="flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {grades.map((g, i) => (
-              <button
-                key={g.name}
-                type="button"
-                onClick={() => selectIndex(i)}
-                className={`rounded-full border px-3 py-2 text-sm font-medium shadow-sm ${
-                  i === activeIndex
-                    ? "border-amber-300 bg-amber-50 text-zinc-900"
-                    : "border-zinc-200 bg-white hover:bg-zinc-50"
-                }`}
-                aria-pressed={i === activeIndex}
-              >
-                {g.name}
-              </button>
-            ))}
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
+        <div
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-8 flex-wrap gap-4"
+        >
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">{vehicle.name}</h1>
+            <p className="text-slate-400 mt-1">Configure your perfect drive</p>
           </div>
 
-          {/* Engine segmented (black selected pill) */}
-          <Segmented
-            ariaLabel="Select engine"
-            options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
-            value={selectedEngine}
-            onChange={(id) => setSelectedEngine(id)}
-          />
-        </div>
+          <div className="flex gap-2">
+            {engines.map((eng) => (
+              <motion.button
+                key={eng.name}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedEngine(eng.name)}
+                className={`px-6 py-3 rounded-2xl font-semibold transition-all ${selectedEngine === eng.name ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/50" : "bg-white/5 text-slate-400 hover:bg-white/10 backdrop-blur-xl border border-white/10"}`}
+              >
+                <div className="text-sm">{eng.name}</div>
+                <div className="text-xs opacity-75">{eng.power}</div>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
 
-        {/* ====== Desktop: poster + finance ====== */}
-        <div className="mt-6 hidden lg:block">
-          <div className="grid grid-cols-12 gap-6 items-stretch">
-            {/* Poster */}
-            <div className="col-span-7">
-              <div className="relative h-full overflow-hidden rounded-[28px] ring-1 ring-zinc-200 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
-                {/* arrows — change grade only */}
-                <button
-                  type="button"
-                  aria-label="Previous grade"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    selectIndex(activeIndex - 1);
-                  }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next grade"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    selectIndex(activeIndex + 1);
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-2 shadow hover:bg-white"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-
-                {/* Badge + price chip */}
-                <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
-                  {activeGrade.badge && (
-                    <Badge className={`${activeGrade.badgeColor}`}>
-                      {activeGrade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />}
-                      {activeGrade.badge}
-                    </Badge>
-                  )}
-                  <div className="rounded-full bg-white/95 backdrop-blur border px-3 py-1 text-[12px] font-semibold shadow-sm">
-                    {AEDFmt.format(activeGrade.price)}
-                  </div>
+        <div className="grid lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative">
+              <div className="absolute top-6 left-6 right-6 z-20 flex justify-center">
+                <div className="flex gap-3 p-2 bg-black/40 backdrop-blur-2xl rounded-3xl border border-white/10 overflow-x-auto">
+                  {grades.map((g, i) => (
+                    <motion.button
+                      key={g.name}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => selectIndex(i)}
+                      className={`relative px-6 py-3 rounded-2xl font-semibold transition-all whitespace-nowrap ${i === activeIndex ? "text-white" : "text-slate-400 hover:text-white"}`}
+                    >
+                      {i === activeIndex && (
+                        <motion.div
+                          layoutId="activeGrade"
+                          className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className="relative z-10">{g.name}</span>
+                    </motion.button>
+                  ))}
                 </div>
+              </div>
 
-                {/* Poster image */}
+              <div className="absolute top-6 left-6 z-20">
+                <Badge className={`${activeGrade.badgeColor} border backdrop-blur-xl px-4 py-2 text-sm font-semibold`}>
+                  {activeGrade.badge === "Most Popular" && <Star className="mr-2 h-4 w-4 fill-current" />}
+                  {activeGrade.badge}
+                </Badge>
+              </div>
+
+              <button
+                onClick={() => selectIndex(activeIndex - 1)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-4 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white hover:bg-black/60 transition-all"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={() => selectIndex(activeIndex + 1)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-4 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white hover:bg-black/60 transition-all"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeGrade.name}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="aspect-[16/9]"
                   >
-                    <div className="aspect-[16/9] w-full">
-                      <img
-                        src={activeGrade.image}
-                        alt={`${vehicle.name} ${activeGrade.name}`}
-                        className="h-full w-full object-contain"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    </div>
+                    <img
+                      src={activeGrade.image}
+                      alt={`${vehicle.name} ${activeGrade.name}`}
+                      className="w-full h-full object-contain"
+                    />
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Start Configuration — big amber CTA under poster */}
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-                  <Button
-                    type="button"
-                    className="rounded-xl bg-amber-400 hover:bg-amber-500 text-zinc-900 shadow-lg"
-                    onClick={() => onCarBuilder(activeGrade.name)}
+                <div className="absolute bottom-6 left-6 right-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    className="p-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10"
                   >
-                    Start Configuration <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                    <Zap className="h-5 w-5 text-blue-400 mb-2" />
+                    <div className="text-white font-bold text-lg">{activeGrade.specs.power}</div>
+                    <div className="text-slate-400 text-xs">Power</div>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    className="p-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10"
+                  >
+                    <Gauge className="h-5 w-5 text-amber-400 mb-2" />
+                    <div className="text-white font-bold text-lg">{activeGrade.specs.acceleration}</div>
+                    <div className="text-slate-400 text-xs">0-100</div>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    className="p-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10"
+                  >
+                    <Fuel className="h-5 w-5 text-green-400 mb-2" />
+                    <div className="text-white font-bold text-lg">{activeGrade.specs.fuelEconomy}</div>
+                    <div className="text-slate-400 text-xs">Economy</div>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    className="p-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10"
+                  >
+                    <Settings className="h-5 w-5 text-purple-400 mb-2" />
+                    <div className="text-white font-bold text-lg">{activeGrade.specs.transmission}</div>
+                    <div className="text-slate-400 text-xs">Trans</div>
+                  </motion.div>
                 </div>
               </div>
-            </div>
 
-            {/* Finance panel */}
-            <div className="col-span-5">
-              <Card className="rounded-[28px] border-0 bg-white p-1 shadow-[0_16px_44px_rgba(0,0,0,0.08)] h-full">
-                <CardContent className="p-6 flex flex-col h-full">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight text-zinc-900 uppercase">
-                        {vehicle.name} {activeGrade.name}
-                      </h2>
-                      <p className="mt-1 text-sm text-zinc-600">{activeGrade.description}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-zinc-500">From</div>
-                      <div className="text-2xl font-extrabold text-zinc-900">
-                        {AEDFmt.format(
-                          program === "cashback"
-                            ? Math.max(0, activeGrade.price * (1 - cashbackPct))
-                            : activeGrade.price,
-                        )}
-                      </div>
-                      <div className="text-xs text-zinc-600">{AEDFmt.format(estMonthly)}/mo est.</div>
-                    </div>
-                  </div>
-
-                  {/* Specs */}
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <SpecRow label="Engine" value={activeGrade.specs.engine} />
-                    <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
-                    <SpecRow label="Transmission" value={activeGrade.specs.transmission} />
-                    <SpecRow label="Economy" value={activeGrade.specs.fuelEconomy} />
-                  </div>
-
-                  <Separator className="my-5" />
-
-                  {/* Program segmented */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-600">Finance Program</span>
-                    <Segmented
-                      ariaLabel="Select finance program"
-                      options={programOpts as unknown as { id: string; label: string }[]}
-                      value={program}
-                      onChange={(id) => setProgram(id as FinanceProgram)}
-                    />
-                  </div>
-
-                  {/* Terms + sliders */}
-                  <div className="mt-4 grid gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {allowedTerms.map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setTerm(t)}
-                          className={`rounded-full px-3 py-2 text-sm border ${
-                            term === t ? "bg-red-500 text-white border-red-500" : "border-zinc-300 hover:bg-zinc-50"
-                          }`}
-                          aria-pressed={term === t}
-                        >
-                          {t === 24 ? "3 yrs" : t === 36 ? "4 yrs" : t === 48 ? "5 yrs" : "5 yrs"}
-                        </button>
-                      ))}
-                    </div>
-
-                    <RangeControl
-                      label="Down payment"
-                      min={program === "lease" ? 0 : 0.1}
-                      max={0.5}
-                      step={0.05}
-                      value={dpPct}
-                      onChange={setDpPct}
-                      format={(v) => `${Math.round(v * 100)}%`}
-                    />
-                    <RangeControl
-                      label={program === "lease" ? "APR (MF base)" : "APR"}
-                      min={0.02}
-                      max={0.06}
-                      step={0.0025}
-                      value={apr}
-                      onChange={setApr}
-                      format={(v) => `${(v * 100).toFixed(2)}%`}
-                    />
-                    {program === "lease" && (
-                      <RangeControl
-                        label="Residual value"
-                        min={0.25}
-                        max={0.65}
-                        step={0.01}
-                        value={residualPct}
-                        onChange={setResidualPct}
-                        format={(v) => `${Math.round(v * 100)}%`}
-                      />
-                    )}
-                    {program === "cashback" && (
-                      <RangeControl
-                        label="Cashback"
-                        min={0}
-                        max={0.1}
-                        step={0.01}
-                        value={cashbackPct}
-                        onChange={setCashbackPct}
-                        format={(v) => `${Math.round(v * 100)}%`}
-                      />
-                    )}
-                  </div>
-
-                  {/* Features */}
-                  <ul className="mt-4 grid list-disc grid-cols-2 gap-x-6 gap-y-1 pl-4 text-[12px] sm:text-sm text-zinc-700">
-                    {activeGrade.features.slice(0, 6).map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                  </ul>
-
-                  {/* CTAs */}
-                  <div className="mt-auto pt-5 grid grid-cols-3 gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 rounded-xl border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => onCarBuilder(activeGrade.name)}
-                    >
-                      <Wrench className="mr-1 h-4 w-4" /> Build
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 rounded-xl border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={onTestDrive}
-                    >
-                      <CarIcon className="mr-1 h-4 w-4" /> Test Drive
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-10 rounded-xl text-red-600 hover:text-red-700"
-                      onClick={() => {
-                        setIsComparisonOpen(true);
-                        onGradeComparison?.();
-                      }}
-                    >
-                      Compare all grades
-                    </Button>
-                  </div>
-
-                  <p className="mt-3 text-[11px] text-zinc-600">
-                    <Info className="inline-block -mt-1 mr-1 h-3.5 w-3.5" />
-                    Figures are illustrative and may vary by market.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+              <div className="mt-6 flex gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onCarBuilder(activeGrade.name)}
+                  className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transition-all"
+                >
+                  <Wrench className="inline-block mr-2 h-5 w-5" />
+                  Start Configuration
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onTestDrive}
+                  className="py-4 px-6 bg-white/5 backdrop-blur-xl text-white rounded-2xl font-bold border border-white/10 hover:bg-white/10 transition-all"
+                >
+                  Test Drive
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
 
-        {/* ====== Mobile: compact ====== */}
-        <div className="mt-6 lg:hidden">
-          <div className="overflow-hidden rounded-[22px] ring-1 ring-zinc-200 bg-white shadow">
-            <div className="relative">
-              {/* arrows — grade only */}
-              <button
-                type="button"
-                aria-label="Previous grade"
-                onClick={() => selectIndex(activeIndex - 1)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-1.5 shadow"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                aria-label="Next grade"
-                onClick={() => selectIndex(activeIndex + 1)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full border bg-white/90 backdrop-blur p-1.5 shadow"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-
-              {/* badge & price */}
-              <div className="absolute left-3 top-3 z-10 flex items-center gap-2">
-                {activeGrade.badge && (
-                  <Badge className={`${activeGrade.badgeColor}`}>
-                    {activeGrade.badge === "Most Popular" && <Star className="mr-1 h-3 w-3" />}
-                    {activeGrade.badge}
-                  </Badge>
-                )}
-                <div className="rounded-full bg-white/95 backdrop-blur border px-2.5 py-1 text-[11px] font-semibold shadow-sm">
-                  {AEDFmt.format(activeGrade.price)}
+          <div className="lg:col-span-4">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="sticky top-8 space-y-4"
+            >
+              <div className="p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-3xl border border-white/10">
+                <div className="text-slate-400 text-sm mb-2">Starting from</div>
+                <div className="text-5xl font-bold text-white mb-4">{AEDFmt.format(priceForDisplay)}</div>
+                <div className="flex items-center justify-between p-4 bg-black/40 rounded-2xl">
+                  <div className="text-slate-400">Monthly from</div>
+                  <div className="text-2xl font-bold text-amber-400">{AEDFmt.format(estMonthly)}/mo</div>
                 </div>
               </div>
 
-              <img
-                src={activeGrade.image}
-                alt={`${vehicle.name} ${activeGrade.name}`}
-                className="w-full h-auto object-contain"
-                loading="eager"
-                decoding="async"
-              />
-            </div>
-
-            <Card className="border-0 shadow-none">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-extrabold uppercase">{activeGrade.name}</h2>
-                    <p className="text-xs text-zinc-600 line-clamp-2">{activeGrade.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] text-zinc-500">From</div>
-                    <div className="text-base font-extrabold">{AEDFmt.format(priceForDisplay)}</div>
-                    <div className="text-[11px] text-zinc-600">{AEDFmt.format(estMonthly)}/mo</div>
-                  </div>
-                </div>
-
-                {/* grade chips */}
-                <div className="mt-3 flex overflow-x-auto gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {grades.map((g, i) => (
-                    <button
-                      key={g.name}
-                      type="button"
-                      onClick={() => selectIndex(i)}
-                      className={`rounded-full border px-3 py-1.5 text-[12px] ${
-                        i === activeIndex ? "border-amber-300 bg-amber-50" : "border-zinc-300"
-                      }`}
+              <div className="p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-3xl border border-white/10">
+                <h3 className="text-white font-bold text-xl mb-4">Key Features</h3>
+                <div className="space-y-3">
+                  {activeGrade.features.map((feature, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex items-center gap-3"
                     >
-                      {g.name}
-                    </button>
+                      <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                        <Check className="h-4 w-4 text-blue-400" />
+                      </div>
+                      <span className="text-slate-300">{feature}</span>
+                    </motion.div>
                   ))}
                 </div>
+              </div>
 
-                {/* concise specs */}
-                <div className="mt-3 grid grid-cols-2 gap-2 text-[13px]">
-                  <SpecRow label="Engine" value={activeGrade.specs.engine} />
-                  <SpecRow label="Power/Torque" value={`${activeGrade.specs.power} • ${activeGrade.specs.torque}`} />
-                </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setFinanceDrawerOpen(true)}
+                className="w-full py-4 px-6 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-500/50 hover:shadow-amber-500/70 transition-all"
+              >
+                Customize Finance Options
+                <ArrowRight className="inline-block ml-2 h-5 w-5" />
+              </motion.button>
 
-                {/* single collapsible keeps mobile short */}
-                <MobileCollapsible title="Finance Options">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-[13px] text-zinc-600">Program</span>
-                    <Segmented
-                      ariaLabel="Select finance program"
-                      options={[
-                        { id: "lease", label: "Lease" },
-                        { id: "hp", label: "HP" },
-                        { id: "cashback", label: "Cash" },
-                      ]}
-                      value={program}
-                      onChange={(id) => setProgram(id as FinanceProgram)}
-                    />
-                  </div>
-
-                  <div className="grid gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {allowedTerms.map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setTerm(t)}
-                          className={`rounded-full px-3 py-2 text-sm border ${
-                            term === t ? "bg-red-500 text-white border-red-500" : "border-zinc-300"
-                          }`}
-                          aria-pressed={term === t}
-                        >
-                          {t === 24 ? "3 yrs" : t === 36 ? "4 yrs" : t === 48 ? "5 yrs" : "5 yrs"}
-                        </button>
-                      ))}
-                    </div>
-
-                    <RangeControl
-                      label="Down payment"
-                      min={program === "lease" ? 0 : 0.1}
-                      max={0.5}
-                      step={0.05}
-                      value={dpPct}
-                      onChange={setDpPct}
-                      format={(v) => `${Math.round(v * 100)}%`}
-                    />
-                    <RangeControl
-                      label={program === "lease" ? "APR (MF)" : "APR"}
-                      min={0.02}
-                      max={0.06}
-                      step={0.0025}
-                      value={apr}
-                      onChange={setApr}
-                      format={(v) => `${(v * 100).toFixed(2)}%`}
-                    />
-                    {program === "lease" && (
-                      <RangeControl
-                        label="Residual"
-                        min={0.25}
-                        max={0.65}
-                        step={0.01}
-                        value={residualPct}
-                        onChange={setResidualPct}
-                        format={(v) => `${Math.round(v * 100)}%`}
-                      />
-                    )}
-                    {program === "cashback" && (
-                      <RangeControl
-                        label="Cashback"
-                        min={0}
-                        max={0.1}
-                        step={0.01}
-                        value={cashbackPct}
-                        onChange={setCashbackPct}
-                        format={(v) => `${Math.round(v * 100)}%`}
-                      />
-                    )}
-                  </div>
-                </MobileCollapsible>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 border-red-300 text-red-600"
-                    onClick={() => onCarBuilder(activeGrade.name)}
-                  >
-                    <Wrench className="mr-1 h-4 w-4" /> Build
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 border-red-300 text-red-600"
-                    onClick={onTestDrive}
-                  >
-                    <CarIcon className="mr-1 h-4 w-4" /> Drive
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="col-span-2 h-10 text-red-600"
-                    onClick={() => {
-                      setIsComparisonOpen(true);
-                      onGradeComparison?.();
-                    }}
-                  >
-                    Compare all grades
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <button
+                onClick={() => {
+                  setIsComparisonOpen(true);
+                  onGradeComparison?.();
+                }}
+                className="w-full py-3 text-slate-400 hover:text-white transition-all text-sm"
+              >
+                Compare all grades →
+              </button>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Comparison modal/sheet */}
-      <VehicleGradeComparison
-        isOpen={isComparisonOpen}
-        onClose={() => setIsComparisonOpen(false)}
-        engineName={`${vehicle.name} ${selectedEngine}`}
-        grades={grades}
-        onGradeSelect={(n) => {
-          setIsComparisonOpen(false);
-          setActiveGradeName(n);
-          onGradeSelect(n);
-        }}
-        onCarBuilder={(n) => onCarBuilder(n)}
-        onTestDrive={onTestDrive}
-      />
-    </section>
+      <AnimatePresence>
+        {financeDrawerOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFinanceDrawerOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-gradient-to-br from-slate-800 to-slate-900 z-50 overflow-y-auto"
+            >
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-3xl font-bold text-white">Finance Options</h2>
+                  <button
+                    onClick={() => setFinanceDrawerOpen(false)}
+                    className="p-2 rounded-full hover:bg-white/10 transition-all"
+                  >
+                    <X className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+
+                <div className="mb-8">
+                  <label className="text-slate-400 text-sm mb-3 block">Finance Program</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: "lease", label: "Lease" },
+                      { id: "hp", label: "Hire Purchase" },
+                      { id: "cashback", label: "Cash Back" },
+                    ].map((opt) => (
+                      <motion.button
+                        key={opt.id}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setProgram(opt.id as FinanceProgram)}
+                        className={`p-4 rounded-2xl font-semibold transition-all ${program === opt.id ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg" : "bg-white/5 text-slate-400 border border-white/10"}`}
+                      >
+                        {opt.label}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <label className="text-slate-400 text-sm mb-3 block">Loan Term</label>
+                  <div className="flex gap-3">
+                    {allowedTerms.map((t) => (
+                      <motion.button
+                        key={t}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setTerm(t)}
+                        className={`flex-1 p-4 rounded-2xl font-semibold transition-all ${term === t ? "bg-gradient-to-r from-amber-600 to-amber-500 text-white" : "bg-white/5 text-slate-400 border border-white/10"}`}
+                      >
+                        {t} months
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between mb-3">
+                      <label className="text-slate-400 text-sm">Down Payment</label>
+                      <span className="text-white font-bold">{Math.round(dpPct * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={program === "lease" ? 0 : 0.1}
+                      max={0.5}
+                      step={0.05}
+                      value={dpPct}
+                      onChange={(e) => setDpPct(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-3">
+                      <label className="text-slate-400 text-sm">Interest Rate (APR)</label>
+                      <span className="text-white font-bold">{(apr * 100).toFixed(2)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0.02}
+                      max={0.06}
+                      step={0.0025}
+                      value={apr}
+                      onChange={(e) => setApr(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+
+                  {program === "lease" && (
+                    <div>
+                      <div className="flex justify-between mb-3">
+                        <label className="text-slate-400 text-sm">Residual Value</label>
+                        <span className="text-white font-bold">{Math.round(residualPct * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.25}
+                        max={0.65}
+                        step={0.01}
+                        value={residualPct}
+                        onChange={(e) => setResidualPct(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+                  )}
+
+                  {program === "cashback" && (
+                    <div>
+                      <div className="flex justify-between mb-3">
+                        <label className="text-slate-400 text-sm">Cashback</label>
+                        <span className="text-white font-bold">{Math.round(cashbackPct * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={0.1}
+                        step={0.01}
+                        value={cashbackPct}
+                        onChange={(e) => setCashbackPct(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8 p-6 bg-black/40 rounded-2xl border border-white/10">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="text-slate-400">Estimated Monthly Payment</div>
+                    <div className="text-4xl font-bold text-amber-400">{AEDFmt.format(estMonthly)}</div>
+                  </div>
+                  <div className="text-xs text-slate-500 flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Estimates are illustrative and may vary by market conditions
+                  </div>
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setFinanceDrawerOpen(false);
+                    onCarBuilder(activeGrade.name);
+                  }}
+                  className="w-full mt-6 py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl font-bold shadow-lg"
+                >
+                  Apply & Continue to Configuration
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
