@@ -19,14 +19,7 @@ import VehicleGradeComparison from '@/components/vehicle-details/VehicleGradeCom
 import { usePersona } from "@/contexts/PersonaContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVehicleData } from "@/hooks/use-vehicle-data";
-import { useCleanup } from "@/hooks/use-cleanup";
-import { useNetworkAware } from "@/hooks/use-network-aware";
-import { useEnhancedGestures } from "@/hooks/use-enhanced-gestures";
-import { useImageCarousel } from "@/hooks/use-image-carousel";
-import { useOptimizedDeviceInfo } from "@/hooks/use-optimized-device-info";
-import { useWebVitalsOptimized, useMemoryPressure } from "@/utils/performance-web-vitals";
-import { useCoreWebVitals } from "@/utils/performance-core-vitals";
-import { createLazyComponent, preloadOnFastNetwork } from "@/utils/lazy-components";
+import { createLazyComponent } from "@/utils/lazy-components";
 import { cn } from "@/lib/utils";
 import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-monitor';
 
@@ -69,10 +62,6 @@ const PreOwnedSimilar = createLazyComponent(
 
 // Remove PremiumGallery as it's replaced by Spiral3DGallery
 
-// Preload components on fast networks
-preloadOnFastNetwork(() => import("@/components/vehicle-details/VehicleGallery"));
-preloadOnFastNetwork(() => import("@/components/vehicle-details/StorytellingSection"));
-
 const VehicleDetails = () => {
   // Modal states - memoized to prevent unnecessary re-renders
   const [modals, setModals] = useState({
@@ -89,17 +78,8 @@ const VehicleDetails = () => {
 
   // Hooks with performance optimizations
   const { personaData } = usePersona();
-  const { isMobile, deviceCategory } = useOptimizedDeviceInfo();
-  const { addCleanup } = useCleanup();
-  const { shouldPreloadContent, isSlowConnection, isFastConnection } = useNetworkAware();
+  const isMobile = useIsMobile();
   const { vehicle, galleryImages, monthlyEMI, navigate, isLoading, error } = useVehicleData();
-  const { reportMetric } = useWebVitalsOptimized();
-  const { isLowMemory } = useMemoryPressure();
-  const { getMetricsSummary } = useCoreWebVitals();
-
-  const { currentImageIndex, nextImage, previousImage, setCurrentImageIndex } = useImageCarousel({
-    images: galleryImages
-  });
 
   // Vehicle configuration is now handled by EngineGradeSelection component
 
@@ -126,54 +106,10 @@ const VehicleDetails = () => {
     }
   }), []);
 
-  // Performance monitoring with Core Web Vitals
+  // Scroll to top on mount
   React.useEffect(() => {
-    const startTime = performance.now();
-    reportMetric({
-      name: 'vehicle-details-mount',
-      value: 0,
-      rating: 'good',
-      delta: 0
-    });
-
-    // Initialize page load monitoring
-    import('@/utils/performance-optimization').then(({ performanceMonitor }) => {
-      performanceMonitor.measurePageLoad();
-    });
-    
-    return () => {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      reportMetric({
-        name: 'vehicle-details-unmount',
-        value: duration,
-        rating: duration < 1000 ? 'good' : 'needs-improvement',
-        delta: 0
-      });
-
-      // Log performance summary on unmount
-      const summary = getMetricsSummary();
-      console.log('🚗 Vehicle Details Performance Summary:', summary);
-    };
-  }, [reportMetric, getMetricsSummary]);
-
-  // Enhanced gesture handlers with performance optimization
-  const gesturesRef = useEnhancedGestures({
-    onSwipeLeft: nextImage,
-    onSwipeRight: previousImage,
-    hapticFeedback: isMobile && 'vibrate' in navigator
-  });
-
-  // Cleanup on unmount
-  React.useEffect(() => {
-    addCleanup(() => {
-      console.log('VehicleDetails cleanup');
-    });
-  }, [addCleanup]);
-
-  // Determine what content to render based on device capabilities
-  const shouldRenderHeavyContent = !isSlowConnection && !isLowMemory();
-  const shouldUseSuspense = isFastConnection && !isLowMemory();
+    window.scrollTo(0, 0);
+  }, []);
 
   // Loading state with skeleton
   if (isLoading) {
@@ -228,7 +164,6 @@ const VehicleDetails = () => {
           onFinanceCalculator={() => modalHandlers.updateModal('isFinanceOpen', true)}
         >
       <div
-        ref={gesturesRef as React.RefObject<HTMLDivElement>}
         className={cn(
           `relative overflow-hidden ${isMobile ? "pb-28" : "pb-32"}`,
           'motion-reduce:transition-none motion-reduce:transform-none'
@@ -256,76 +191,36 @@ const VehicleDetails = () => {
           </PerformanceErrorBoundary>
 
           {/* Seamless Cinematic Showroom - Immersive Gallery Experience */}
-          {shouldRenderHeavyContent && (
-            <Suspense fallback={<ComponentLoading />}>
-              <section id="seamless-showroom">
-               <SeamlessCinematicShowroom />
+          <Suspense fallback={<ComponentLoading />}>
+            <section id="seamless-showroom">
+              <SeamlessCinematicShowroom />
+            </section>
+          </Suspense>
+
+          <PerformanceErrorBoundary>
+            <Suspense fallback={<ComponentLoading height="400px" />}>
+              <section id="media-showcase">
+                <PremiumMediaShowcase vehicle={vehicle} />
+              </section>
+
+              <StorytellingSection
+                galleryImages={galleryImages}
+                monthlyEMI={monthlyEMI}
+                setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
+                navigate={navigate}
+                setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
+              />
+
+              {/* Virtual Showroom - Under Storytelling */}
+              <section id="virtual-showroom">
+                <VirtualShowroom vehicleName={vehicle.name} />
+              </section>
+
+              <section id="offers">
+                <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
               </section>
             </Suspense>
-          )}
-
-          {shouldRenderHeavyContent ? (
-            shouldUseSuspense ? (
-              <PerformanceErrorBoundary>
-                <Suspense fallback={<ComponentLoading height="400px" />}>
-                  <section id="media-showcase">
-                    <PremiumMediaShowcase vehicle={vehicle} />
-                  </section>
-
-                  <StorytellingSection
-                    galleryImages={galleryImages}
-                    monthlyEMI={monthlyEMI}
-                    setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
-                    navigate={navigate}
-                    setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
-                  />
-
-                  {/* Virtual Showroom - Under Storytelling */}
-                  <section id="virtual-showroom">
-                    <VirtualShowroom vehicleName={vehicle.name} />
-                  </section>
-
-                  <section id="offers">
-                    <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
-                  </section>
-                </Suspense>
-              </PerformanceErrorBoundary>
-            ) : (
-              <PerformanceErrorBoundary>
-                <Suspense fallback={<ComponentLoading />}>
-                  <StorytellingSection
-                    galleryImages={galleryImages}
-                    monthlyEMI={monthlyEMI}
-                    setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
-                    navigate={navigate}
-                    setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
-                  />
-
-                  {/* Virtual Showroom - Under Storytelling */}
-                  <section id="virtual-showroom">
-                    <VirtualShowroom vehicleName={vehicle.name} />
-                  </section>
-                </Suspense>
-
-                <section id="offers">
-                  <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
-                </section>
-              </PerformanceErrorBoundary>
-            )
-          ) : (
-            // Lightweight version for slow connections/low memory
-            <>
-              <section className="py-8 lg:py-16 bg-muted/30">
-                <div className="toyota-container">
-                  <h2 className="text-2xl font-bold mb-8">Vehicle Overview</h2>
-                  <p className="text-muted-foreground mb-4">
-                    Detailed content optimized for your connection speed.
-                  </p>
-                </div>
-              </section>
-              <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
-            </>
-          )}
+          </PerformanceErrorBoundary>
           
           <section id="configuration">
             <EngineGradeSelection
@@ -337,23 +232,21 @@ const VehicleDetails = () => {
             />
           </section>
 
-          {shouldRenderHeavyContent && (
-            <Suspense fallback={<ComponentLoading />}>
-              <section id="related" aria-labelledby="related-vehicles-heading">
-                <h2 id="related-vehicles-heading" className="sr-only">Related Vehicles</h2>
-                <CinematicRelatedVehicles currentVehicle={vehicle} />
-              </section>
+          <Suspense fallback={<ComponentLoading />}>
+            <section id="related" aria-labelledby="related-vehicles-heading">
+              <h2 id="related-vehicles-heading" className="sr-only">Related Vehicles</h2>
+              <CinematicRelatedVehicles currentVehicle={vehicle} />
+            </section>
+            
+            {/* Pre-Owned Similar - Above FAQ */}
+            <section id="pre-owned">
+              <PreOwnedSimilar />
+            </section>
               
-              {/* Pre-Owned Similar - Above FAQ */}
-              <section id="pre-owned">
-                <PreOwnedSimilar />
-              </section>
-              
-              <section id="faq">
-                <VehicleFAQ vehicle={vehicle} />
-              </section>
-            </Suspense>
-          )}
+            <section id="faq">
+              <VehicleFAQ vehicle={vehicle} />
+            </section>
+          </Suspense>
 
           <ActionPanel
             vehicle={vehicle}
