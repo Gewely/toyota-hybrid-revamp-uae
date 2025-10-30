@@ -331,15 +331,16 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({
           </p>
         </motion.div>
 
-        {/* Card with poster */}
+        {/* Card with poster - Enhanced with 3D flip reveal */}
         <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          initial={{ opacity: 0, rotateY: 15, y: 30 }}
+          whileInView={{ opacity: 1, rotateY: 0, y: 0 }}
+          viewport={{ once: true, margin: "-10%" }}
+          transition={{ duration: 0.8, delay: 0.1, type: "spring", stiffness: 80 }}
           className="group relative w-full"
+          style={{ perspective: '2000px', transformStyle: 'preserve-3d' }}
         >
-          <div 
+          <motion.div 
             onClick={handleActivate}
             role="button"
             tabIndex={0}
@@ -351,6 +352,13 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({
             }}
             className="relative overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] cursor-pointer"
             aria-label={`Enter ${vehicleName} virtual showroom`}
+            whileHover={{ 
+              y: -8, 
+              rotateY: -2,
+              boxShadow: '0 20px 60px -15px rgba(0,0,0,0.25)',
+              transition: { duration: 0.3 }
+            }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
             {/* Poster */}
             <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-[2.3/1] w-full">
@@ -384,7 +392,7 @@ const PremiumVirtualShowroom: React.FC<PremiumVirtualShowroomProps> = ({
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Trust row */}

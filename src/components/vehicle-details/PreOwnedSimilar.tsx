@@ -49,13 +49,32 @@ const PreOwnedSimilar: React.FC = () => {
             {preOwnedVehicles.map((vehicle, index) => (
               <CarouselItem key={vehicle.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                 <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.05 }}
+                  initial={{ opacity: 0, rotateY: 90, scale: 0.8 }}
+                  whileInView={{ opacity: 1, rotateY: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{ 
+                    duration: 0.7, 
+                    delay: index * 0.1,
+                    type: "spring",
+                    stiffness: 80,
+                    damping: 12
+                  }}
                   className="h-full"
+                  style={{ 
+                    transformStyle: 'preserve-3d',
+                    perspective: '1500px'
+                  }}
                 >
-                  <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full">
+                  <motion.div
+                    whileHover={{ 
+                      rotateY: -5, 
+                      y: -8,
+                      boxShadow: '0 20px 60px -10px rgba(0,0,0,0.3)',
+                      transition: { duration: 0.3 }
+                    }}
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
+                    <Card className="group overflow-hidden transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full">
                     <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                       <img
                         src={vehicle.image}
@@ -144,7 +163,8 @@ const PreOwnedSimilar: React.FC = () => {
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
+                    </Card>
+                  </motion.div>
                 </motion.div>
               </CarouselItem>
             ))}

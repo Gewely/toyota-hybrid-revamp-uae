@@ -360,17 +360,29 @@ const VehicleFAQ: React.FC<VehicleFAQProps> = ({ vehicle }) => {
                 {filteredFAQs.map((faq, index) => (
                   <motion.div
                     key={`${selectedCategory}-${index}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: index * 0.05 }}
+                    initial={{ opacity: 0, y: 20, scale: 0.95, rotateX: -5 }}
+                    animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ 
+                      delay: index * 0.06,
+                      duration: 0.4,
+                      type: "spring",
+                      stiffness: 120
+                    }}
+                    style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
                   >
                     <Card className="overflow-hidden border hover:shadow-lg transition-all duration-300">
                       <motion.button
                         className="w-full text-left"
                         onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                        whileHover={{ 
+                          scale: 1.02, 
+                          y: -2,
+                          boxShadow: '0 10px 30px -5px rgba(0,0,0,0.15)',
+                          transition: { duration: 0.2 }
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        style={{ transformStyle: 'preserve-3d' }}
                       >
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between">
@@ -393,15 +405,23 @@ const VehicleFAQ: React.FC<VehicleFAQProps> = ({ vehicle }) => {
                           <AnimatePresence>
                             {openFAQ === index && (
                               <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.3 }}
+                                initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, height: "auto", scale: 1 }}
+                                exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                                transition={{ 
+                                  duration: 0.3,
+                                  ease: [0.22, 1, 0.36, 1]
+                                }}
                                 className="overflow-hidden"
                               >
-                                <div className="pt-4 border-t border-border mt-4">
+                                <motion.div 
+                                  className="pt-4 border-t border-border mt-4"
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.1 }}
+                                >
                                   <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
-                                </div>
+                                </motion.div>
                               </motion.div>
                             )}
                           </AnimatePresence>

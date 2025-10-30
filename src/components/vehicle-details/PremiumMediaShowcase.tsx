@@ -434,37 +434,82 @@ const PremiumMediaShowcase: React.FC<Props> = ({
 
   if (!current) return null; // ✅ ensure section mounts only if data exists
 
+  const sectionRef = useRef<HTMLDivElement>(null);
+  
   return (
-    <section className="py-10 md:py-16">
+    <section ref={sectionRef} className="py-10 md:py-16">
       <div
         className="relative mx-auto max-w-7xl h-[75vh] md:h-[85vh] min-h-[600px] overflow-hidden rounded-3xl border border-border/30 bg-muted/30"
       >
         <motion.div
           key={current.id}
           className="snap-start h-full w-full relative"
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <img
+          <motion.img
             src={current.gallery[0]?.url || current.thumbnail}
             alt={`${current.category} ${current.title}`}
             className="w-full h-full object-cover"
+            initial={{ scale: 1.0 }}
+            animate={{ scale: 1.1 }}
+            transition={{ 
+              duration: 8, 
+              ease: "linear",
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
           />
-          <div className="absolute inset-x-0 bottom-0 p-5 md:p-8 text-white">
-            <Badge className="mb-3 bg-primary text-primary-foreground border-0">
-              {current.category}
-            </Badge>
-            <h3 className="text-2xl md:text-4xl font-black leading-tight">
+          <motion.div 
+            className="absolute inset-x-0 bottom-0 p-5 md:p-8 text-white"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Badge className="mb-3 bg-primary text-primary-foreground border-0">
+                {current.category}
+              </Badge>
+            </motion.div>
+            <motion.h3 
+              className="text-2xl md:text-4xl font-black leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
               {current.title}
-            </h3>
-            <p className="mt-2 text-sm md:text-base">{current.summary}</p>
-            <Button onClick={() => setActive(current)} className="mt-3">
-              Explore details
-            </Button>
-          </div>
+            </motion.h3>
+            <motion.p 
+              className="mt-2 text-sm md:text-base"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              {current.summary}
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              <Button onClick={() => setActive(current)} className="mt-3">
+                Explore details
+              </Button>
+            </motion.div>
+          </motion.div>
         </motion.div>
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-          <div
-            className="h-1 bg-[#EB0A1E] transition-all"
-            style={{ width: `${progress}%` }}
+          <motion.div
+            className="h-1 bg-[#EB0A1E]"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
           />
         </div>
       </div>

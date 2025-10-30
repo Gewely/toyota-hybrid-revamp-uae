@@ -227,34 +227,57 @@ const MobileCarousel: React.FC<{
 };
 
 /* ============================================================
-   Desktop Grid (inline component)
+   Desktop Grid (inline component) - Enhanced with 3D scroll animations
 ============================================================ */
 const DesktopGrid: React.FC<{
   cards: ShowroomCard[];
   onCardClick: (id: ShowroomCard["id"]) => void;
 }> = ({ cards, onCardClick }) => {
+  const gridRef = React.useRef<HTMLDivElement>(null);
+  
   return (
     <div className="mx-auto max-w-[1400px] px-6 lg:px-8 py-10">
-      <div className="grid grid-cols-12 gap-6">
+      <div ref={gridRef} className="grid grid-cols-12 gap-6" style={{ perspective: '1500px' }}>
         {cards.map((card, i) => {
           const aspect =
             card.layout === "tall" ? "aspect-[4/5]" : card.layout === "square" ? "aspect-square" : "aspect-[16/9]";
           const span = card.layout === "tall" ? "col-span-4" : card.layout === "square" ? "col-span-4" : "col-span-8";
 
           return (
-            <button
+            <motion.button
               key={card.id}
               onClick={() => onCardClick(card.id)}
               className={`group relative ${span} ${aspect} overflow-hidden rounded-3xl bg-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800`}
               aria-label={`${card.title}: ${card.tagline}`}
+              initial={{ opacity: 0, rotateX: -15, scale: 0.9 }}
+              whileInView={{ opacity: 1, rotateX: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-10%" }}
+              transition={{
+                duration: 0.6,
+                delay: i * 0.15,
+                type: "spring",
+                stiffness: 100,
+                damping: 20
+              }}
+              whileHover={{ 
+                y: -8,
+                rotateY: 2,
+                transition: { duration: 0.3 }
+              }}
+              style={{ 
+                transformStyle: 'preserve-3d',
+                willChange: 'transform'
+              }}
             >
-              <img
+              <motion.img
                 src={card.image}
                 alt={card.alt || card.title}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                className="absolute inset-0 h-full w-full object-cover"
                 loading={i < 2 ? "eager" : "lazy"}
                 decoding="async"
                 sizes={span.includes("8") ? "(min-width:1024px) 66vw" : "(min-width:1024px) 33vw"}
+                whileHover={{ scale: 1.04 }}
+                transition={{ duration: 0.5 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-95" />
               <div
@@ -266,15 +289,24 @@ const DesktopGrid: React.FC<{
                       : "items-end"
                 }`}
               >
-                <div className="max-w-[80%]">
+                <motion.div 
+                  className="max-w-[80%]"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15 + 0.3 }}
+                >
                   <h3 className="text-white text-2xl font-semibold">{card.title}</h3>
                   <p className="text-white/80 mt-1">{card.tagline}</p>
-                </div>
-                <span className="absolute right-6 bottom-6 rounded-xl bg-white/10 text-white text-sm px-3 py-2 border border-white/20 backdrop-blur group-hover:bg-white/15">
+                </motion.div>
+                <motion.span 
+                  className="absolute right-6 bottom-6 rounded-xl bg-white/10 text-white text-sm px-3 py-2 border border-white/20 backdrop-blur group-hover:bg-white/15"
+                  whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.2)' }}
+                >
                   Explore
-                </span>
+                </motion.span>
               </div>
-            </button>
+            </motion.button>
           );
         })}
       </div>

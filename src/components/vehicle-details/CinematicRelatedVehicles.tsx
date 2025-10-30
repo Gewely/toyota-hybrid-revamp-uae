@@ -226,26 +226,44 @@ const VehicleCardEnhanced: React.FC<{
   return (
     <motion.div
       className="vehicle-card flex-shrink-0 w-[340px] sm:w-[380px] md:w-[420px] snap-center"
-      initial={{ opacity: 0, y: 50, rotateY: -15 }}
-      animate={inView ? { opacity: 1, y: 0, rotateY: 0 } : {}}
-      transition={{
-        duration: 0.7,
-        delay: index * 0.15,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <Card className="group relative overflow-hidden rounded-3xl border-2 border-border hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-2xl h-full">
-        <CardContent className="p-0 h-full flex flex-col">
+                  initial={{ opacity: 0, rotateY: 45, scale: 0.9 }}
+                  whileInView={{ opacity: 1, rotateY: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{
+                    duration: 0.7,
+                    delay: index * 0.12,
+                    type: "spring",
+                    stiffness: 100,
+                    damping: 15
+                  }}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    perspective: '1200px'
+                  }}
+                >
+        <Card className="group relative overflow-hidden rounded-3xl border-2 border-border hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-2xl h-full">
+          <motion.div
+            style={{ transformStyle: 'preserve-3d' }}
+            whileHover={{ 
+              rotateY: -3,
+              boxShadow: '0 30px 80px -15px rgba(0,0,0,0.4)',
+              transition: { duration: 0.3 }
+            }}
+          >
+            <CardContent className="p-0 h-full flex flex-col">
           {/* Image Section */}
           <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-muted via-muted/50 to-muted/30">
             <motion.img
               src={vehicle.image}
               alt={vehicle.name}
-              className="w-full h-full object-cover transition-transform duration-700"
-              animate={{ scale: isHovered ? 1.1 : 1 }}
-              transition={{ duration: 0.7 }}
+              className="w-full h-full object-cover"
+              animate={{ 
+                scale: isHovered ? 1.15 : 1,
+                rotateZ: isHovered ? 1 : 0
+              }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             />
 
             {/* Overlay gradient */}
@@ -338,8 +356,9 @@ const VehicleCardEnhanced: React.FC<{
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </motion.div>
+        </Card>
     </motion.div>
   );
 };

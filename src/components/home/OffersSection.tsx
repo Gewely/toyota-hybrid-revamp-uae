@@ -168,19 +168,41 @@ const OffersSection: React.FC<OffersSectionProps> = ({ onOfferClick }) => {
                 transform: `translateX(-${currentIndex * (100 / visibleOffers)}%)`
               }}
             >
-              {offers.map((offer, index) => (
-                <motion.div
-                  key={offer.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: (index % visibleOffers) * 0.1 }}
-                  whileHover={{ y: -8 }}
-                  className={`group cursor-pointer flex-shrink-0 ${
-                    isMobile ? 'w-full' : 'w-1/3'
-                  } px-3`}
-                  onClick={() => onOfferClick(offer)}
-                >
+              {offers.map((offer, index) => {
+                const row = Math.floor(index / visibleOffers);
+                const col = index % visibleOffers;
+                const diagonalDelay = (row + col) * 0.08;
+                
+                return (
+                  <motion.div
+                    key={offer.id}
+                    initial={{ opacity: 0, y: -100, rotateX: -15, scale: 0.9 }}
+                    whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+                    viewport={{ once: true, margin: "-5%" }}
+                    transition={{ 
+                      delay: diagonalDelay,
+                      duration: 0.6,
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 15
+                    }}
+                    whileHover={{ 
+                      y: -12, 
+                      scale: 1.02,
+                      rotateY: 3,
+                      zIndex: 10,
+                      transition: { duration: 0.3 }
+                    }}
+                    className={`group cursor-pointer flex-shrink-0 ${
+                      isMobile ? 'w-full' : 'w-1/3'
+                    } px-3`}
+                    onClick={() => onOfferClick(offer)}
+                    style={{ 
+                      transformStyle: 'preserve-3d',
+                      perspective: '1000px'
+                    }}
+                  >
+
                   <Card className="overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02] bg-white h-full">
                     <div className="relative aspect-[4/3] overflow-hidden">
                       <img
@@ -229,7 +251,8 @@ const OffersSection: React.FC<OffersSectionProps> = ({ onOfferClick }) => {
                     </CardContent>
                   </Card>
                 </motion.div>
-              ))}
+              );
+            })}
             </motion.div>
           </div>
 
