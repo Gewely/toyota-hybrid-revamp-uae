@@ -1,62 +1,62 @@
-
-import React, { useEffect, useState } from 'react';
-import { useInView } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
 
 interface AnimatedCounterProps {
   value: number;
   duration?: number;
-  className?: string;
-  suffix?: string;
   prefix?: string;
+  suffix?: string;
   decimals?: number;
 }
 
-const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
-  value,
-  duration = 2,
-  className = '',
+export function AnimatedCounter({ 
+  value, 
+  duration = 1.5, 
+  prefix = '', 
   suffix = '',
-  prefix = '',
-  decimals = 0
-}) => {
-  const [count, setCount] = useState(0);
-  const ref = React.useRef(null);
-  const isInView = useInView(ref, { once: true });
-  const [isVisible, setIsVisible] = useState(false);
+  decimals = 0 
+}: AnimatedCounterProps) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const rafRef = useRef<number>();
+  const startTimeRef = useRef<number>();
 
   useEffect(() => {
-    if (!isInView) return;
-
-    setIsVisible(true);
-    let startTime: number;
-    let animationId: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
+    startTimeRef.current = Date.now();
+    
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - (startTimeRef.current || now);
+      const progress = Math.min(elapsed / (duration * 1000), 1);
       
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const currentCount = easeOutQuart * value;
+      // Easing function
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(value * easeOut);
       
-      setCount(currentCount);
-
       if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(value);
       }
     };
+    
+    rafRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [value, duration]);
 
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, [isInView, value, duration]);
+  const formattedValue = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(displayValue);
 
   return (
-    <span
-      ref={ref}
-      className={`inline-block transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'} ${className}`}
-    >
-      {prefix}{count.toFixed(decimals)}{suffix}
+    <span>
+      {prefix}{formattedValue}{suffix}
     </span>
   );
-};
+}
 
 export default AnimatedCounter;

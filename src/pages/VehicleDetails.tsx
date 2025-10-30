@@ -26,6 +26,8 @@ import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-m
 import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
 import { ModalProvider } from '@/contexts/ModalProvider';
+import { ScrollProgressBar } from '@/components/animations/ScrollProgressBar';
+import { SectionTransition } from '@/components/animations/SectionTransition';
 
 // Lazy load heavy components with intelligent preloading
 const CinematicRelatedVehicles = createLazyComponent(
@@ -154,6 +156,7 @@ const VehicleDetails = () => {
       vehiclePrice: vehicle.price
     }}>
         <PerformanceErrorBoundary>
+        <ScrollProgressBar />
         <UnifiedPerformanceMonitor />
         <SkipLinks />
         <ToyotaLayout
@@ -192,37 +195,39 @@ const VehicleDetails = () => {
 
           {/* Seamless Cinematic Showroom - Immersive Gallery Experience */}
           <Suspense fallback={<ComponentLoading />}>
-            <section id="seamless-showroom">
+            <SectionTransition>
               <SeamlessCinematicShowroom />
-            </section>
+            </SectionTransition>
           </Suspense>
 
           <PerformanceErrorBoundary>
             <Suspense fallback={<ComponentLoading height="400px" />}>
-              <section id="media-showcase">
+              <SectionTransition parallaxSpeed={0.3}>
                 <PremiumMediaShowcase vehicle={vehicle} />
-              </section>
+              </SectionTransition>
 
-              <StorytellingSection
-                galleryImages={galleryImages}
-                monthlyEMI={monthlyEMI}
-                setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
-                navigate={navigate}
-                setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
-              />
+              <SectionTransition parallaxSpeed={0.15}>
+                <StorytellingSection
+                  galleryImages={galleryImages}
+                  monthlyEMI={monthlyEMI}
+                  setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
+                  navigate={navigate}
+                  setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
+                />
+              </SectionTransition>
 
               {/* Virtual Showroom - Under Storytelling */}
-              <section id="virtual-showroom">
+              <SectionTransition parallaxSpeed={0.25}>
                 <VirtualShowroom vehicleName={vehicle.name} />
-              </section>
+              </SectionTransition>
 
-              <section id="offers">
+              <SectionTransition>
                 <OffersSection onOfferClick={modalHandlers.handleOfferClick} />
-              </section>
+              </SectionTransition>
             </Suspense>
           </PerformanceErrorBoundary>
           
-          <section id="configuration">
+          <SectionTransition parallaxSpeed={0.2}>
             <EngineGradeSelection
               vehicle={vehicle}
               onCarBuilder={modalHandlers.handleConfigureWithGrade}
@@ -230,22 +235,21 @@ const VehicleDetails = () => {
               onGradeSelect={modalHandlers.handleGradeSelect}
               onGradeComparison={() => modalHandlers.handleGradeComparison()}
             />
-          </section>
+          </SectionTransition>
 
           <Suspense fallback={<ComponentLoading />}>
-            <section id="related" aria-labelledby="related-vehicles-heading">
-              <h2 id="related-vehicles-heading" className="sr-only">Related Vehicles</h2>
+            <SectionTransition parallaxSpeed={0.3}>
               <CinematicRelatedVehicles currentVehicle={vehicle} />
-            </section>
+            </SectionTransition>
             
             {/* Pre-Owned Similar - Above FAQ */}
-            <section id="pre-owned">
+            <SectionTransition>
               <PreOwnedSimilar />
-            </section>
+            </SectionTransition>
               
-            <section id="faq">
+            <SectionTransition>
               <VehicleFAQ vehicle={vehicle} />
-            </section>
+            </SectionTransition>
           </Suspense>
 
           <ActionPanel

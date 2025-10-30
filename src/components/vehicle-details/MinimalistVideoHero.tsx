@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import type { VehicleModel } from "@/types/vehicle";
 import { PremiumButton } from "@/components/ui/premium-button";
 import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 /* ============================================================
    MinimalistVideoHero — Mobile-Compact
@@ -322,9 +323,20 @@ export default function MinimalistVideoHero({
   const sectionRef = useRef<HTMLElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll animations
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"]
+  });
+
+  const titleY = useTransform(scrollYProgress, [0, 1], [0, -50]);
+  const backgroundScale = useTransform(scrollYProgress, [0, 1], [1.05, 1]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
   const title = (vehicle?.name ?? DEFAULT_TITLE).toUpperCase();
   const price = formatPrice(vehicle?.priceFrom);
   const videoId = vehicle?.videoId ?? (vehicle as any)?.videoUrl ?? DEFAULT_VIDEO_ID;
+  const rawPrice = typeof vehicle?.priceFrom === 'number' ? vehicle.priceFrom : parseFloat(String(vehicle?.priceFrom || '0').replace(/[^\d.]/g, '')) || 0;
 
   const images = useMemo(
     () =>
@@ -409,8 +421,8 @@ export default function MinimalistVideoHero({
     >
       <div ref={topSentinelRef} aria-hidden="true" className="absolute -top-1 h-1 w-1" />
 
-      {/* Background Media */}
-      <div className="absolute inset-0 z-0">
+      {/* Background Media with Parallax */}
+      <motion.div className="absolute inset-0 z-0" style={{ scale: backgroundScale }}>
         {mode === "video" ? (
           <CoverYouTube videoId={videoId} playing={!shouldReduceMotion && videoPlaying} />
         ) : (
@@ -432,61 +444,95 @@ export default function MinimalistVideoHero({
             />
           </>
         )}
-      </div>
+      </motion.div>
 
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col justify-between p-4 md:p-6 lg:p-12">
-        {/* Top: Title + Price */}
+        {/* Top: Title + Price with Parallax */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
+          style={{ y: titleY, opacity: contentOpacity }}
           className="space-y-1"
         >
-          <h1
+          <motion.h1
             id="video-hero-heading"
             className="text-[clamp(1.6rem,6vw,2.25rem)] md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-wide text-white leading-tight"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
             {title}
-          </h1>
+          </motion.h1>
 
-          {vehicle?.modelYear && <div className="text-xs md:text-sm text-white/80">Model Year {vehicle.modelYear}</div>}
+          {vehicle?.modelYear && (
+            <motion.div 
+              className="text-xs md:text-sm text-white/80"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Model Year {vehicle.modelYear}
+            </motion.div>
+          )}
 
           <div className="text-xs md:text-sm text-white/90">
             <span className="font-light">Starting from (incl. VAT)</span>
           </div>
-          <div className="text-xl md:text-2xl lg:text-3xl font-light text-white" aria-live="polite">
-            {price}
-          </div>
+          <motion.div 
+            className="text-xl md:text-2xl lg:text-3xl font-light text-white" 
+            aria-live="polite"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <AnimatedCounter value={rawPrice} duration={1.5} prefix="AED " />
+          </motion.div>
         </motion.div>
 
         {/* Bottom: CTAs + Variant + Media Strip + Specs */}
         <div className="space-y-4 md:space-y-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-          {/* CTAs */}
+          {/* CTAs with stagger */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
+            style={{ opacity: contentOpacity }}
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col gap-2.5 md:flex-row md:gap-4"
           >
-            <PremiumButton
-              onClick={onCarBuilder}
-              aria-label="Open Car Builder"
-              className="h-10 md:h-12 px-5 md:px-8 text-sm md:text-base bg-white text-foreground hover:bg-white/90"
-              data-analytics-id="cta-build"
+            <motion.div
+              custom={0}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
-              Build & Price
-            </PremiumButton>
+              <PremiumButton
+                onClick={onCarBuilder}
+                aria-label="Open Car Builder"
+                className="h-10 md:h-12 px-5 md:px-8 text-sm md:text-base bg-white text-foreground hover:bg-white/90"
+                data-analytics-id="cta-build"
+              >
+                Build & Price
+              </PremiumButton>
+            </motion.div>
 
-            <PremiumButton
-              onClick={onBookTestDrive}
-              aria-label="Book a Test Drive"
-              variant="outline"
-              className="h-10 md:h-12 border-2 border-white bg-transparent px-5 md:px-8 text-sm md:text-base text-white hover:bg-white/10"
-              data-analytics-id="cta-testdrive"
+            <motion.div
+              custom={1}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              Book a Test Drive
-            </PremiumButton>
+              <PremiumButton
+                onClick={onBookTestDrive}
+                aria-label="Book a Test Drive"
+                variant="outline"
+                className="h-10 md:h-12 border-2 border-white bg-transparent px-5 md:px-8 text-sm md:text-base text-white hover:bg-white/10"
+                data-analytics-id="cta-testdrive"
+              >
+                Book a Test Drive
+              </PremiumButton>
+            </motion.div>
           </motion.div>
 
           {/* Variant Toggle */}
