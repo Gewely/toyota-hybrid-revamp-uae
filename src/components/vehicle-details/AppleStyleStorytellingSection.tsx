@@ -611,6 +611,13 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     ];
   }, [qualityMode]);
 
+  // Pre-compute parallax transforms (must be at top level, not in map)
+  const parallaxTransforms = [
+    useTransform(scrollY, [0, 1000], [0, 1000 * 0.1]),
+    useTransform(scrollY, [0, 1000], [0, 1000 * 0.3]),
+    useTransform(scrollY, [0, 1000], [0, 1000 * 0.5]),
+  ];
+
   /* ----------------- Dolly Zoom ----------------- */
   const dollyProgress = useTransform(scrollYProgress, [0, 0.5], [1, 1.15]);
   const contentScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
@@ -755,7 +762,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
                   key={`layer-${i}`}
                   className="absolute inset-0"
                   style={{
-                    y: useTransform(scrollY, [0, 1000], [0, 1000 * layer.depth]),
+                    y: parallaxTransforms[i],
                     filter: `blur(${layer.blur}px)`,
                     opacity: layer.opacity,
                     scale: i === 1 ? dollyProgress : 1,
