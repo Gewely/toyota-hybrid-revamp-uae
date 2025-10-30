@@ -200,6 +200,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('low');
   const [textColor, setTextColor] = useState('white');
+  const [badgeOffsets, setBadgeOffsets] = useState<Record<number, { x: number; y: number }>>({});
 
   // Motion values
   const scrollY = useMotionValue(0);
@@ -914,47 +915,59 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
                     transition={{ duration: 0.6, delay: 0.5 }}
                     className="flex flex-wrap gap-3 justify-center"
                   >
-                    {active.features.map((feature, i) => {
-                      const badgeRef = useRef<HTMLDivElement>(null);
-                      const magneticPull = getMagneticPull(badgeRef);
-                      
-                      return (
-                        <motion.div
-                          key={i}
-                          ref={badgeRef}
+                    {active.features.map((feature, i) => (
+                      <motion.div
+                        key={i}
+                        style={{
+                          x: badgeOffsets[i]?.x ?? 0,
+                          y: badgeOffsets[i]?.y ?? 0,
+                        }}
+                        onMouseMove={(e) => {
+                          if (qualityMode === 'medium') return;
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const centerX = rect.left + rect.width / 2;
+                          const centerY = rect.top + rect.height / 2;
+                          const distance = Math.hypot(cursorPos.x - centerX, cursorPos.y - centerY);
+                          const maxDistance = 100;
+                          let x = 0, y = 0;
+                          if (distance < maxDistance) {
+                            const strength = 1 - (distance / maxDistance);
+                            x = (cursorPos.x - centerX) * strength * 0.15;
+                            y = (cursorPos.y - centerY) * strength * 0.15;
+                          }
+                          setBadgeOffsets(prev => ({ ...prev, [i]: { x, y } }));
+                        }}
+                        onMouseLeave={() => {
+                          setBadgeOffsets(prev => ({ ...prev, [i]: { x: 0, y: 0 } }));
+                        }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      >
+                        <Badge
+                          className="bg-white/10 text-white border-white/20 cursor-pointer transition-all hover:bg-white/20 hover:shadow-lg backdrop-blur-sm"
                           style={{
-                            x: magneticPull.x,
-                            y: magneticPull.y
+                            color: textColor,
+                            borderColor: `${textColor}33`,
+                            backgroundColor: `${textColor}1a`
                           }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                          onClick={() => {
+                            contextualHaptic.selectionChange();
+                            audioManager.play('badgeHover');
+                            toast({
+                              title: feature,
+                              description: "Available in all grades",
+                            });
+                          }}
+                          onMouseEnter={() => audioManager.play('badgeHover', 0.1)}
                         >
-                          <Badge
-                            className="bg-white/10 text-white border-white/20 cursor-pointer transition-all hover:bg-white/20 hover:shadow-lg backdrop-blur-sm"
-                            style={{
-                              color: textColor,
-                              borderColor: `${textColor}33`,
-                              backgroundColor: `${textColor}1a`
-                            }}
-                            onClick={() => {
-                              contextualHaptic.selectionChange();
-                              audioManager.play('badgeHover');
-                              toast({
-                                title: feature,
-                                description: "Available in all grades",
-                              });
-                            }}
-                            onMouseEnter={() => audioManager.play('badgeHover', 0.1)}
+                          <motion.span
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            <motion.span
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                            >
-                              {feature}
-                            </motion.span>
-                          </Badge>
-                        </motion.div>
-                      );
-                    })}
+                            {feature}
+                          </motion.span>
+                        </Badge>
+                      </motion.div>
+                    ))}
                   </motion.div>
                 )}
 
