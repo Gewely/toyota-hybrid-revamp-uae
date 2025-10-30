@@ -3,8 +3,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX, X } from "lucide-react";
+import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX, X, Star } from "lucide-react";
 import { useModal } from "@/contexts/ModalProvider";
+import { contextualHaptic } from "@/utils/haptic";
+import { toast } from "@/hooks/use-toast";
 
 /* ============================================================
    Types
@@ -147,6 +149,15 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
+  
+  /* ----------------- Enhanced UX States ----------------- */
+  const [transitionRipple, setTransitionRipple] = useState<{ show: boolean; direction: 'down' | 'up' }>({ 
+    show: false, 
+    direction: 'down' 
+  });
+  const [previewScene, setPreviewScene] = useState<number | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [textColor, setTextColor] = useState('white');
 
   /* ----------------- Scenes ----------------- */
   const scenes: Scene[] = useMemo(
@@ -163,7 +174,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           { value: 268, label: "Horsepower", icon: <Zap className="w-6 h-6" aria-hidden="true" /> },
           { value: 7.1, suffix: "s", label: "0–100 km/h", icon: <Car className="w-6 h-6" aria-hidden="true" /> },
           { value: 850, suffix: " km", label: "Range", icon: <Sparkles className="w-6 h-6" aria-hidden="true" /> },
-          { value: 5, suffix: "★", label: "Safety", icon: <Shield className="w-6 h-6" aria-hidden="true" /> },
+          { value: 4.8, suffix: "★", label: "Owner Rating", icon: <Star className="w-6 h-6" aria-hidden="true" /> },
         ],
       },
       {
@@ -185,7 +196,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Step into a world where comfort meets cutting-edge technology.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
-        cta: { label: "Experience Interior", action: () => { console.log('Opening story-interior'); open('story-interior'); }, variant: "primary" },
+        cta: { label: "Experience Interior", action: () => open('story-interior'), variant: "primary" },
         features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Premium Audio"],
       },
       {
@@ -194,7 +205,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Advanced technology that anticipates your needs.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg",
-        cta: { label: "Discover Tech", action: () => { console.log('Opening story-technology'); open('story-technology'); }, variant: "secondary" },
+        cta: { label: "Discover Tech", action: () => open('story-technology'), variant: "secondary" },
         features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
@@ -203,7 +214,16 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
 
   /* ----------------- State ----------------- */
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => {
+    // Session persistence: restore progress
+    if (typeof sessionStorage !== 'undefined') {
+      const saved = sessionStorage.getItem('storytelling-progress');
+      if (saved && !isNaN(parseInt(saved))) {
+        return Math.min(parseInt(saved), scenes.length - 1);
+      }
+    }
+    return 0;
+  });
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [manualUnlock, setManualUnlock] = useState(false);
@@ -257,12 +277,21 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, [motionAllowed]);
 
-  /* ----------------- Step navigation ----------------- */
+  /* ----------------- Step navigation with feedback ----------------- */
   const step = useCallback(
     (dir: 1 | -1) => {
       if (isTransitioning) return;
+      
+      // Haptic feedback
+      contextualHaptic.swipeNavigation();
+      
+      // Visual ripple feedback
+      setTransitionRipple({ show: true, direction: dir > 0 ? 'down' : 'up' });
+      setTimeout(() => setTransitionRipple({ show: false, direction: 'down' }), 600);
+      
       setIsTransitioning(true);
       setIndex((i) => Math.max(0, Math.min(lastIndex, i + dir)));
+      
       // cooldown to avoid accidental multiple steps
       setTimeout(() => setIsTransitioning(false), motionAllowed ? 650 : 220);
     },
@@ -315,7 +344,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       const endY = e.changedTouches[0]?.clientY ?? 0;
       const dy = (touchStartY.current ?? 0) - endY;
       touchStartY.current = null;
-      if (Math.abs(dy) < 48) return;
+      if (Math.abs(dy) < 30) return; // Lowered threshold for better responsiveness
       step(dy > 0 ? 1 : -1);
     };
 
@@ -362,6 +391,13 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     }
   }, [index, isMuted, active.backgroundVideoWistiaId, lockActive, mute, unmute, play, pause]);
 
+  /* ----------------- Session persistence ----------------- */
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('storytelling-progress', index.toString());
+    }
+  }, [index]);
+
   /* ----------------- Preload next background ----------------- */
   useEffect(() => {
     const next = scenes[index + 1];
@@ -369,6 +405,45 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     const img = new Image();
     img.src = next.backgroundImage;
   }, [index, scenes]);
+
+  /* ----------------- Adaptive text contrast ----------------- */
+  const analyzeImageBrightness = useCallback((imgSrc: string) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.drawImage(img, 0, 0);
+        
+        // Sample center-bottom region where text appears
+        const imageData = ctx.getImageData(0, img.height * 0.6, img.width, img.height * 0.4);
+        const data = imageData.data;
+        
+        let brightness = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        }
+        brightness /= (data.length / 4);
+        
+        setTextColor(brightness > 128 ? '#000000' : '#ffffff');
+      } catch (e) {
+        // CORS or other errors - default to white
+        setTextColor('#ffffff');
+      }
+    };
+    img.onerror = () => setTextColor('#ffffff');
+    img.src = imgSrc;
+  }, []);
+
+  useEffect(() => {
+    analyzeImageBrightness(active.backgroundImage);
+    setImageLoading(true);
+  }, [active.backgroundImage, analyzeImageBrightness]);
 
   /* ----------------- UI ----------------- */
   const progressRatio = (index + 1) / scenes.length;
@@ -390,6 +465,21 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       aria-label="Cinematic automotive storytelling"
       aria-live="polite"
     >
+      {/* TRANSITION RIPPLE FEEDBACK */}
+      <AnimatePresence>
+        {transitionRipple.show && (
+          <motion.div
+            className="absolute inset-0 z-40 pointer-events-none"
+            initial={{ opacity: 0, y: transitionRipple.direction === 'down' ? '-100%' : '100%' }}
+            animate={{ opacity: [0.15, 0], y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="w-full h-full bg-gradient-to-b from-white/30 to-transparent" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* MEDIA LAYER (z-0, pointer-events: none so it never blocks clicks) */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -404,10 +494,18 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           exit={{ opacity: 0 }}
           transition={{ duration: motionAllowed ? 0.5 : 0.18 }}
         >
+          {/* Loading skeleton */}
+          {imageLoading && (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse" />
+          )}
+          
           <img
             src={active.backgroundImage}
             alt={active.title}
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            onLoad={() => setImageLoading(false)}
+            className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500 ${
+              imageLoading ? 'opacity-0' : 'opacity-100'
+            }`}
             loading="eager"
             fetchPriority="high"
             decoding="async"
@@ -421,7 +519,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
               />
             </div>
           )}
-          {/* overlays */}
+          {/* Enhanced overlays for better text readability */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay"
             style={{ pointerEvents: "none" }}
@@ -429,11 +527,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
             transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
           />
           <div
-            className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"
+            className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
             style={{ pointerEvents: "none" }}
           />
           <div
-            className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20"
+            className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40"
             style={{ pointerEvents: "none" }}
           />
         </motion.div>
@@ -455,13 +553,20 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         )}
         <button
           data-interactive="true"
-          onClick={() => setManualUnlock((v) => !v)}
-          className="bg-black/60 text-white px-3 py-2 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60 flex items-center gap-2"
-          aria-label={manualUnlock ? "Re-enter cinematic mode" : "Exit cinematic mode"}
-          title={manualUnlock ? "Re-enter cinematic" : "Exit cinematic"}
+          onClick={() => {
+            setManualUnlock(true);
+            contextualHaptic.exitAction();
+            setTimeout(() => {
+              sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 100);
+          }}
+          className="bg-black/60 text-white px-4 py-2 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60 flex items-center gap-2"
+          aria-label="Continue scrolling to next section"
+          title="Continue Scrolling"
         >
           <X className="w-4 h-4" />
-          <span className="text-sm">{manualUnlock ? "Re-enter" : "Exit"}</span>
+          <span className="text-sm">Continue Scrolling</span>
+          <ChevronDown className="w-4 h-4" />
         </button>
       </div>
 
@@ -478,11 +583,22 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-5 py-4 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
             <h2
               className="font-extralight mb-2 md:mb-3 leading-tight"
-              style={{ fontSize: "clamp(1.75rem, 4.8vw, 3.5rem)" }}
+              style={{ 
+                fontSize: "clamp(1.75rem, 4.8vw, 3.5rem)",
+                color: textColor,
+                textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
+              }}
             >
               {active.title}
             </h2>
-            <p className="text-white/90 mb-4 md:mb-6" style={{ fontSize: "clamp(0.95rem, 2.2vw, 1.5rem)" }}>
+            <p 
+              className="mb-4 md:mb-6" 
+              style={{ 
+                fontSize: "clamp(0.95rem, 2.2vw, 1.5rem)",
+                color: textColor === '#000000' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
+                textShadow: '0 2px 10px rgba(0,0,0,0.6)'
+              }}
+            >
               {active.subtitle}
             </p>
 
@@ -501,18 +617,30 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
               </div>
             )}
 
-            {/* Features */}
+            {/* Features with interactive hover */}
             {active.features && (
-              <div className="flex flex-wrap gap-2 mb-4 md:mb-6">
+              <div className="flex flex-wrap gap-3 mb-6">
                 {active.features.map((f, i) => (
-                  <Badge
+                  <motion.div
                     key={i}
-                    className="bg-white/10 text-white border-white/20"
-                    aria-label={f}
-                    data-interactive="true"
+                    whileHover={{ y: -2, scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    {f}
-                  </Badge>
+                    <Badge
+                      className="bg-white/10 text-white border-white/20 cursor-pointer transition-all hover:bg-white/20 hover:shadow-lg"
+                      aria-label={f}
+                      data-interactive="true"
+                      onClick={() => {
+                        contextualHaptic.buttonPress();
+                        toast({
+                          title: f,
+                          description: "Available in all grades",
+                        });
+                      }}
+                    >
+                      {f}
+                    </Badge>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -555,20 +683,45 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         </motion.div>
       </div>
 
-      {/* PROGRESS DOTS (z-30) */}
+      {/* PROGRESS DOTS with Preview (z-30) */}
       <div className="absolute bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] left-1/2 -translate-x-1/2 z-30 flex space-x-6">
+        {/* Scene Preview Card */}
+        <AnimatePresence>
+          {previewScene !== null && previewScene !== index && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-black/90 rounded-xl backdrop-blur-md border border-white/20 shadow-2xl"
+            >
+              <img 
+                src={scenes[previewScene].backgroundImage} 
+                className="w-48 h-28 object-cover rounded-lg mb-2" 
+                alt={scenes[previewScene].title}
+              />
+              <p className="text-white text-sm font-medium">{scenes[previewScene].title}</p>
+              <p className="text-white/60 text-xs">{scenes[previewScene].subtitle}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {scenes.map((s, i) => (
-          <div key={s.id} className="flex flex-col items-center">
+          <div key={s.id} className="flex flex-col items-center relative">
             <button
               data-interactive="true"
               onClick={(e) => {
                 e.stopPropagation();
+                contextualHaptic.selectionChange();
                 setIndex(i);
               }}
+              onMouseEnter={() => setPreviewScene(i)}
+              onMouseLeave={() => setPreviewScene(null)}
               aria-label={`Go to ${labels[i]} section`}
               aria-current={i === index ? "true" : "false"}
               className={`rounded-full mb-1 transition-all focus:outline-none focus:ring-2 focus:ring-white/60 ${
-                i === index ? "bg-white w-8 h-2" : "bg-white/40 hover:bg-white/60 w-3 h-3"
+                i === index 
+                  ? "bg-white w-12 h-3 sm:w-8 sm:h-2" // Larger on mobile (12px × 12px minimum)
+                  : "bg-white/40 hover:bg-white/60 w-5 h-5 sm:w-3 sm:h-3" // 20px on mobile
               }`}
             />
             <span className={`text-[11px] ${i === index ? "text-white" : "text-white/60"}`}>{labels[i]}</span>
