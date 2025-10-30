@@ -1,8 +1,9 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, useTransform, useSpring, useMotionValue } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX, X, Star } from "lucide-react";
 import { useModal } from "@/contexts/ModalProvider";
 import { contextualHaptic } from "@/utils/haptic";
@@ -26,7 +27,36 @@ type Scene = {
 };
 
 /* ============================================================
-   Animated Number (reduced-motion aware)
+   Audio Manager
+============================================================ */
+const createAudioManager = (enabled: boolean) => {
+  if (typeof Audio === 'undefined') {
+    return {
+      play: () => {},
+      sceneEnter: null,
+      badgeHover: null,
+      ctaClick: null,
+    };
+  }
+  
+  return {
+    sceneEnter: new Audio(),
+    badgeHover: new Audio(),
+    ctaClick: new Audio(),
+    play(sound: 'sceneEnter' | 'badgeHover' | 'ctaClick', volume = 0.15) {
+      if (!enabled) return;
+      const audio = this[sound];
+      if (audio) {
+        audio.volume = volume;
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      }
+    }
+  };
+};
+
+/* ============================================================
+   Animated Number
 ============================================================ */
 const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
   value,
@@ -62,7 +92,7 @@ const AnimatedNumber: React.FC<{ value: number; duration?: number; suffix?: stri
 };
 
 /* ============================================================
-   Wistia Player Hook (lazy + robust)
+   Wistia Player Hook
 ============================================================ */
 function useWistiaPlayer(videoId?: string) {
   const playerRef = useRef<any>(null);
@@ -150,14 +180,34 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const sectionRef = useRef<HTMLElement | null>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   
-  /* ----------------- Enhanced UX States ----------------- */
+  /* ----------------- Ultra-Premium States ----------------- */
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [fps, setFps] = useState(60);
+  const [qualityMode, setQualityMode] = useState<'ultra' | 'high' | 'medium'>('ultra');
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [scrollVelocity, setScrollVelocity] = useState(0);
+  const lastScrollTime = useRef(Date.now());
+  const [showKeyboardHints, setShowKeyboardHints] = useState(() => {
+    return typeof localStorage !== 'undefined' ? !localStorage.getItem('keyboard-hints-seen') : false;
+  });
+  const sceneEngagement = useRef<Record<string, number>>({});
+  const sceneStartTime = useRef(Date.now());
   const [transitionRipple, setTransitionRipple] = useState<{ show: boolean; direction: 'down' | 'up' }>({ 
     show: false, 
     direction: 'down' 
   });
   const [previewScene, setPreviewScene] = useState<number | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
+  const [imageQuality, setImageQuality] = useState<'low' | 'medium' | 'high'>('low');
   const [textColor, setTextColor] = useState('white');
+
+  // Motion values
+  const scrollY = useMotionValue(0);
+  const scrollYProgress = useMotionValue(0);
+  const cameraShake = useSpring(0, { stiffness: 400, damping: 30 });
+
+  // Audio manager
+  const audioManager = useMemo(() => createAudioManager(soundEnabled), [soundEnabled]);
 
   /* ----------------- Scenes ----------------- */
   const scenes: Scene[] = useMemo(
@@ -209,13 +259,12 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
-    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, open, galleryImages],
+    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, open],
   );
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
 
   /* ----------------- State ----------------- */
   const [index, setIndex] = useState(() => {
-    // Session persistence: restore progress
     if (typeof sessionStorage !== 'undefined') {
       const saved = sessionStorage.getItem('storytelling-progress');
       if (saved && !isNaN(parseInt(saved))) {
@@ -231,7 +280,139 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const active = scenes[index];
   const lastIndex = scenes.length - 1;
 
-  /* ----------------- Lock evaluator (Intersection + heuristics) ----------- */
+  /* ----------------- FPS Monitoring ----------------- */
+  useEffect(() => {
+    let lastTime = performance.now();
+    let frames = 0;
+    let rafId: number;
+    
+    const measureFPS = () => {
+      frames++;
+      const now = performance.now();
+      
+      if (now >= lastTime + 1000) {
+        const currentFps = Math.round(frames * 1000 / (now - lastTime));
+        setFps(currentFps);
+        frames = 0;
+        lastTime = now;
+      }
+      
+      rafId = requestAnimationFrame(measureFPS);
+    };
+    
+    rafId = requestAnimationFrame(measureFPS);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  // Adaptive quality
+  useEffect(() => {
+    if (fps < 30) setQualityMode('medium');
+    else if (fps < 45) setQualityMode('high');
+    else setQualityMode('ultra');
+  }, [fps]);
+
+  /* ----------------- Keyboard Hints ----------------- */
+  useEffect(() => {
+    if (showKeyboardHints) {
+      const timer = setTimeout(() => {
+        setShowKeyboardHints(false);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('keyboard-hints-seen', 'true');
+        }
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showKeyboardHints]);
+
+  /* ----------------- Cursor Tracking ----------------- */
+  useEffect(() => {
+    if (qualityMode === 'medium') return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      setCursorPos({ x: e.clientX, y: e.clientY });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [qualityMode]);
+
+  /* ----------------- Camera Shake for Performance Scene ----------------- */
+  useEffect(() => {
+    if (active?.id === 'performance' && qualityMode === 'ultra') {
+      const interval = setInterval(() => {
+        cameraShake.set(Math.random() * 2 - 1);
+      }, 80);
+      return () => clearInterval(interval);
+    }
+  }, [active?.id, qualityMode, cameraShake]);
+
+  /* ----------------- Engagement Tracking ----------------- */
+  useEffect(() => {
+    sceneStartTime.current = Date.now();
+    
+    return () => {
+      const duration = Date.now() - sceneStartTime.current;
+      if (active?.id) {
+        sceneEngagement.current[active.id] = 
+          (sceneEngagement.current[active.id] || 0) + duration;
+      }
+    };
+  }, [active?.id]);
+
+  /* ----------------- Image Brightness Analysis ----------------- */
+  const analyzeImageBrightness = useCallback((imgSrc: string) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, img.height * 0.6, img.width, img.height * 0.4);
+        const data = imageData.data;
+        
+        let brightness = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        }
+        brightness /= (data.length / 4);
+        
+        setTextColor(brightness > 128 ? '#000000' : '#ffffff');
+      } catch (e) {
+        setTextColor('#ffffff');
+      }
+    };
+    img.onerror = () => setTextColor('#ffffff');
+    img.src = imgSrc;
+  }, []);
+
+  /* ----------------- Progressive Image Loading ----------------- */
+  useEffect(() => {
+    if (!active?.backgroundImage) return;
+    
+    analyzeImageBrightness(active.backgroundImage);
+    setImageLoading(true);
+    setImageQuality('low');
+    
+    const mediumImg = new Image();
+    mediumImg.onload = () => {
+      setImageQuality('medium');
+      
+      const highImg = new Image();
+      highImg.onload = () => {
+        setImageQuality('high');
+        setImageLoading(false);
+      };
+      highImg.src = active.backgroundImage;
+    };
+    mediumImg.src = active.backgroundImage;
+  }, [active?.backgroundImage, analyzeImageBrightness]);
+
+  /* ----------------- Lock evaluator ----------------- */
   const [lockActive, setLockActive] = useState(false);
 
   useEffect(() => {
@@ -249,7 +430,6 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       if (!raf) raf = requestAnimationFrame(evaluate);
     };
 
-    // Initial + delayed evaluation (layout settle)
     evaluate();
     setTimeout(evaluate, 120);
 
@@ -265,7 +445,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     };
   }, [index, lastIndex, manualUnlock, topOffsetPx]);
 
-  /* ----------------- Parallax (off for reduced motion) ----------------- */
+  /* ----------------- Parallax ----------------- */
   useEffect(() => {
     if (!motionAllowed) return;
     const onMove = (e: MouseEvent) => {
@@ -277,28 +457,39 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     return () => window.removeEventListener("mousemove", onMove);
   }, [motionAllowed]);
 
-  /* ----------------- Step navigation with feedback ----------------- */
+  /* ----------------- Elastic Resistance ----------------- */
+  const elasticResistance = useCallback((delta: number, max: number = 100) => {
+    return max * (1 - Math.exp(-Math.abs(delta) / 150));
+  }, []);
+
+  /* ----------------- Step Navigation ----------------- */
   const step = useCallback(
     (dir: 1 | -1) => {
       if (isTransitioning) return;
       
-      // Haptic feedback
       contextualHaptic.swipeNavigation();
+      audioManager.play('sceneEnter');
       
-      // Visual ripple feedback
       setTransitionRipple({ show: true, direction: dir > 0 ? 'down' : 'up' });
       setTimeout(() => setTransitionRipple({ show: false, direction: 'down' }), 600);
+      
+      // Track velocity
+      const now = Date.now();
+      const timeDelta = now - lastScrollTime.current;
+      if (timeDelta > 0) {
+        setScrollVelocity(Math.abs(1000 / timeDelta));
+      }
+      lastScrollTime.current = now;
       
       setIsTransitioning(true);
       setIndex((i) => Math.max(0, Math.min(lastIndex, i + dir)));
       
-      // cooldown to avoid accidental multiple steps
       setTimeout(() => setIsTransitioning(false), motionAllowed ? 650 : 220);
     },
-    [isTransitioning, lastIndex, motionAllowed],
+    [isTransitioning, lastIndex, motionAllowed, audioManager],
   );
 
-  /* ----------------- Scoped wheel / touch / keys on the section ---------- */
+  /* ----------------- Input Handlers ----------------- */
   const wheelHandlerRef = useRef<(e: WheelEvent) => void>();
   const touchStartY = useRef<number | null>(null);
 
@@ -307,8 +498,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       const el = sectionRef.current;
       if (!el || !lockActive) return;
 
-      if (isInteractive(e.target as Element)) return; // don't hijack over buttons/links
-      // Only if pointer is within section bounds
+      if (isInteractive(e.target as Element)) return;
       const rect = el.getBoundingClientRect();
       const cx = (e as any).clientX ?? rect.left + rect.width / 2;
       const cy = (e as any).clientY ?? rect.top + rect.height / 2;
@@ -327,7 +517,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
 
     const onTouchStart = (e: TouchEvent) => {
       if (!lockActive) return;
-      if (isInteractive(e.target as Element)) return; // let taps on CTAs through
+      if (isInteractive(e.target as Element)) return;
       touchStartY.current = e.touches[0]?.clientY ?? null;
     };
 
@@ -335,16 +525,21 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       if (!lockActive || touchStartY.current == null) return;
       const currentY = e.touches[0]?.clientY ?? 0;
       const deltaY = Math.abs((touchStartY.current ?? 0) - currentY);
-      // Allow small moves (scrolling content inside buttons), block big swipes for step
       if (deltaY > 10) e.preventDefault();
     };
 
     const onTouchEnd = (e: TouchEvent) => {
       if (!lockActive || touchStartY.current == null) return;
       const endY = e.changedTouches[0]?.clientY ?? 0;
-      const dy = (touchStartY.current ?? 0) - endY;
+      let dy = (touchStartY.current ?? 0) - endY;
+      
+      // Apply elastic resistance at boundaries
+      if ((index === 0 && dy < 0) || (index === lastIndex && dy > 0)) {
+        dy = elasticResistance(dy, 50);
+      }
+      
       touchStartY.current = null;
-      if (Math.abs(dy) < 30) return; // Lowered threshold for better responsiveness
+      if (Math.abs(dy) < 30) return;
       step(dy > 0 ? 1 : -1);
     };
 
@@ -357,7 +552,6 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       step(dir as 1 | -1);
     };
 
-    // Important: passive:false to allow preventDefault
     el.addEventListener("wheel", onWheel as any, { passive: false });
     el.addEventListener("touchstart", onTouchStart as any, { passive: true });
     el.addEventListener("touchmove", onTouchMove as any, { passive: false });
@@ -371,9 +565,9 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       el.removeEventListener("touchend", onTouchEnd as any);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [lockActive, step]);
+  }, [lockActive, step, index, lastIndex, elasticResistance]);
 
-  /* ----------------- Wistia reacts to visibility & index ----------------- */
+  /* ----------------- Wistia ----------------- */
   const { mute, unmute, pause, play } = useWistiaPlayer(lockActive ? active.backgroundVideoWistiaId : undefined);
 
   useEffect(() => {
@@ -391,14 +585,14 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     }
   }, [index, isMuted, active.backgroundVideoWistiaId, lockActive, mute, unmute, play, pause]);
 
-  /* ----------------- Session persistence ----------------- */
+  /* ----------------- Session Persistence ----------------- */
   useEffect(() => {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem('storytelling-progress', index.toString());
     }
   }, [index]);
 
-  /* ----------------- Preload next background ----------------- */
+  /* ----------------- Preload Next ----------------- */
   useEffect(() => {
     const next = scenes[index + 1];
     if (!next?.backgroundImage) return;
@@ -406,44 +600,53 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     img.src = next.backgroundImage;
   }, [index, scenes]);
 
-  /* ----------------- Adaptive text contrast ----------------- */
-  const analyzeImageBrightness = useCallback((imgSrc: string) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        ctx.drawImage(img, 0, 0);
-        
-        // Sample center-bottom region where text appears
-        const imageData = ctx.getImageData(0, img.height * 0.6, img.width, img.height * 0.4);
-        const data = imageData.data;
-        
-        let brightness = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
-        }
-        brightness /= (data.length / 4);
-        
-        setTextColor(brightness > 128 ? '#000000' : '#ffffff');
-      } catch (e) {
-        // CORS or other errors - default to white
-        setTextColor('#ffffff');
-      }
-    };
-    img.onerror = () => setTextColor('#ffffff');
-    img.src = imgSrc;
-  }, []);
+  /* ----------------- Parallax Layers ----------------- */
+  const parallaxLayers = useMemo(() => {
+    if (qualityMode === 'medium') return [];
+    
+    return [
+      { depth: 0.1, blur: 3, opacity: 0.6 },
+      { depth: 0.3, blur: 2, opacity: 0.8 },
+      { depth: 0.5, blur: 0, opacity: 1 },
+    ];
+  }, [qualityMode]);
 
-  useEffect(() => {
-    analyzeImageBrightness(active.backgroundImage);
-    setImageLoading(true);
-  }, [active.backgroundImage, analyzeImageBrightness]);
+  /* ----------------- Dolly Zoom ----------------- */
+  const dollyProgress = useTransform(scrollYProgress, [0, 0.5], [1, 1.15]);
+  const contentScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+
+  /* ----------------- Particles ----------------- */
+  const particles = useMemo(() => {
+    if (qualityMode !== 'ultra') return [];
+    
+    return Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+      y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+      delay: Math.random() * 0.5
+    }));
+  }, [qualityMode]);
+
+  /* ----------------- Magnetic Badge Effect ----------------- */
+  const getMagneticPull = useCallback((badgeRef: React.RefObject<HTMLDivElement>) => {
+    if (qualityMode === 'medium' || !badgeRef.current) return { x: 0, y: 0 };
+    
+    const rect = badgeRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const distance = Math.hypot(cursorPos.x - centerX, cursorPos.y - centerY);
+    const maxDistance = 100;
+    
+    if (distance < maxDistance) {
+      const strength = 1 - (distance / maxDistance);
+      const pullX = (cursorPos.x - centerX) * strength * 0.15;
+      const pullY = (cursorPos.y - centerY) * strength * 0.15;
+      return { x: pullX, y: pullY };
+    }
+    
+    return { x: 0, y: 0 };
+  }, [cursorPos, qualityMode]);
 
   /* ----------------- UI ----------------- */
   const progressRatio = (index + 1) / scenes.length;
@@ -451,315 +654,429 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const isLast = index === lastIndex;
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative bg-black text-white overflow-hidden select-none"
-      style={{
-        minHeight: "100vh",
-        height: "100vh",
-        overscrollBehavior: "contain",
-        // pan-y improves iOS Safari; still allows our touch listeners
-        touchAction: lockActive ? ("pan-y pinch-zoom" as any) : "auto",
-        WebkitOverflowScrolling: "touch",
-      }}
-      aria-label="Cinematic automotive storytelling"
-      aria-live="polite"
-    >
-      {/* TRANSITION RIPPLE FEEDBACK */}
-      <AnimatePresence>
-        {transitionRipple.show && (
-          <motion.div
-            className="absolute inset-0 z-40 pointer-events-none"
-            initial={{ opacity: 0, y: transitionRipple.direction === 'down' ? '-100%' : '100%' }}
-            animate={{ opacity: [0.15, 0], y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="w-full h-full bg-gradient-to-b from-white/30 to-transparent" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* MEDIA LAYER (z-0, pointer-events: none so it never blocks clicks) */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={active.id}
-          className="absolute inset-0 z-0 pointer-events-none will-change-transform"
+    <TooltipProvider>
+      <section
+        ref={sectionRef}
+        className="relative bg-black text-white overflow-hidden select-none"
+        style={{
+          minHeight: "100vh",
+          height: "100vh",
+          overscrollBehavior: "contain",
+          touchAction: lockActive ? ("pan-y pinch-zoom" as any) : "auto",
+          WebkitOverflowScrolling: "touch",
+          willChange: isTransitioning ? 'transform, opacity' : 'auto',
+        }}
+        aria-label="Cinematic automotive storytelling"
+        aria-live="polite"
+      >
+        {/* Sound Toggle */}
+        <motion.button
           initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            x: motionAllowed ? parallax.x * 0.3 : 0,
-            y: motionAllowed ? parallax.y * 0.3 : 0,
-          }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: motionAllowed ? 0.5 : 0.18 }}
-        >
-          {/* Loading skeleton */}
-          {imageLoading && (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse" />
-          )}
-          
-          <img
-            src={active.backgroundImage}
-            alt={active.title}
-            onLoad={() => setImageLoading(false)}
-            className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-500 ${
-              imageLoading ? 'opacity-0' : 'opacity-100'
-            }`}
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
-          {active.backgroundVideoWistiaId && (
-            <div className="absolute inset-0">
-              <div
-                className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} videoFoam=true`}
-                style={{ width: "100%", height: "100%" }}
-                aria-hidden="true"
-              />
-            </div>
-          )}
-          {/* Enhanced overlays for better text readability */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-tr from-red-600/30 via-transparent to-blue-600/30 mix-blend-overlay"
-            style={{ pointerEvents: "none" }}
-            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-            transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-          />
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
-            style={{ pointerEvents: "none" }}
-          />
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40"
-            style={{ pointerEvents: "none" }}
-          />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* SOUND + EXIT CONTROLS (top-left / top-right) */}
-      <div className="absolute top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] left-0 right-0 z-30 flex items-center justify-between px-4 md:px-6">
-        {active.backgroundVideoWistiaId ? (
-          <button
-            data-interactive="true"
-            onClick={() => setIsMuted((m) => !m)}
-            className="bg-black/60 text-white p-3 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60"
-            aria-label={isMuted ? "Unmute background video" : "Mute background video"}
-          >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          </button>
-        ) : (
-          <div />
-        )}
-        <button
-          data-interactive="true"
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
           onClick={() => {
-            setManualUnlock(true);
-            contextualHaptic.exitAction();
-            setTimeout(() => {
-              sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }, 100);
+            setSoundEnabled(!soundEnabled);
+            contextualHaptic.selectionChange();
           }}
-          className="bg-black/60 text-white px-4 py-2 rounded-full hover:bg-black/75 transition focus:outline-none focus:ring-2 focus:ring-white/60 flex items-center gap-2"
-          aria-label="Continue scrolling to next section"
-          title="Continue Scrolling"
+          className="fixed top-24 right-4 z-50 bg-black/60 backdrop-blur-md text-white p-3 rounded-full hover:bg-black/80 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
         >
-          <X className="w-4 h-4" />
-          <span className="text-sm">Continue Scrolling</span>
-          <ChevronDown className="w-4 h-4" />
-        </button>
-      </div>
+          {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </motion.button>
 
-      {/* CONTENT LAYER (z-20) */}
-      <div className="absolute bottom-0 left-0 w-full z-20 flex justify-start px-4 md:px-10 pb-[max(5.5rem,env(safe-area-inset-bottom))]">
-        <motion.div
-          key={`content-${active.id}`}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -40 }}
-          transition={{ duration: motionAllowed ? 0.5 : 0.18 }}
-          className="max-w-[min(92vw,60rem)]"
-        >
-          <div className="inline-block rounded-2xl bg-black/28 backdrop-blur-md px-5 py-4 md:px-10 md:py-8 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-            <h2
-              className="font-extralight mb-2 md:mb-3 leading-tight"
-              style={{ 
-                fontSize: "clamp(1.75rem, 4.8vw, 3.5rem)",
-                color: textColor,
-                textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
-              }}
-            >
-              {active.title}
-            </h2>
-            <p 
-              className="mb-4 md:mb-6" 
-              style={{ 
-                fontSize: "clamp(0.95rem, 2.2vw, 1.5rem)",
-                color: textColor === '#000000' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
-                textShadow: '0 2px 10px rgba(0,0,0,0.6)'
-              }}
-            >
-              {active.subtitle}
-            </p>
-
-            {/* Stats */}
-            {active.stats && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-5 mb-4 md:mb-6">
-                {active.stats.map((s, i) => (
-                  <div key={i} className="text-center">
-                    <div className="flex justify-center mb-2">{s.icon}</div>
-                    <div className="font-light" style={{ fontSize: "clamp(1.1rem, 3.2vw, 2rem)" }}>
-                      <AnimatedNumber value={s.value} suffix={s.suffix} />
-                    </div>
-                    <div className="text-xs md:text-sm text-white/70">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Features with interactive hover */}
-            {active.features && (
-              <div className="flex flex-wrap gap-3 mb-6">
-                {active.features.map((f, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ y: -2, scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Badge
-                      className="bg-white/10 text-white border-white/20 cursor-pointer transition-all hover:bg-white/20 hover:shadow-lg"
-                      aria-label={f}
-                      data-interactive="true"
-                      onClick={() => {
-                        contextualHaptic.buttonPress();
-                        toast({
-                          title: f,
-                          description: "Available in all grades",
-                        });
-                      }}
-                    >
-                      {f}
-                    </Badge>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            {/* CTAs (explicitly marked interactive so gestures never swallow taps) */}
-            <div className="flex flex-wrap items-center gap-3">
-              {active.cta && (
-                <Button
-                  data-interactive="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    active.cta?.action();
-                  }}
-                  className={`px-6 py-3 transition-transform hover:scale-[1.03] focus:ring-2 focus:ring-white/60 ${
-                    active.cta.variant === "primary"
-                      ? "bg-white text-black hover:bg-white/90"
-                      : "border border-white/40 text-white hover:bg-white/10"
-                  }`}
-                >
-                  {active.cta.label}
-                  <ChevronRight className="ml-2 w-5 h-5" aria-hidden="true" />
-                </Button>
-              )}
-              {active.secondaryCta && (
-                <Button
-                  data-interactive="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    active.secondaryCta?.action();
-                  }}
-                  variant="outline"
-                  className="px-6 py-3 border border-white/40 text-white hover:bg-white/10 transition-transform hover:scale-[1.03] focus:ring-2 focus:ring-white/60"
-                >
-                  {active.secondaryCta.label}
-                  <ChevronRight className="ml-2 w-5 h-5" aria-hidden="true" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* PROGRESS DOTS with Preview (z-30) */}
-      <div className="absolute bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] left-1/2 -translate-x-1/2 z-30 flex space-x-6">
-        {/* Scene Preview Card */}
+        {/* Keyboard Hints */}
         <AnimatePresence>
-          {previewScene !== null && previewScene !== index && (
+          {showKeyboardHints && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-black/90 rounded-xl backdrop-blur-md border border-white/20 shadow-2xl"
+              exit={{ opacity: 0, y: -20 }}
+              className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full text-sm font-medium"
             >
-              <img 
-                src={scenes[previewScene].backgroundImage} 
-                className="w-48 h-28 object-cover rounded-lg mb-2" 
-                alt={scenes[previewScene].title}
-              />
-              <p className="text-white text-sm font-medium">{scenes[previewScene].title}</p>
-              <p className="text-white/60 text-xs">{scenes[previewScene].subtitle}</p>
+              Use ↑↓ keys or scroll to navigate scenes
             </motion.div>
           )}
         </AnimatePresence>
 
-        {scenes.map((s, i) => (
-          <div key={s.id} className="flex flex-col items-center relative">
-            <button
-              data-interactive="true"
-              onClick={(e) => {
-                e.stopPropagation();
-                contextualHaptic.selectionChange();
-                setIndex(i);
-              }}
-              onMouseEnter={() => setPreviewScene(i)}
-              onMouseLeave={() => setPreviewScene(null)}
-              aria-label={`Go to ${labels[i]} section`}
-              aria-current={i === index ? "true" : "false"}
-              className={`rounded-full mb-1 transition-all focus:outline-none focus:ring-2 focus:ring-white/60 ${
-                i === index 
-                  ? "bg-white w-12 h-3 sm:w-8 sm:h-2" // Larger on mobile (12px × 12px minimum)
-                  : "bg-white/40 hover:bg-white/60 w-5 h-5 sm:w-3 sm:h-3" // 20px on mobile
-              }`}
-            />
-            <span className={`text-[11px] ${i === index ? "text-white" : "text-white/60"}`}>{labels[i]}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* PROGRESS BAR */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-30 overflow-hidden">
-        <motion.div
-          className="h-full bg-red-600 origin-left will-change-transform"
-          animate={{ scaleX: progressRatio }}
-          initial={false}
-          transition={{ duration: motionAllowed ? 0.45 : 0.18 }}
-        />
-      </div>
-
-      {/* SCROLL HINT */}
-      {(isFirst || isLast) && motionAllowed && !manualUnlock && (
-        <motion.div
-          className="absolute bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+2.75rem))] left-1/2 -translate-x-1/2 z-30 text-center text-white/85 text-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          {isFirst ? (
-            <>
-              <p className="mb-2">Scroll to explore</p>
-              <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 1.4 }}>
-                <ChevronDown className="w-6 h-6 mx-auto" aria-hidden="true" />
-              </motion.div>
-            </>
-          ) : (
-            <p>Scroll to continue</p>
+        {/* Transition Ripple */}
+        <AnimatePresence>
+          {transitionRipple.show && (
+            <motion.div
+              className="absolute inset-0 z-40 pointer-events-none"
+              initial={{ opacity: 0, y: transitionRipple.direction === 'down' ? '-100%' : '100%' }}
+              animate={{ opacity: [0.15, 0], y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="w-full h-full bg-gradient-to-b from-white/30 to-transparent" />
+            </motion.div>
           )}
-        </motion.div>
-      )}
-    </section>
+        </AnimatePresence>
+
+        {/* Wistia Background */}
+        {active.backgroundVideoWistiaId && (
+          <div className="absolute inset-0 z-0">
+            <div
+              className="wistia_responsive_padding"
+              style={{ padding: "56.25% 0 0 0", position: "relative", height: "100%" }}
+            >
+              <div className="wistia_responsive_wrapper" style={{ height: "100%", left: 0, position: "absolute", top: 0, width: "100%" }}>
+                <div
+                  className={`wistia_embed wistia_async_${active.backgroundVideoWistiaId} seo=true videoFoam=true`}
+                  style={{ height: "100%", position: "relative", width: "100%" }}
+                >
+                  <div className="wistia_swatch" style={{ height: "100%", left: 0, opacity: 0, overflow: "hidden", position: "absolute", top: 0, transition: "opacity 200ms", width: "100%" }}>
+                    <img
+                      src={`https://fast.wistia.com/embed/medias/${active.backgroundVideoWistiaId}/swatch`}
+                      style={{ filter: "blur(5px)", height: "100%", objectFit: "contain", width: "100%" }}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className="absolute inset-0"
+          >
+            {/* Multi-layer Parallax Background */}
+            {parallaxLayers.length > 0 ? (
+              parallaxLayers.map((layer, i) => (
+                <motion.div
+                  key={`layer-${i}`}
+                  className="absolute inset-0"
+                  style={{
+                    y: useTransform(scrollY, [0, 1000], [0, 1000 * layer.depth]),
+                    filter: `blur(${layer.blur}px)`,
+                    opacity: layer.opacity,
+                    scale: i === 1 ? dollyProgress : 1,
+                  }}
+                >
+                  {imageLoading && i === 2 && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse" />
+                  )}
+                  {i === 2 && (
+                    <motion.img
+                      src={active.backgroundImage}
+                      alt={active.title}
+                      className="w-full h-full object-cover transition-opacity duration-500"
+                      style={{ 
+                        opacity: imageLoading ? 0 : 1,
+                        x: cameraShake,
+                      }}
+                      onLoad={() => setImageLoading(false)}
+                    />
+                  )}
+                </motion.div>
+              ))
+            ) : (
+              <div className="absolute inset-0">
+                {imageLoading && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse" />
+                )}
+                <motion.img
+                  src={active.backgroundImage}
+                  alt={active.title}
+                  className="w-full h-full object-cover transition-opacity duration-500"
+                  style={{ 
+                    opacity: imageLoading ? 0 : 1,
+                  }}
+                  onLoad={() => setImageLoading(false)}
+                />
+              </div>
+            )}
+
+            {/* Enhanced Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50" />
+
+            {/* Particle Transition */}
+            <AnimatePresence>
+              {isTransitioning && qualityMode === 'ultra' && (
+                <div className="absolute inset-0 pointer-events-none z-30">
+                  {particles.map(p => (
+                    <motion.div
+                      key={p.id}
+                      className="absolute w-1 h-1 bg-white/40 rounded-full"
+                      initial={{ x: p.x, y: p.y, opacity: 0 }}
+                      animate={{ 
+                        x: p.x + (Math.random() * 200 - 100),
+                        y: p.y - 200,
+                        opacity: [0, 1, 0]
+                      }}
+                      transition={{ duration: 0.8, delay: p.delay }}
+                    />
+                  ))}
+                </div>
+              )}
+            </AnimatePresence>
+
+            {/* Content */}
+            <motion.div 
+              className="relative h-full flex flex-col items-center justify-end pb-20 px-4 z-10"
+              style={{ scale: contentScale }}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="max-w-4xl w-full space-y-6"
+              >
+                <motion.h2
+                  className="text-5xl sm:text-6xl lg:text-7xl font-bold text-center leading-tight"
+                  style={{ 
+                    color: textColor,
+                    textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.5)'
+                  }}
+                >
+                  {active.title}
+                </motion.h2>
+
+                <motion.p
+                  className="text-xl sm:text-2xl text-center opacity-90"
+                  style={{ 
+                    color: textColor,
+                    textShadow: '0 2px 10px rgba(0,0,0,0.6)'
+                  }}
+                >
+                  {active.subtitle}
+                </motion.p>
+
+                {/* Animated Stats */}
+                {active.stats && active.stats.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    className="grid grid-cols-2 sm:grid-cols-4 gap-6"
+                  >
+                    {active.stats.map((stat, i) => (
+                      <Tooltip key={i}>
+                        <TooltipTrigger asChild>
+                          <motion.div 
+                            className="text-center cursor-pointer"
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            transition={{ type: 'spring', stiffness: 400 }}
+                          >
+                            <div 
+                              className="text-3xl sm:text-4xl font-bold mb-1"
+                              style={{ 
+                                color: textColor,
+                                textShadow: '0 2px 10px rgba(0,0,0,0.6)'
+                              }}
+                            >
+                              {stat.icon && <span className="inline-block mr-1">{stat.icon}</span>}
+                              <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+                            </div>
+                            <div 
+                              className="text-sm opacity-80"
+                              style={{ 
+                                color: textColor,
+                                textShadow: '0 1px 5px rgba(0,0,0,0.6)'
+                              }}
+                            >
+                              {stat.label}
+                            </div>
+                          </motion.div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-black/90 border-white/10">
+                          <div className="space-y-1">
+                            <p className="text-xs opacity-60">Industry Leading</p>
+                            <p className="text-sm font-medium">{stat.label}</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </motion.div>
+                )}
+
+                {/* Magnetic Feature Badges */}
+                {active.features && active.features.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                    className="flex flex-wrap gap-3 justify-center"
+                  >
+                    {active.features.map((feature, i) => {
+                      const badgeRef = useRef<HTMLDivElement>(null);
+                      const magneticPull = getMagneticPull(badgeRef);
+                      
+                      return (
+                        <motion.div
+                          key={i}
+                          ref={badgeRef}
+                          style={{
+                            x: magneticPull.x,
+                            y: magneticPull.y
+                          }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        >
+                          <Badge
+                            className="bg-white/10 text-white border-white/20 cursor-pointer transition-all hover:bg-white/20 hover:shadow-lg backdrop-blur-sm"
+                            style={{
+                              color: textColor,
+                              borderColor: `${textColor}33`,
+                              backgroundColor: `${textColor}1a`
+                            }}
+                            onClick={() => {
+                              contextualHaptic.selectionChange();
+                              audioManager.play('badgeHover');
+                              toast({
+                                title: feature,
+                                description: "Available in all grades",
+                              });
+                            }}
+                            onMouseEnter={() => audioManager.play('badgeHover', 0.1)}
+                          >
+                            <motion.span
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              {feature}
+                            </motion.span>
+                          </Badge>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+
+                {/* CTAs */}
+                {(active.cta || active.secondaryCta) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.6 }}
+                    className="flex gap-3 pt-2 justify-center flex-wrap"
+                  >
+                    {active.cta && (
+                      <Button
+                        size="lg"
+                        variant={active.cta.variant === "primary" ? "default" : "outline"}
+                        data-interactive="true"
+                        asChild
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            contextualHaptic.buttonPress();
+                            audioManager.play('ctaClick');
+                            active.cta?.action();
+                          }}
+                        >
+                          {active.cta.label}
+                          <ChevronRight className="ml-2 h-5 w-5" />
+                        </motion.button>
+                      </Button>
+                    )}
+                    {active.secondaryCta && (
+                      <Button
+                        size="lg"
+                        variant={active.secondaryCta.variant === "primary" ? "default" : "outline"}
+                        data-interactive="true"
+                        asChild
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            contextualHaptic.buttonPress();
+                            audioManager.play('ctaClick');
+                            active.secondaryCta?.action();
+                          }}
+                        >
+                          {active.secondaryCta.label}
+                        </motion.button>
+                      </Button>
+                    )}
+                  </motion.div>
+                )}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Navigation UI */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-4">
+          {/* Preview on Hover Progress Bar */}
+          <div className="relative flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full">
+            {previewScene !== null && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-black/90 rounded-xl backdrop-blur-md"
+              >
+                <img src={scenes[previewScene].backgroundImage} className="w-48 h-28 object-cover rounded-lg mb-2" alt="" />
+                <p className="text-white text-sm font-medium">{scenes[previewScene].title}</p>
+                <p className="text-white/60 text-xs">{scenes[previewScene].subtitle}</p>
+              </motion.div>
+            )}
+            
+            {scenes.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  contextualHaptic.selectionChange();
+                  setIndex(i);
+                }}
+                onMouseEnter={() => setPreviewScene(i)}
+                onMouseLeave={() => setPreviewScene(null)}
+                className={`rounded-full mb-1 transition-all ${
+                  i === index 
+                    ? "bg-white w-12 h-3 sm:w-8 sm:h-2" 
+                    : "bg-white/40 hover:bg-white/60 w-5 h-5 sm:w-3 sm:h-3"
+                }`}
+                aria-label={`Go to ${labels[i]}`}
+                aria-current={i === index ? "true" : "false"}
+              />
+            ))}
+          </div>
+
+          {/* Exit/Continue Button */}
+          {lockActive && index === lastIndex && (
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => {
+                setManualUnlock(true);
+                contextualHaptic.exitAction();
+                sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+              }}
+              className="bg-black/60 text-white px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-md hover:bg-black/80 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <X className="w-4 h-4" />
+              <span className="text-sm">Continue Scrolling</span>
+              <ChevronDown className="w-4 h-4" />
+            </motion.button>
+          )}
+        </div>
+
+        {/* Mute Toggle for Video */}
+        {active.backgroundVideoWistiaId && (
+          <button
+            onClick={() => setIsMuted((m) => !m)}
+            className="absolute bottom-8 right-8 z-40 bg-black/40 backdrop-blur-md text-white p-3 rounded-full hover:bg-black/60 transition-colors"
+            aria-label={isMuted ? "Unmute background video" : "Mute background video"}
+            data-interactive="true"
+          >
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+        )}
+      </section>
+    </TooltipProvider>
   );
 };
 
