@@ -22,10 +22,11 @@ export const SectionTransition = ({
   const duration = useVelocityAwareDuration(0.6);
   const isInView = useInView(ref, { once: true, amount: 0.1, margin: '-50px' });
 
-  // Only apply parallax if not disabled and motion is enabled
-  const y = (!disableParallax && !prefersReducedMotion) 
-    ? useParallax(ref, { speed: parallaxSpeed }) 
-    : undefined;
+  // Always call hook - use disabled flag instead of conditional
+  const y = useParallax(ref, { 
+    speed: parallaxSpeed,
+    disabled: disableParallax || prefersReducedMotion 
+  });
 
   const variants = {
     initial: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.98 },
