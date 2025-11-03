@@ -19,6 +19,9 @@ export interface VehicleModel {
   mmeUrl: string;
   configureUrl: string;
   price: number;
+  priceFrom?: number | string; // For hero section price display
+  modelYear?: number; // For displaying model year
+  videoId?: string; // For YouTube video background
   category: string;
   features: string[];
   specifications?: {

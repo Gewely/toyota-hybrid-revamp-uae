@@ -77,6 +77,9 @@ export const vehicles: VehicleModel[] = [
     mmeUrl: "https://www.toyota.ae/en/new-cars/land-cruiser",
     configureUrl: "/configure/land-cruiser",
     price: 249900,
+    priceFrom: 249900,
+    modelYear: 2024,
+    videoId: "E-TmuQuQwVI",
     category: "SUV",
     features: ["5.7L V8 Engine", "Off-Road Technology", "Premium Comfort"],
     specifications: {

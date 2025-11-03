@@ -164,7 +164,7 @@ const MobileCarousel: React.FC<{
                   alt={card.alt || card.title}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
-                  fetchPriority={i === 0 ? "high" : "auto"}
+                  {...(i === 0 ? { fetchPriority: "high" as const } : {})}
                   sizes="100vw"
                 />
               )}

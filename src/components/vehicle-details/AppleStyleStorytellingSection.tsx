@@ -612,12 +612,10 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     ];
   }, [qualityMode]);
 
-  // Pre-compute parallax transforms (must be at top level, not in map)
-  const parallaxTransforms = [
-    useTransform(scrollY, [0, 1000], [0, 1000 * 0.1]),
-    useTransform(scrollY, [0, 1000], [0, 1000 * 0.3]),
-    useTransform(scrollY, [0, 1000], [0, 1000 * 0.5]),
-  ];
+  // Pre-compute parallax transforms (REDUCED from 5 to 3 layers for performance)
+  const parallaxTransform1 = useTransform(scrollY, [0, 1000], [0, 1000 * 0.1]);
+  const parallaxTransform2 = useTransform(scrollY, [0, 1000], [0, 1000 * 0.3]);
+  const parallaxTransform3 = useTransform(scrollY, [0, 1000], [0, 1000 * 0.5]);
 
   /* ----------------- Dolly Zoom ----------------- */
   const dollyProgress = useTransform(scrollYProgress, [0, 0.5], [1, 1.15]);
@@ -758,34 +756,47 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           >
             {/* Multi-layer Parallax Background */}
             {parallaxLayers.length > 0 ? (
-              parallaxLayers.map((layer, i) => (
+              <>
                 <motion.div
-                  key={`layer-${i}`}
                   className="absolute inset-0"
                   style={{
-                    y: parallaxTransforms[i],
-                    filter: `blur(${layer.blur}px)`,
-                    opacity: layer.opacity,
-                    scale: i === 1 ? dollyProgress : 1,
+                    y: parallaxTransform1,
+                    filter: 'blur(3px)',
+                    opacity: 0.6,
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    y: parallaxTransform2,
+                    filter: 'blur(2px)',
+                    opacity: 0.8,
+                    scale: dollyProgress,
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-0"
+                  style={{
+                    y: parallaxTransform3,
+                    filter: 'none',
+                    opacity: 1,
                   }}
                 >
-                  {imageLoading && i === 2 && (
+                  {imageLoading && (
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse" />
                   )}
-                  {i === 2 && (
-                    <motion.img
-                      src={active.backgroundImage}
-                      alt={active.title}
-                      className="w-full h-full object-cover transition-opacity duration-500"
-                      style={{ 
-                        opacity: imageLoading ? 0 : 1,
-                        x: cameraShake,
-                      }}
-                      onLoad={() => setImageLoading(false)}
-                    />
-                  )}
+                  <motion.img
+                    src={active.backgroundImage}
+                    alt={active.title}
+                    className="w-full h-full object-cover transition-opacity duration-500"
+                    style={{ 
+                      opacity: imageLoading ? 0 : 1,
+                      x: cameraShake,
+                    }}
+                    onLoad={() => setImageLoading(false)}
+                  />
                 </motion.div>
-              ))
+              </>
             ) : (
               <div className="absolute inset-0">
                 {imageLoading && (
