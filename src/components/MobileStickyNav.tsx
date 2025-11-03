@@ -776,15 +776,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={reduceMotion ? { duration: 0.2 } : spring}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 300 }}
-            dragElastic={0.2}
-            onDragEnd={(e, info) => {
-              if (info.offset.y > 100 || info.velocity.y > 500) {
-                contextualHaptic.swipeNavigation();
-                navigationState.resetNavigation();
-              }
-            }}
             className={cn(
               "fixed left-0 right-0 rounded-t-3xl shadow-2xl overflow-hidden border-t",
               deviceInfo.deviceCategory === "smallMobile" ? "max-h-[70vh]" : "max-h-[80vh]",
