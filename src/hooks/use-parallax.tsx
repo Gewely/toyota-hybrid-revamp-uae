@@ -1,43 +1,45 @@
-import { useScroll, useTransform, MotionValue } from 'framer-motion';
+import { useScroll, useTransform } from 'framer-motion';
 import { RefObject } from 'react';
 
 interface ParallaxConfig {
   speed?: number;
   direction?: 'vertical' | 'horizontal';
   offset?: ["start end" | "end start" | "start start" | "end end", "start end" | "end start" | "start start" | "end end"];
+  disabled?: boolean;
 }
 
 export const useParallax = (
   ref: RefObject<HTMLElement>,
   config: ParallaxConfig = {}
 ) => {
-  const { speed = 0.5, direction = 'vertical', offset = ["start end", "end start"] } = config;
+  const { speed = 0.5, direction = 'vertical', offset = ["start end", "end start"], disabled = false } = config;
   
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset,
-  });
+  const { scrollYProgress } = useScroll({ target: ref, offset });
   
+  const reducedSpeed = speed * 0.6;
   const outputRange = direction === 'vertical' 
-    ? [`${-100 * speed}px`, `${100 * speed}px`]
-    : [`${-100 * speed}px`, `${100 * speed}px`];
+    ? [`${-50 * reducedSpeed}px`, `${50 * reducedSpeed}px`]
+    : [`${-50 * reducedSpeed}px`, `${50 * reducedSpeed}px`];
   
-  const transform = useTransform(scrollYProgress, [0, 1], outputRange);
-  
-  return transform;
+  return useTransform(scrollYProgress, [0, 1], disabled ? ['0px', '0px'] : outputRange);
 };
 
 export const useMultiLayerParallax = (
   ref: RefObject<HTMLElement>,
-  layers: number[] = [0.3, 0.6, 1.0]
+  layers: number[] = [0.3, 0.6, 1.0] // Max 3 layers for performance
 ) => {
+  // Limit to max 3 layers
+  const limitedLayers = layers.slice(0, 3);
+  
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
   });
   
-  return layers.map(speed => ({
-    y: useTransform(scrollYProgress, [0, 1], [`${-100 * speed}px`, `${100 * speed}px`]),
+  // Use translateZ for depth instead of multiple layers
+  return limitedLayers.map((speed, index) => ({
+    y: useTransform(scrollYProgress, [0, 1], [`${-50 * speed}px`, `${50 * speed}px`]),
+    z: useTransform(scrollYProgress, [0, 1], [0, index * 10]), // Depth effect
     speed,
   }));
 };

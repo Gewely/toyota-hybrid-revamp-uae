@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PersonaProvider } from "@/contexts/PersonaContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ModalProvider } from "@/contexts/ModalProvider";
+import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 import Index from "./pages/Index";
 import VehicleDetails from "./pages/VehicleDetails";
 import TestDrive from "./pages/TestDrive";
@@ -25,6 +26,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PerformanceMonitor position="top-right" />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />

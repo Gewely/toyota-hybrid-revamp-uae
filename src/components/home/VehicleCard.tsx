@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Info, RotateCw, Check, Sparkles, Fuel, Shield, Award } from "lucide-react";
 import { VehicleModel } from "@/types/vehicle";
 import { useToast } from "@/hooks/use-toast";
+import { useReducedMotionSafe } from "@/hooks/useReducedMotionSafe";
+import { useMagneticHover } from "@/hooks/use-magnetic-hover";
+import { ShimmerLoader } from "@/components/ui/shimmer-loader";
 
 interface VehicleCardProps {
   vehicle: VehicleModel;
@@ -28,7 +31,15 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const { toast } = useToast();
+  const prefersReducedMotion = useReducedMotionSafe();
+  
+  // Magnetic hover for CTA buttons (desktop only)
+  const { ref: magneticRef, style: magneticStyle } = useMagneticHover({ 
+    strength: 0.25, 
+    range: 60 
+  });
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -68,16 +79,23 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         transition={{ duration: 0.6, type: "spring", stiffness: 300, damping: 20 }}
         style={{ perspective: 1000 }}
       >
-        <Card className={`h-full backface-hidden rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 ${isFlipped ? "opacity-0" : "opacity-100"} overflow-hidden`}>
+        <Card className={`h-full backface-hidden rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 ${isFlipped ? "opacity-0" : "opacity-100"} overflow-hidden gpu-accelerated`}>
           <div className="relative h-48 overflow-hidden rounded-t-xl">
+            {!imageLoaded && <ShimmerLoader variant="image" className="absolute inset-0" />}
             <motion.img
               src={vehicle.image}
               alt={vehicle.name}
-              className="w-full h-full object-cover"
+              loading="lazy"
+              onLoad={() => setImageLoaded(true)}
+              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+              style={{ transformOrigin: 'center' }}
               animate={{ 
-                scale: isHovering ? 1.05 : 1
+                scale: isHovering && !prefersReducedMotion ? 1.08 : 1
               }}
-              transition={{ duration: 0.5 }}
+              transition={{ 
+                duration: prefersReducedMotion ? 0 : 12, 
+                ease: 'easeOut'
+              }}
             />
             <Badge
               className={`absolute top-3 left-3 border-none ${
@@ -121,7 +139,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             </div>
 
             <div className="flex gap-2">
-              <motion.div className="flex-1" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <motion.div 
+                className="flex-1" 
+                whileHover={prefersReducedMotion ? {} : { scale: 1.03 }} 
+                whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
+              >
                 <Button
                   variant="outline"
                   size="sm"
@@ -131,7 +153,13 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
                   <Info className="h-4 w-4 mr-1" /> Details
                 </Button>
               </motion.div>
-              <motion.div className="flex-1" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <motion.div 
+                ref={magneticRef as any}
+                className="flex-1" 
+                style={magneticStyle}
+                whileHover={prefersReducedMotion ? {} : { scale: 1.03 }} 
+                whileTap={prefersReducedMotion ? {} : { scale: 0.97 }}
+              >
                 <Button
                   variant={isCompared ? "default" : "secondary"}
                   size="sm"
