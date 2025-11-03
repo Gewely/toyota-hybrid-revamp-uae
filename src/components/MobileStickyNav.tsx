@@ -19,6 +19,8 @@ import {
   Bolt,
   ChevronRight,
   Calculator,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
 import { Z } from "@/lib/z-index";
+import { useSmartScroll } from "@/hooks/use-smart-scroll";
+import { useVoiceSearch } from "@/hooks/use-voice-search";
+import { useRecentSearches } from "@/hooks/use-recent-searches";
+import { useSavedFilters } from "@/hooks/use-saved-filters";
+import { useComparisonMode } from "@/hooks/use-comparison-mode";
+import { BadgeCounter } from "@/components/ui/badge-counter";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const GR_RED = "#EB0A1E";
 const GR_EDGE = "#17191B";
@@ -191,6 +200,25 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const { isGR, toggleGR } = useGRMode();
   const [userTouchedCategory, setUserTouchedCategory] = useState(false);
 
+  // Enhanced hooks
+  const { scrollDirection, scrollY } = useSmartScroll();
+  const { recentSearches, addSearch, removeSearch, clearRecent } = useRecentSearches();
+  const { savedFilters, saveCategory, savePriceRange } = useSavedFilters();
+  const comparisonMode = useComparisonMode();
+
+  // Voice search
+  const { isListening, isSupported: isVoiceSupported, startListening, stopListening } = useVoiceSearch({
+    onResult: (transcript) => {
+      setSearchQuery(transcript);
+      addSearch(transcript);
+      contextualHaptic.successAction();
+    },
+    onError: (error) => {
+      console.error('Voice search error:', error);
+      contextualHaptic.errorFeedback();
+    }
+  });
+
   // Add body class when mobile nav is shown
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -259,6 +287,16 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     [selectedCategory, priceRange],
   );
 
+  const filteredVehiclesCount = filteredPreOwnedVehicles.length;
+  const totalVehiclesCount = preOwnedVehicles.length;
+
+  // Handle search submission
+  const handleSearchSubmit = useCallback((query: string) => {
+    if (query.trim()) {
+      addSearch(query);
+    }
+  }, [addSearch]);
+
   // open a specific section and ensure the sheet is shown
   const openSection = useCallback(
     (section: "quick-actions" | "models" | "search" | "pre-owned") => {
@@ -281,10 +319,26 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   );
 
   const handleCategoryClick = useCallback((id: string) => {
-    contextualHaptic.buttonPress();
+    contextualHaptic.categorySwitch();
     setSelectedCategory(id);
     setUserTouchedCategory(true);
-  }, []);
+    saveCategory(id);
+  }, [saveCategory]);
+
+  // Save price range changes
+  useEffect(() => {
+    savePriceRange(priceRange);
+  }, [priceRange, savePriceRange]);
+
+  // Load saved filters on mount
+  useEffect(() => {
+    if (savedFilters.category && !userTouchedCategory) {
+      setSelectedCategory(savedFilters.category);
+    }
+    if (savedFilters.priceRange) {
+      setPriceRange(savedFilters.priceRange);
+    }
+  }, [savedFilters, userTouchedCategory]);
 
   const toggleMenu = useCallback(() => {
     contextualHaptic.stepProgress();
@@ -361,6 +415,9 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const spring = isGR
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
+
+  // Smart auto-hide on scroll
+  const shouldHideNav = scrollY > 100 && scrollDirection === 'down' && !navigationState.isMenuOpen && !navigationState.isActionsExpanded;
 
   // Fixed nav sizing + padding the real scroll container
   const navRef = useRef<HTMLElement | null>(null);
@@ -722,6 +779,15 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={reduceMotion ? { duration: 0.2 } : spring}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 300 }}
+            dragElastic={0.2}
+            onDragEnd={(e, info) => {
+              if (info.offset.y > 100 || info.velocity.y > 500) {
+                contextualHaptic.swipeNavigation();
+                navigationState.resetNavigation();
+              }
+            }}
             className={cn(
               "fixed left-0 right-0 rounded-t-3xl shadow-2xl overflow-hidden border-t",
               deviceInfo.deviceCategory === "smallMobile" ? "max-h-[70vh]" : "max-h-[80vh]",
@@ -740,7 +806,14 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
               className="flex items-center justify-between p-4 border-b"
               style={isGR ? { ...carbonMatte, borderColor: GR_EDGE } : undefined}
             >
-              <div>
+              <div className="flex-1">
+                {/* Swipe indicator */}
+                <div className="flex justify-center mb-2">
+                  <div className={cn(
+                    "w-12 h-1 rounded-full",
+                    isGR ? "bg-neutral-700" : "bg-gray-300"
+                  )} />
+                </div>
                 <h3
                   className={cn("font-bold text-lg", isGR ? "text-white" : "text-gray-900 dark:text-gray-100")}
                   style={{ letterSpacing: ".02em" }}
@@ -1119,7 +1192,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                     Find Your Toyota
                   </h4>
 
-                  <div className="relative mb-6" role="search">
+                   <div className="relative mb-6" role="search">
                     <Search
                       className={cn(
                         "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4",
@@ -1131,15 +1204,85 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                       placeholder="Search models, features..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearchSubmit(searchQuery);
+                        }
+                      }}
                       className={cn(
                         "w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent focus:ring-[#EB0A1E]",
                         isGR
                           ? "border-neutral-800 bg-neutral-950 text-white placeholder:text-neutral-500"
                           : "border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-white",
+                        isVoiceSupported && "pr-12"
                       )}
                       aria-label="Search vehicles"
                     />
+                    {isVoiceSupported && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={isListening ? stopListening : startListening}
+                        className={cn(
+                          "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0",
+                          isListening && "text-red-500 animate-pulse"
+                        )}
+                        aria-label={isListening ? "Stop voice search" : "Start voice search"}
+                      >
+                        {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                      </Button>
+                    )}
                   </div>
+
+                  {recentSearches.length > 0 && !searchQuery && (
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5
+                          className={cn(
+                            "text-sm font-medium",
+                            isGR ? "text-neutral-400" : "text-gray-600 dark:text-gray-400",
+                          )}
+                        >
+                          Recent Searches
+                        </h5>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={clearRecent}
+                          className="h-6 text-xs"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {recentSearches.map((term) => (
+                          <button
+                            key={term}
+                            type="button"
+                            onClick={() => setSearchQuery(term)}
+                            className={cn(
+                              "flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm transition-colors",
+                              isGR
+                                ? "border border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800"
+                                : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                            )}
+                          >
+                            <Search className="h-3 w-3 opacity-60" />
+                            <span>{term}</span>
+                            <X 
+                              className="h-3 w-3 opacity-60 hover:opacity-100" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeSearch(term);
+                              }}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {searchQuery ? (
                     <div className="space-y-3">
@@ -1149,7 +1292,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
                           isGR ? "text-neutral-400" : "text-gray-600 dark:text-gray-400",
                         )}
                       >
-                        Search Results
+                        Search Results ({searchResults.length})
                       </h5>
                       <Carousel opts={{ align: "start" }} className="w-full">
                         <CarouselContent>
@@ -1531,7 +1674,10 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         zIndex: Z.stickyNav,
       }}
       initial={{ y: 80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      animate={{ 
+        y: shouldHideNav ? 80 : 0, 
+        opacity: shouldHideNav ? 0 : 1 
+      }}
       transition={reduceMotion ? { duration: 0.1 } : spring}
       aria-label="Bottom navigation"
     >
@@ -1560,18 +1706,38 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         >
           <NavItem
             asButton
-            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "h-4 w-4")} />}
+            icon={
+              <div className="relative">
+                <Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "h-4 w-4")} />
+                {filteredVehicles.length > 0 && (
+                  <BadgeCounter count={filteredVehicles.length} isGRMode={isGR} />
+                )}
+              </div>
+            }
             label="Models"
-            onClick={() => openSection("models")}
+            onClick={() => {
+              contextualHaptic.sheetOpen();
+              openSection("models");
+            }}
             isActive={navigationState.isMenuOpen && navigationState.activeSection === "models"}
             grMode={isGR}
             deviceCategory={deviceInfo.deviceCategory}
           />
           <NavItem
             asButton
-            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
+            icon={
+              <div className="relative">
+                <ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />
+                {filteredPreOwnedVehicles.length > 0 && (
+                  <BadgeCounter count={filteredPreOwnedVehicles.length} isGRMode={isGR} />
+                )}
+              </div>
+            }
             label="Pre-Owned"
-            onClick={() => openSection("pre-owned")}
+            onClick={() => {
+              contextualHaptic.sheetOpen();
+              openSection("pre-owned");
+            }}
             isActive={navigationState.isMenuOpen && navigationState.activeSection === "pre-owned"}
             grMode={isGR}
             deviceCategory={deviceInfo.deviceCategory}
@@ -1659,9 +1825,19 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
           <NavItem
             asButton
-            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
+            icon={
+              <div className="relative">
+                <Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />
+                {recentSearches.length > 0 && (
+                  <BadgeCounter count={recentSearches.length} isGRMode={isGR} />
+                )}
+              </div>
+            }
             label="Search"
-            onClick={() => openSection("search")}
+            onClick={() => {
+              contextualHaptic.sheetOpen();
+              openSection("search");
+            }}
             isActive={navigationState.isMenuOpen && navigationState.activeSection === "search"}
             grMode={isGR}
             deviceCategory={deviceInfo.deviceCategory}
