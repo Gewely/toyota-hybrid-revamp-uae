@@ -34,12 +34,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { contextualHaptic } from "@/utils/haptic";
 import { Z } from "@/lib/z-index";
-import { useSmartScroll } from "@/hooks/use-smart-scroll";
 import { useVoiceSearch } from "@/hooks/use-voice-search";
 import { useRecentSearches } from "@/hooks/use-recent-searches";
 import { useSavedFilters } from "@/hooks/use-saved-filters";
 import { useComparisonMode } from "@/hooks/use-comparison-mode";
-import { BadgeCounter } from "@/components/ui/badge-counter";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const GR_RED = "#EB0A1E";
@@ -201,7 +199,6 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
   const [userTouchedCategory, setUserTouchedCategory] = useState(false);
 
   // Enhanced hooks
-  const { scrollDirection, scrollY } = useSmartScroll();
   const { recentSearches, addSearch, removeSearch, clearRecent } = useRecentSearches();
   const { savedFilters, saveCategory, savePriceRange } = useSavedFilters();
   const comparisonMode = useComparisonMode();
@@ -416,8 +413,8 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
     ? { type: "spring", stiffness: 420, damping: 28, mass: 0.7 }
     : { type: "spring", stiffness: 260, damping: 20 };
 
-  // Smart auto-hide on scroll
-  const shouldHideNav = scrollY > 100 && scrollDirection === 'down' && !navigationState.isMenuOpen && !navigationState.isActionsExpanded;
+  // Auto-hide disabled to prevent conflicts with horizontal swipes
+  const shouldHideNav = false;
 
   // Fixed nav sizing + padding the real scroll container
   const navRef = useRef<HTMLElement | null>(null);
@@ -1706,14 +1703,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
         >
           <NavItem
             asButton
-            icon={
-              <div className="relative">
-                <Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "h-4 w-4")} />
-                {filteredVehicles.length > 0 && (
-                  <BadgeCounter count={filteredVehicles.length} isGRMode={isGR} />
-                )}
-              </div>
-            }
+            icon={<Car className={cn(isGR ? "text-neutral-100" : "text-red-600", "h-4 w-4")} />}
             label="Models"
             onClick={() => {
               contextualHaptic.sheetOpen();
@@ -1725,14 +1715,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
           />
           <NavItem
             asButton
-            icon={
-              <div className="relative">
-                <ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />
-                {filteredPreOwnedVehicles.length > 0 && (
-                  <BadgeCounter count={filteredPreOwnedVehicles.length} isGRMode={isGR} />
-                )}
-              </div>
-            }
+            icon={<ShoppingBag className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
             label="Pre-Owned"
             onClick={() => {
               contextualHaptic.sheetOpen();
@@ -1825,14 +1808,7 @@ const MobileStickyNav: React.FC<MobileStickyNavProps> = ({
 
           <NavItem
             asButton
-            icon={
-              <div className="relative">
-                <Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />
-                {recentSearches.length > 0 && (
-                  <BadgeCounter count={recentSearches.length} isGRMode={isGR} />
-                )}
-              </div>
-            }
+            icon={<Search className={cn(isGR ? "text-neutral-100" : "text-gray-900", "h-4 w-4")} />}
             label="Search"
             onClick={() => {
               contextualHaptic.sheetOpen();
