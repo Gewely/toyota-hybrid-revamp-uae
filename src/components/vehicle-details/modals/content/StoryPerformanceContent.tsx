@@ -8,6 +8,7 @@ interface StoryPerformanceContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const driveModes = [
@@ -25,7 +26,8 @@ const terrainCapability = [
 export const StoryPerformanceContent: React.FC<StoryPerformanceContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [selectedMode, setSelectedMode] = useState(1);
 
@@ -137,10 +139,10 @@ export const StoryPerformanceContent: React.FC<StoryPerformanceContentProps> = (
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Test Performance
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Compare Specs
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Build & Price
         </Button>
       </div>
     </div>

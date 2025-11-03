@@ -9,6 +9,7 @@ interface ShowroomTechnologyContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const techEcosystem = [
@@ -33,7 +34,8 @@ const softwareVersions = [
 export const ShowroomTechnologyContent: React.FC<ShowroomTechnologyContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [selectedVersion, setSelectedVersion] = useState(0);
 
@@ -162,10 +164,10 @@ export const ShowroomTechnologyContent: React.FC<ShowroomTechnologyContentProps>
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Experience Tech
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Connect Device
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Explore Tech Package
         </Button>
       </div>
     </div>

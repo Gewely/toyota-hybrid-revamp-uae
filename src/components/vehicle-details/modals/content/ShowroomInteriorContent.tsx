@@ -9,6 +9,7 @@ interface ShowroomInteriorContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const tabs = [
@@ -41,7 +42,8 @@ const features = {
 export const ShowroomInteriorContent: React.FC<ShowroomInteriorContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [activeTab, setActiveTab] = useState<'front' | 'rear' | 'cargo'>('front');
 
@@ -129,11 +131,11 @@ export const ShowroomInteriorContent: React.FC<ShowroomInteriorContentProps> = (
 
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Build Your Interior
+        <Button onClick={onBuild || onTestDrive} size="lg" className="flex-1">
+          Customize Interior
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Download Specs
+        <Button onClick={onTestDrive} variant="outline" size="lg" className="flex-1">
+          Book Test Drive
         </Button>
       </div>
     </div>

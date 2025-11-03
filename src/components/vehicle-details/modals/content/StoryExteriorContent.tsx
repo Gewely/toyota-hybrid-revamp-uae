@@ -11,6 +11,7 @@ interface StoryExteriorContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const colors = [
@@ -37,7 +38,8 @@ const awards = [
 export const StoryExteriorContent: React.FC<StoryExteriorContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [selectedColor, setSelectedColor] = useState(0);
 
@@ -139,10 +141,10 @@ export const StoryExteriorContent: React.FC<StoryExteriorContentProps> = ({
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          See in Showroom
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          View All Colors
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Customize Exterior
         </Button>
       </div>
     </div>

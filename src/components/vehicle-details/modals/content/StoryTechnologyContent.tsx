@@ -9,6 +9,7 @@ interface StoryTechnologyContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const techFeatures = [
@@ -28,7 +29,8 @@ const packages = [
 export const StoryTechnologyContent: React.FC<StoryTechnologyContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [selectedPackage, setSelectedPackage] = useState(1);
 
@@ -121,10 +123,10 @@ export const StoryTechnologyContent: React.FC<StoryTechnologyContentProps> = ({
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Experience Technology
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Learn More
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Tech Packages
         </Button>
       </div>
     </div>

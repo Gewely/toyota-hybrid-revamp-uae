@@ -9,6 +9,7 @@ interface StorySafetyContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const safetyFeatures = [
@@ -28,7 +29,8 @@ const ratings = [
 export const StorySafetyContent: React.FC<StorySafetyContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   return (
     <div className="space-y-8 pb-6">
@@ -125,10 +127,10 @@ export const StorySafetyContent: React.FC<StorySafetyContentProps> = ({
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Schedule Safety Demo
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Learn More
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Safety Packages
         </Button>
       </div>
     </div>

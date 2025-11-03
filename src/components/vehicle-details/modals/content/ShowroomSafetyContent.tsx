@@ -9,6 +9,7 @@ interface ShowroomSafetyContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const safetyMatrix = [
@@ -37,7 +38,8 @@ const certifications = [
 export const ShowroomSafetyContent: React.FC<ShowroomSafetyContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [selectedGrade, setSelectedGrade] = useState<'standard' | 'premium'>('premium');
 
@@ -147,10 +149,10 @@ export const ShowroomSafetyContent: React.FC<ShowroomSafetyContentProps> = ({
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Book Safety Demo
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Explore More
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Safety Package Options
         </Button>
       </div>
     </div>

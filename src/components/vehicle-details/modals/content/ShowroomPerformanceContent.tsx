@@ -10,6 +10,7 @@ interface ShowroomPerformanceContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const engineSpecs = [
@@ -31,7 +32,8 @@ const performanceMetrics = [
 export const ShowroomPerformanceContent: React.FC<ShowroomPerformanceContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   return (
     <div className="space-y-6 pb-6">
@@ -108,10 +110,10 @@ export const ShowroomPerformanceContent: React.FC<ShowroomPerformanceContentProp
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Test Performance
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Spec Comparison
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Build & Price
         </Button>
       </div>
     </div>

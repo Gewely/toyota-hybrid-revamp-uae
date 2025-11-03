@@ -11,6 +11,7 @@ interface StoryInteriorContentProps {
   vehicle: VehicleModel;
   onClose: () => void;
   onTestDrive: () => void;
+  onBuild?: () => void;
 }
 
 const interiorImages = [
@@ -36,7 +37,8 @@ const materials = [
 export const StoryInteriorContent: React.FC<StoryInteriorContentProps> = ({
   vehicle,
   onClose,
-  onTestDrive
+  onTestDrive,
+  onBuild
 }) => {
   const [currentImage, setCurrentImage] = useState(0);
 
@@ -95,10 +97,10 @@ export const StoryInteriorContent: React.FC<StoryInteriorContentProps> = ({
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button onClick={onTestDrive} size="lg" className="flex-1">
-          Book Interior Experience
+          Book Test Drive
         </Button>
-        <Button onClick={onClose} variant="outline" size="lg" className="flex-1">
-          Explore More
+        <Button onClick={onBuild || onClose} variant="outline" size="lg" className="flex-1">
+          Build & Price
         </Button>
       </div>
     </div>

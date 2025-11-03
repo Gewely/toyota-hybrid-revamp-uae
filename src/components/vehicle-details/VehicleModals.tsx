@@ -75,9 +75,6 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
         if (!isOpen(id)) return null;
 
         const ModalComponent = entry.component as any;
-        const imageSrc = typeof entry.imageSrc === 'function' 
-          ? entry.imageSrc(pageContext) 
-          : entry.imageSrc;
 
         return (
           <PremiumModalV2
@@ -88,7 +85,6 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
             variant={entry.variant}
             title={entry.title}
             description={entry.description}
-            imageSrc={imageSrc}
           >
             <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
               <ModalComponent 
@@ -97,6 +93,14 @@ const VehicleModals: React.FC<VehicleModalsProps> = ({
                 onTestDrive={() => {
                   close(id);
                   setIsBookingOpen(true);
+                }}
+                onBuild={() => {
+                  close(id);
+                  setIsCarBuilderOpen(true);
+                }}
+                onFinance={() => {
+                  close(id);
+                  setIsFinanceOpen(true);
                 }}
                 {...getProps(id)}
               />

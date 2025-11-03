@@ -21,7 +21,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Step into comfort and sophistication',
     variant: 'gallery',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/StoryInteriorContent').then(m => ({ default: m.StoryInteriorContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[3] || '',
     deepLinkEnabled: true,
   },
   'story-technology': {
@@ -30,7 +29,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Advanced technology that anticipates your needs',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/StoryTechnologyContent').then(m => ({ default: m.StoryTechnologyContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[1] || '',
     deepLinkEnabled: true,
   },
   'story-performance': {
@@ -39,7 +37,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Power meets precision in every journey',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/StoryPerformanceContent').then(m => ({ default: m.StoryPerformanceContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[2] || '',
     deepLinkEnabled: true,
   },
   'story-safety': {
@@ -48,7 +45,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: '360° awareness for every journey',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/StorySafetyContent').then(m => ({ default: m.StorySafetyContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[0] || '',
     deepLinkEnabled: true,
   },
   'story-exterior': {
@@ -57,7 +53,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Every curve designed with purpose',
     variant: 'gallery',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/StoryExteriorContent').then(m => ({ default: m.StoryExteriorContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[1] || '',
     deepLinkEnabled: true,
   },
 
@@ -68,7 +63,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Explore every detail',
     variant: 'gallery',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/ShowroomInteriorContent').then(m => ({ default: m.ShowroomInteriorContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[3] || '',
     deepLinkEnabled: true,
   },
   'exterior': {
@@ -77,7 +71,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Bold design meets capability',
     variant: 'gallery',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/ShowroomExteriorContent').then(m => ({ default: m.ShowroomExteriorContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[1] || '',
     deepLinkEnabled: true,
   },
   'performance': {
@@ -86,7 +79,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Technical specifications',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/ShowroomPerformanceContent').then(m => ({ default: m.ShowroomPerformanceContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[2] || '',
     deepLinkEnabled: true,
   },
   'safety': {
@@ -95,7 +87,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Advanced protection systems',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/ShowroomSafetyContent').then(m => ({ default: m.ShowroomSafetyContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[0] || '',
     deepLinkEnabled: true,
   },
   'technology': {
@@ -104,7 +95,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Intuitive technology',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/ShowroomTechnologyContent').then(m => ({ default: m.ShowroomTechnologyContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[1] || '',
     deepLinkEnabled: true,
   },
   
@@ -115,7 +105,6 @@ export const modalRegistry: Record<string, ModalEntry> = {
     description: 'Intuitive technology',
     variant: 'specs',
     component: React.lazy(() => import('@/components/vehicle-details/modals/content/ShowroomTechnologyContent').then(m => ({ default: m.ShowroomTechnologyContent }))),
-    imageSrc: (ctx) => ctx.galleryImages?.[1] || '',
     deepLinkEnabled: true,
   },
 };
