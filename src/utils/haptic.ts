@@ -51,7 +51,7 @@ const triggerHaptic = (type: HapticType): void => {
 // Luxury Haptic Patterns
 type LuxuryHapticType = 'luxuryPress' | 'premiumError' | 'configComplete' | 'stepProgress' | 'resetAction' | 'exitAction' | 'swipeNavigation';
 
-// Enhanced contextual haptic feedback
+// Enhanced contextual haptic feedback with pattern library
 export const contextualHaptic = {
   swipeNavigation: () => {
     if (isHapticEnabled()) {
@@ -95,6 +95,38 @@ export const contextualHaptic = {
 
   // Enhanced error feedback
   errorFeedback: () => {
+    if (isHapticEnabled()) {
+      triggerHaptic('heavy');
+    }
+  },
+
+  // New haptic patterns
+  categorySwitch: () => {
+    if (isHapticEnabled()) {
+      triggerHaptic('light');
+    }
+  },
+  
+  sheetOpen: () => {
+    if (isHapticEnabled()) {
+      triggerHaptic('medium');
+    }
+  },
+  
+  limitReached: () => {
+    if (isHapticEnabled()) {
+      triggerHaptic('error');
+      setTimeout(() => triggerHaptic('error'), 100);
+    }
+  },
+  
+  successAction: () => {
+    if (isHapticEnabled()) {
+      triggerHaptic('success');
+    }
+  },
+  
+  toggleMode: () => {
     if (isHapticEnabled()) {
       triggerHaptic('heavy');
     }
