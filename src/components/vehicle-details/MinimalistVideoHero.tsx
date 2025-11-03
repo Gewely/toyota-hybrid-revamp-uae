@@ -53,21 +53,21 @@ function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; p
   const src = useMemo(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const params = new URLSearchParams({
-      autoplay: playing ? "1" : "0",
+      autoplay: "1", // Always autoplay for background video
       mute: "1",
       controls: "0",
       rel: "0",
       showinfo: "0",
       modestbranding: "1",
       enablejsapi: "1",
-      playsinline: "1",
+      playsinline: "1", // Critical for iOS
       iv_load_policy: "3",
       loop: "1",
       playlist: videoId,
       origin,
     });
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
-  }, [videoId, playing]);
+  }, [videoId]);
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
@@ -75,16 +75,20 @@ function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; p
         ref={iframeRef}
         title="Background video"
         src={src}
-        allow="autoplay; encrypted-media; picture-in-picture"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen={false}
         frameBorder={0}
+        loading="eager"
         className="
           absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
           w-[100vw] h-[56.25vw]
           min-w-[177.78vh] min-h-[100vh]
-          md:min-h-screen
           pointer-events-none
         "
+        style={{
+          border: 'none',
+          display: 'block'
+        }}
       />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
       <div
@@ -306,12 +310,12 @@ export default function MinimalistVideoHero({
 }: MinimalistVideoHeroProps) {
   const shouldReduceMotion = useReducedMotion();
 
+  // Only respect reduced motion, not saveData - users want to see videos
   const prefersImage = useMemo(() => {
-    const saveData =
-      typeof navigator !== "undefined" && (navigator as any)?.connection && (navigator as any)?.connection?.saveData;
-    return Boolean(shouldReduceMotion || saveData);
+    return Boolean(shouldReduceMotion);
   }, [shouldReduceMotion]);
 
+  // Always start with video mode unless reduced motion is preferred
   const [mode, setMode] = useState<"video" | "image">(prefersImage ? "image" : "video");
   const [activeIndex, setActiveIndex] = useState(defaultVariant === "modellista" ? 1 : 0);
   const [videoPlaying, setVideoPlaying] = useState(!prefersImage);
