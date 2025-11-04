@@ -3,11 +3,13 @@ import React, { useState, useCallback, Suspense, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonModal';
 
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
 import MinimalistVideoHero from "@/components/vehicle-details/MinimalistVideoHero";
 import EngineGradeSelection from "@/components/vehicle-details/EngineGradeSelection";
+import VehicleModals from "@/components/vehicle-details/VehicleModals";
 // import ModernSectionNavigation from "@/components/vehicle-details/ModernSectionNavigation"; // Removed
 import { PageLoading, ComponentLoading } from "@/components/ui/enhanced-loading";
 import { PerformanceErrorBoundary } from "@/components/ui/performance-error-boundary";
@@ -23,6 +25,7 @@ import { UnifiedPerformanceMonitor } from '@/components/ui/unified-performance-m
 
 import { SkipLinks } from '@/components/ui/enhanced-accessibility';
 import { ProgressiveLoader } from '@/components/ui/enhanced-loading-states';
+import { ModalProvider } from '@/contexts/ModalProvider';
 import { ScrollProgressBar } from '@/components/animations/ScrollProgressBar';
 import { SectionTransition } from '@/components/animations/SectionTransition';
 
@@ -146,6 +149,12 @@ const VehicleDetails = () => {
   }
 
   return (
+    <ModalProvider pageContext={{
+      heroImage: vehicle.image,
+      galleryImages: galleryImages,
+      vehicleName: vehicle.name,
+      vehiclePrice: vehicle.price
+    }}>
         <PerformanceErrorBoundary>
         <ScrollProgressBar />
         <UnifiedPerformanceMonitor />
@@ -254,8 +263,25 @@ const VehicleDetails = () => {
         {/* ModernSectionNavigation temporarily disabled */}
         {/* <ModernSectionNavigation /> */}
       </div>
+
+      {/* Vehicle Modals */}
+      <VehicleModals
+        vehicle={vehicle}
+        isBookingOpen={modals.isBookingOpen}
+        setIsBookingOpen={(value) => modalHandlers.updateModal('isBookingOpen', value)}
+        isFinanceOpen={modals.isFinanceOpen}
+        setIsFinanceOpen={(value) => modalHandlers.updateModal('isFinanceOpen', value)}
+        isCarBuilderOpen={modals.isCarBuilderOpen}
+        setIsCarBuilderOpen={(value) => modalHandlers.updateModal('isCarBuilderOpen', value)}
+        isOffersModalOpen={modals.isOffersModalOpen}
+        setIsOffersModalOpen={(value) => modalHandlers.updateModal('isOffersModalOpen', value)}
+        selectedOffer={selectedOffer}
+        setSelectedOffer={setSelectedOffer}
+        carBuilderInitialGrade={carBuilderInitialGrade}
+      />
         </ToyotaLayout>
       </PerformanceErrorBoundary>
+  </ModalProvider>
   );
 };
 
