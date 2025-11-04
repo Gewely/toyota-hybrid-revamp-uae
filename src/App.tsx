@@ -7,7 +7,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PersonaProvider } from "@/contexts/PersonaContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { ModalProvider } from "@/contexts/ModalProvider";
 import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 import Index from "./pages/Index";
 import VehicleDetails from "./pages/VehicleDetails";
@@ -22,7 +21,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <PersonaProvider>
-        <ModalProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -38,7 +36,6 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
-        </ModalProvider>
       </PersonaProvider>
     </LanguageProvider>
   </QueryClientProvider>
