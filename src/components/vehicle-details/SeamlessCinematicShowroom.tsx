@@ -314,7 +314,7 @@ const DesktopGrid: React.FC<{
 };
 
 /* ============================================================
-   Main component
+   Main component - now using useModal hook
 ============================================================ */
 const SeamlessCinematicShowroom: React.FC = () => {
   const { galleryImages } = useVehicleData();
@@ -436,7 +436,7 @@ const SeamlessCinematicShowroom: React.FC = () => {
     ];
   }, [isDesktop, galleryImages]);
 
-  const handleCardClick = (id: string) => console.log('Clicked:', id);
+  const handleCardClick = (id: string) => console.log('Card clicked:', id);
 
   return (
     <section className="w-full bg-[hsl(var(--neutral-50))] min-h-screen">
