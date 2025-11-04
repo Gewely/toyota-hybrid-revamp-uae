@@ -62,9 +62,7 @@ const PreOwnedSimilar = createLazyComponent(
   () => import("@/components/vehicle-details/PreOwnedSimilar")
 );
 
-const SplitSystemADAS = createLazyComponent(
-  () => import("@/components/vehicle-details/SplitSystemADAS")
-);
+// Remove PremiumGallery as it's replaced by Spiral3DGallery
 
 const VehicleDetails = () => {
   // Modal states - memoized to prevent unnecessary re-renders
@@ -199,15 +197,6 @@ const VehicleDetails = () => {
           <Suspense fallback={<ComponentLoading />}>
             <SectionTransition>
               <SeamlessCinematicShowroom />
-            </SectionTransition>
-          </Suspense>
-
-          {/* ADAS Safety Section */}
-          <Suspense fallback={<ComponentLoading />}>
-            <SectionTransition>
-              <div id="adas-section">
-                <SplitSystemADAS />
-              </div>
             </SectionTransition>
           </Suspense>
 

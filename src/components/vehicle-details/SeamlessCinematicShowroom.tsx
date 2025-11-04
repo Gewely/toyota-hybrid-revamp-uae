@@ -436,13 +436,7 @@ const SeamlessCinematicShowroom: React.FC = () => {
     ];
   }, [isDesktop, galleryImages]);
 
-  const handleCardClick = (id: string) => {
-    if (id === 'safety') {
-      window.location.href = '#adas-section';
-    } else {
-      console.log('Clicked:', id);
-    }
-  };
+  const handleCardClick = (id: string) => console.log('Clicked:', id);
 
   return (
     <section className="w-full bg-[hsl(var(--neutral-50))] min-h-screen">
