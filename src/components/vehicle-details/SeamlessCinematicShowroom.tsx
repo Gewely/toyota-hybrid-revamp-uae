@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useVehicleData } from "@/hooks/use-vehicle-data";
-import { useModal } from "@/contexts/ModalProvider";
 
 /* ============================================================
    Types (aligned with your original ShowroomCard + small opts)
@@ -315,10 +314,9 @@ const DesktopGrid: React.FC<{
 };
 
 /* ============================================================
-   Main component - now using useModal hook
+   Main component
 ============================================================ */
 const SeamlessCinematicShowroom: React.FC = () => {
-  const { open } = useModal();
   const { galleryImages } = useVehicleData();
   const isDesktop = useBreakpoint();
 
@@ -438,7 +436,7 @@ const SeamlessCinematicShowroom: React.FC = () => {
     ];
   }, [isDesktop, galleryImages]);
 
-  const handleCardClick = (id: string) => open(id);
+  const handleCardClick = (id: string) => console.log('Clicked:', id);
 
   return (
     <section className="w-full bg-[hsl(var(--neutral-50))] min-h-screen">
