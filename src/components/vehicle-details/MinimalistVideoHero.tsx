@@ -86,8 +86,8 @@ function CoverYouTube({ videoId, playing, className = "" }: { videoId: string; p
           pointer-events-none
         "
         style={{
-          border: 'none',
-          display: 'block'
+          border: "none",
+          display: "block",
         }}
       />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/30" />
@@ -286,7 +286,7 @@ const DEFAULT_VIDEO_ID = "E-TmuQuQwVI";
 const DEFAULT_TITLE = "TOYOTA";
 const FALLBACK_IMAGES: { src: string; alt?: string }[] = [
   {
-    src: "https://toyota.jp/pages/contents/landcruiser300/004_p_001/image/customizecar/top/original1_01.jpg",
+    src: "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-1536.jpg",
     alt: "Land Cruiser 300 — Original kit",
   },
   {
@@ -330,7 +330,7 @@ export default function MinimalistVideoHero({
   // Scroll animations
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start start", "end start"]
+    offset: ["start start", "end start"],
   });
 
   const titleY = useTransform(scrollYProgress, [0, 1], [0, -50]);
@@ -340,7 +340,10 @@ export default function MinimalistVideoHero({
   const title = (vehicle?.name ?? DEFAULT_TITLE).toUpperCase();
   const price = formatPrice(vehicle?.priceFrom);
   const videoId = vehicle?.videoId ?? (vehicle as any)?.videoUrl ?? DEFAULT_VIDEO_ID;
-  const rawPrice = typeof vehicle?.priceFrom === 'number' ? vehicle.priceFrom : parseFloat(String(vehicle?.priceFrom || '0').replace(/[^\d.]/g, '')) || 0;
+  const rawPrice =
+    typeof vehicle?.priceFrom === "number"
+      ? vehicle.priceFrom
+      : parseFloat(String(vehicle?.priceFrom || "0").replace(/[^\d.]/g, "")) || 0;
 
   const images = useMemo(
     () =>
@@ -471,7 +474,7 @@ export default function MinimalistVideoHero({
           </motion.h1>
 
           {vehicle?.modelYear && (
-            <motion.div 
+            <motion.div
               className="text-xs md:text-sm text-white/80"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -484,8 +487,8 @@ export default function MinimalistVideoHero({
           <div className="text-xs md:text-sm text-white/90">
             <span className="font-light">Starting from (incl. VAT)</span>
           </div>
-          <motion.div 
-            className="text-xl md:text-2xl lg:text-3xl font-light text-white" 
+          <motion.div
+            className="text-xl md:text-2xl lg:text-3xl font-light text-white"
             aria-live="polite"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
