@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX, X, Star } from "lucide-react";
+import { useModal } from "@/contexts/ModalProvider";
 import { contextualHaptic } from "@/utils/haptic";
 import { toast } from "@/hooks/use-toast";
 
@@ -172,6 +173,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   topOffsetPx = 0,
   forceMotion = false,
 }) => {
+  const { open } = useModal();
   const prefersReduced = useReducedMotion();
   const motionAllowed = forceMotion || !prefersReduced;
 
@@ -245,7 +247,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Step into a world where comfort meets cutting-edge technology.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
-        cta: { label: "Experience Interior", action: () => {}, variant: "primary" },
+        cta: { label: "Experience Interior", action: () => open('story-interior'), variant: "primary" },
         features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Premium Audio"],
       },
       {
@@ -254,11 +256,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Advanced technology that anticipates your needs.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg",
-        cta: { label: "Discover Tech", action: () => {}, variant: "secondary" },
+        cta: { label: "Discover Tech", action: () => open('story-technology'), variant: "secondary" },
         features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
-    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate],
+    [monthlyEMI, setIsBookingOpen, setIsFinanceOpen, navigate, open],
   );
   const labels = ["Hero", "Exterior", "Interior", "Tech"];
 

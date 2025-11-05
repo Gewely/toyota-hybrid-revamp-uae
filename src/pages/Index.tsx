@@ -9,6 +9,8 @@ import QuickLinks from "@/components/home/QuickLinks";
 import PersonaBadge from "@/components/home/PersonaBadge";
 import CategoryFilter from "@/components/home/CategoryFilter";
 import VehicleShowcase from "@/components/home/VehicleShowcase";
+import ComparisonTable from "@/components/home/ComparisonTable";
+import QuickViewModal from "@/components/home/QuickViewModal";
 import CompareFloatingBox from "@/components/home/CompareFloatingBox";
 import LifestyleSection from "@/components/home/LifestyleSection";
 import PerformanceSection from "@/components/home/PerformanceSection";
@@ -346,6 +348,16 @@ const Index = () => {
         </section>
       )}
 
+      {/* Quick View Modal */}
+      <AnimatePresence>
+        {selectedVehicle && (
+          <QuickViewModal
+            vehicle={selectedVehicle}
+            onClose={() => setSelectedVehicle(null)}
+            personaData={personaData}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Compare Floating Box - Only show if comparing 1 vehicle */}
       {compareList.length === 1 && (
@@ -378,6 +390,15 @@ const Index = () => {
         <PreOwnedSection vehicles={preOwnedVehicles} />
       )}
 
+      {/* Comparison Table - Show as overlay when at least 2 vehicles are selected */}
+      {compareList.length >= 2 && (
+        <ComparisonTable
+          vehicles={comparedVehicles}
+          onRemove={handleRemoveFromCompare}
+          onClearAll={handleClearCompare}
+          personaData={personaData}
+        />
+      )}
 
       {/* Luxury Showcase Experience */}
       {showLuxuryExperience && (
