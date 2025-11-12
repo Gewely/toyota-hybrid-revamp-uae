@@ -3,7 +3,6 @@ import React, { useState, useCallback, Suspense, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import GradeComparisonModal from '@/components/vehicle-details/GradeComparisonModal';
 
 import ToyotaLayout from "@/components/ToyotaLayout";
 import ActionPanel from "@/components/vehicle-details/ActionPanel";
@@ -38,8 +37,8 @@ const TechnologyShowcase = createLazyComponent(
   () => import("@/components/vehicle-details/TechnologyShowcase")
 );
 
-const StorytellingSection = createLazyComponent(
-  () => import("@/components/vehicle-details/StorytellingSection")
+const AppleStyleStorytellingSection = createLazyComponent(
+  () => import("@/components/vehicle-details/AppleStyleStorytellingSection")
 );
 
 const VehicleFAQ = createLazyComponent(
@@ -207,12 +206,12 @@ const VehicleDetails = () => {
               </SectionTransition>
 
               <SectionTransition parallaxSpeed={0.15}>
-                <StorytellingSection
-                  galleryImages={galleryImages}
+                <AppleStyleStorytellingSection
                   monthlyEMI={monthlyEMI}
                   setIsBookingOpen={(value: boolean) => modalHandlers.updateModal('isBookingOpen', value)}
                   navigate={navigate}
                   setIsFinanceOpen={(value: boolean) => modalHandlers.updateModal('isFinanceOpen', value)}
+                  galleryImages={galleryImages}
                 />
               </SectionTransition>
 
