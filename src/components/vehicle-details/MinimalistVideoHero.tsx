@@ -505,18 +505,8 @@ export default function MinimalistVideoHero({
 
           {/* Variant Toggle */}
           {images.length >= 2 && <div className="flex items-center gap-2">
-              <button type="button" onClick={() => {
-            setActiveIndex(0);
-            setMode("image");
-          }} className={`rounded-full px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${activeIndex === 0 ? "bg-white text-foreground" : "bg-white/10 text-white hover:bg-white/20"}`} aria-pressed={activeIndex === 0}>
-                Original
-              </button>
-              <button type="button" onClick={() => {
-            setActiveIndex(1);
-            setMode("image");
-          }} className={`rounded-full px-2.5 py-1 md:px-3 md:py-1.5 text-xs md:text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/60 ${activeIndex === 1 ? "bg-white text-foreground" : "bg-white/10 text-white hover:bg-white/20"}`} aria-pressed={activeIndex === 1}>
-                Modellista
-              </button>
+              
+              
             </div>}
 
           {/* Media controls + Strip */}
