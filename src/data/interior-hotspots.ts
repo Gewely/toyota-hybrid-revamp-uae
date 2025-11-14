@@ -8,14 +8,14 @@ export interface HotspotMedia {
 
 export interface HotspotSpec {
   label: string;
-  value: string;
+  value: string | number;
   highlight?: boolean;
 }
 
 export interface Hotspot {
   id: string;
   position: { x: number; y: number }; // percentage-based positioning
-  category: 'comfort' | 'technology' | 'safety' | 'design';
+  category: 'comfort' | 'technology' | 'safety' | 'design' | 'performance' | 'engine' | 'drivetrain' | 'efficiency' | 'control';
   title: string;
   icon: any;
   description: string;
