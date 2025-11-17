@@ -1,7 +1,6 @@
 import React from 'react';
 import { VehicleModel } from '@/types/vehicle';
-import { HotspotModal } from '../hotspot/HotspotModal';
-import { safetyHotspots } from '@/data/safety-hotspots';
+import { SafetyLayersVisualization } from './SafetyLayersVisualization';
 
 interface ShowroomSafetyContentProps {
   vehicle: VehicleModel;
@@ -16,16 +15,12 @@ export const ShowroomSafetyContent: React.FC<ShowroomSafetyContentProps> = ({
   onTestDrive,
   onBuild
 }) => {
-  const currentGrade = (vehicle as any).grade || 'Base';
-  
   return (
-    <HotspotModal
-      hotspots={safetyHotspots}
-      defaultBackgroundImage="https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-001-1536.jpg"
-      currentGrade={currentGrade}
+    <SafetyLayersVisualization
+      vehicle={vehicle}
+      onClose={onClose}
       onTestDrive={onTestDrive}
       onBuild={onBuild}
-      modalType="exterior"
     />
   );
 };

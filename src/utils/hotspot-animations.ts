@@ -3,10 +3,10 @@ import { Variants } from 'framer-motion';
 export const hotspotPinVariants: Variants = {
   idle: {
     scale: 1,
-    opacity: 0.8,
+    opacity: 0.9,
   },
   hover: {
-    scale: 1.2,
+    scale: 1.15,
     opacity: 1,
     transition: {
       duration: 0.2,
@@ -14,25 +14,25 @@ export const hotspotPinVariants: Variants = {
     }
   },
   active: {
-    scale: 1.3,
+    scale: 1.25,
     opacity: 1,
     transition: {
-      duration: 0.3,
-      ease: [0.34, 1.56, 0.64, 1] // Overshoot easing
+      duration: 0.2,
+      ease: 'easeOut'
     }
   }
 };
 
 export const pulseRingVariants: Variants = {
-  pulse: (speed: number = 2) => ({
-    scale: [1, 1.5, 1],
-    opacity: [0.6, 0, 0.6],
+  pulse: {
+    scale: [1, 1.3, 1],
+    opacity: [0.5, 0, 0.5],
     transition: {
-      duration: speed,
+      duration: 2.5,
       repeat: Infinity,
       ease: 'easeInOut'
     }
-  })
+  }
 };
 
 export const detailPanelVariants: Variants = {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { VehicleModel } from '@/types/vehicle';
-import { HotspotModal } from '../hotspot/HotspotModal';
-import { performanceHotspots } from '@/data/performance-hotspots';
+import { PerformanceDashboard } from './PerformanceDashboard';
 
 interface ShowroomPerformanceContentProps {
   vehicle: VehicleModel;
@@ -16,16 +15,12 @@ export const ShowroomPerformanceContent: React.FC<ShowroomPerformanceContentProp
   onTestDrive,
   onBuild
 }) => {
-  const currentGrade = (vehicle as any).grade || 'Base';
-  
   return (
-    <HotspotModal
-      hotspots={performanceHotspots}
-      defaultBackgroundImage="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1600"
-      currentGrade={currentGrade}
+    <PerformanceDashboard
+      vehicle={vehicle}
+      onClose={onClose}
       onTestDrive={onTestDrive}
       onBuild={onBuild}
-      modalType="exterior"
     />
   );
 };

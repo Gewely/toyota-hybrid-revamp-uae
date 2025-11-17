@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Play, Maximize2 } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HotspotCanvas } from './HotspotCanvas';
 import { DetailPanel } from './DetailPanel';
 import { TourControls } from './TourControls';
 import { Hotspot } from '@/data/interior-hotspots';
 import { useHotspotTour } from '@/hooks/use-hotspot-tour';
+import { prefersReducedMotion } from '@/utils/modal-performance';
 
 interface HotspotModalProps {
   hotspots: Hotspot[];
@@ -27,9 +28,16 @@ export const HotspotModal: React.FC<HotspotModalProps> = ({
 }) => {
   const [activeHotspot, setActiveHotspot] = useState<Hotspot | null>(null);
   const [backgroundImage, setBackgroundImage] = useState(defaultBackgroundImage);
+  const reducedMotion = prefersReducedMotion();
+
+  // Memoize filtered hotspots to avoid recalculation
+  const filteredHotspots = useMemo(() => 
+    hotspots.filter(h => h.gradeAvailability.includes(currentGrade)),
+    [hotspots, currentGrade]
+  );
 
   const tour = useHotspotTour({ 
-    hotspots: hotspots.filter(h => h.gradeAvailability.includes(currentGrade)),
+    hotspots: filteredHotspots,
     autoAdvance: false 
   });
 
@@ -105,7 +113,7 @@ export const HotspotModal: React.FC<HotspotModalProps> = ({
         }}
       >
         <span className="text-sm font-mono text-cyan-400">
-          {hotspots.filter(h => h.gradeAvailability.includes(currentGrade)).length} Features Available
+          {filteredHotspots.length} Features Available
         </span>
       </div>
 
