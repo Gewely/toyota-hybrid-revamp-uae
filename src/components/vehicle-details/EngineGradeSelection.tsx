@@ -458,13 +458,79 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             ))}
           </div>
 
-          {/* Engine segmented (black selected pill) */}
-          <Segmented
-            ariaLabel="Select engine"
-            options={engines.map((e) => ({ id: e.name, label: `${e.name} · ${e.type}` }))}
-            value={selectedEngine}
-            onChange={(id) => setSelectedEngine(id)}
-          />
+          {/* Engine Selector - Large Visual Cards */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-zinc-900 mb-4">Select Your Engine</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {engines.map((engine) => {
+                const isSelected = selectedEngine === engine.name;
+                return (
+                  <motion.button
+                    key={engine.name}
+                    onClick={() => setSelectedEngine(engine.name)}
+                    className={`relative p-6 rounded-2xl border-2 transition-all text-left ${
+                      isSelected
+                        ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 shadow-lg'
+                        : 'border-zinc-200 bg-white hover:border-amber-200 hover:shadow-md'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {/* Engine Badge */}
+                    {isSelected && (
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-amber-500 text-white">Selected</Badge>
+                      </div>
+                    )}
+
+                    {/* Engine Name & Type */}
+                    <div className="mb-4">
+                      <h4 className="text-2xl font-bold text-zinc-900 mb-1">{engine.name}</h4>
+                      <p className="text-sm text-zinc-600">{engine.type}</p>
+                    </div>
+
+                    {/* Power & Torque Meters */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div className="text-xs text-zinc-500 mb-2">Power</div>
+                        <div className="text-3xl font-bold text-amber-600">{engine.power}</div>
+                        <div className="w-full h-2 bg-zinc-200 rounded-full mt-2 overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: engine.power === '295 HP' ? '100%' : '85%' }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500 mb-2">Torque</div>
+                        <div className="text-3xl font-bold text-amber-600">{engine.torque}</div>
+                        <div className="w-full h-2 bg-zinc-200 rounded-full mt-2 overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: engine.torque === '356 lb-ft' ? '100%' : '90%' }}
+                            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Efficiency Badge */}
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                      engine.efficiency === '9.2 L/100km'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      <span className="text-lg">⚡</span>
+                      {engine.efficiency}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* ====== Desktop: poster + finance ====== */}

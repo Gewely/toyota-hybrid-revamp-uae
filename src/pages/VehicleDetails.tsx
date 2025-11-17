@@ -99,8 +99,6 @@ const VehicleDetails = () => {
     },
     handleGradeSelect: (grade: string) => {
       setSelectedGrade(grade);
-      setCarBuilderInitialGrade(grade);
-      setModals(prev => ({ ...prev, isCarBuilderOpen: true }));
     },
     handleGradeComparison: () => {
       setModals(prev => ({ ...prev, isGradeComparisonOpen: true }));
