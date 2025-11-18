@@ -236,7 +236,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
           "https://www.wsupercars.com/wallpapers-regular/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-007-2160.jpg",
         cta: {
           label: "Explore Design",
-          action: () => document.getElementById("seamless-showroom")?.scrollIntoView({ behavior: "smooth" }),
+          action: () => open('design-explorer'),
           variant: "secondary",
         },
         features: ["LED Matrix Headlights", "Active Aero", "Carbon Fiber Accents", "Sport Wheels"],
@@ -247,7 +247,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Step into a world where comfort meets cutting-edge technology.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-002-1440w.jpg",
-        cta: { label: "Experience Interior", action: () => open('story-interior'), variant: "primary" },
+        cta: { label: "Experience Interior", action: () => open('immersive-interior'), variant: "primary" },
         features: ["Premium Leather", "Ambient Lighting", "Panoramic Roof", "JBL Premium Audio"],
       },
       {
@@ -256,7 +256,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
         subtitle: "Advanced technology that anticipates your needs.",
         backgroundImage:
           "https://www.wsupercars.com/wallpapers-wide/Toyota/2022-Toyota-Land-Cruiser-GR-Sport-003-1440w.jpg",
-        cta: { label: "Discover Tech", action: () => open('story-technology'), variant: "secondary" },
+        cta: { label: "Discover Tech", action: () => open('tech-command-center'), variant: "secondary" },
         features: ["Hybrid Synergy Drive", "Toyota Safety Sense", "Connected Services", "Wireless Charging"],
       },
     ],
