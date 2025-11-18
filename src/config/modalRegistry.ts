@@ -14,7 +14,31 @@ export interface ModalEntry {
 }
 
 export const modalRegistry: Record<string, ModalEntry> = {
-  // AppleStorytelling modals
+  // AppleStorytelling modals - New Interactive Experiences
+  'design-explorer': {
+    id: 'design-explorer',
+    title: 'Explore Design',
+    description: 'Interactive 3D exterior visualizer',
+    variant: 'gallery',
+    component: React.lazy(() => import('@/components/vehicle-details/modals/content/InteractiveDesignModal').then(m => ({ default: m.InteractiveDesignModal }))),
+    deepLinkEnabled: true,
+  },
+  'immersive-interior': {
+    id: 'immersive-interior',
+    title: 'Experience Interior',
+    description: 'Immersive virtual cockpit',
+    variant: 'gallery',
+    component: React.lazy(() => import('@/components/vehicle-details/modals/content/ImmersiveInteriorModal').then(m => ({ default: m.ImmersiveInteriorModal }))),
+    deepLinkEnabled: true,
+  },
+  'tech-command-center': {
+    id: 'tech-command-center',
+    title: 'Discover Technology',
+    description: 'Futuristic tech command center',
+    variant: 'specs',
+    component: React.lazy(() => import('@/components/vehicle-details/modals/content/TechCommandCenterModal').then(m => ({ default: m.TechCommandCenterModal }))),
+    deepLinkEnabled: true,
+  },
   'story-interior': {
     id: 'story-interior',
     title: 'Luxury Redefined',
