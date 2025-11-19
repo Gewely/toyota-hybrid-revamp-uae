@@ -461,7 +461,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
           {/* Engine Selector - Large Visual Cards */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-zinc-900 mb-4">Select Your Engine</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {engines.map((engine) => {
                 const isSelected = selectedEngine === engine.name;
                 return (

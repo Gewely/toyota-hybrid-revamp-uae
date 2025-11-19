@@ -7,6 +7,9 @@ import { ChevronLeft, ChevronRight, Star, TrendingUp, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { vehicles } from "@/data/vehicles";
 import type { VehicleModel } from "@/types/vehicle";
+import DiscoveryGrid from "./DiscoveryGrid";
+import VehicleComparisonDrawer from "./VehicleComparisonDrawer";
+import QuickPreviewSheet from "./QuickPreviewSheet";
 
 interface CinematicRelatedVehiclesProps {
   currentVehicle: VehicleModel;
@@ -69,6 +72,11 @@ const CinematicRelatedVehicles: React.FC<CinematicRelatedVehiclesProps> = ({
   const smoothScroll = useSpring(scrollX, { stiffness: 100, damping: 30 });
 
   // Related vehicles
+  const [comparisonVehicles, setComparisonVehicles] = useState<VehicleModel[]>([]);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [quickViewVehicle, setQuickViewVehicle] = useState<VehicleModel | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
   const related: EnhancedVehicle[] = vehicles
     .filter((v) => v.id !== currentVehicle.id && v.category === currentVehicle.category)
     .slice(0, 6)
@@ -79,6 +87,21 @@ const CinematicRelatedVehicles: React.FC<CinematicRelatedVehiclesProps> = ({
     }));
 
   if (related.length === 0) return null;
+
+  const handleCompare = (vehicleIds: string[]) => {
+    const selectedVehicles = vehicles.filter(v => vehicleIds.includes(v.id));
+    setComparisonVehicles(selectedVehicles);
+    setIsCompareOpen(true);
+  };
+
+  const handleQuickView = (vehicle: VehicleModel) => {
+    setQuickViewVehicle(vehicle);
+    setIsQuickViewOpen(true);
+  };
+
+  const handleNavigate = (vehicleId: string) => {
+    navigate(`/vehicle/${slugify(vehicleId)}`);
+  };
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;

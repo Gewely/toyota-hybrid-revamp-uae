@@ -1,24 +1,36 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gauge, Calendar, CheckCircle2 } from "lucide-react";
+import { Gauge, Calendar, CheckCircle2, Shield } from "lucide-react";
 import { preOwnedVehicles } from "@/data/vehicles";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import FeaturedCertifiedVehicle from "./FeaturedCertifiedVehicle";
+import CertificationBadge from "./CertificationBadge";
 
 const PreOwnedSimilar: React.FC = () => {
   const navigate = useNavigate();
 
+  // Featured vehicle
+  const featuredVehicle = {
+    id: preOwnedVehicles[0].id,
+    model: preOwnedVehicles[0].model,
+    year: preOwnedVehicles[0].year,
+    price: preOwnedVehicles[0].price,
+    mileage: preOwnedVehicles[0].mileage,
+    image: preOwnedVehicles[0].image,
+    images: [preOwnedVehicles[0].image],
+    certified: true,
+    warranty: "2 Years",
+    services: 3,
+    lastService: "Jan 2024",
+    previousOwners: 1,
+    accidentFree: true,
+  };
+
   return (
-    <section className="py-16 md:py-24 px-4 bg-gradient-to-b from-background to-muted/30">
+    <section className="py-16 md:py-24 px-4 bg-gradient-to-b from-background via-muted/20 to-background">
       <div className="container mx-auto max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -27,18 +39,28 @@ const PreOwnedSimilar: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-sm">
-            Certified Pre-Owned
-          </Badge>
+          <div className="inline-flex items-center gap-2 mb-4">
+            <Badge variant="outline" className="px-4 py-1.5 text-sm">
+              <Shield className="w-3 h-3 mr-1.5" />
+              Certified Pre-Owned
+            </Badge>
+          </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-foreground">
-            Discover Certified Pre-Owned
+            Trust & Heritage Showcase
           </h2>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Quality Toyota vehicles with our comprehensive certification guarantee
+            Every vehicle undergoes our rigorous 160-point inspection, backed by comprehensive warranty
           </p>
         </motion.div>
 
-        <Carousel
+        {/* Featured Vehicle */}
+        <div className="mb-12">
+          <FeaturedCertifiedVehicle
+            vehicle={featuredVehicle}
+            onViewDetails={() => navigate("/pre-owned")}
+            onBookTestDrive={() => navigate("/test-drive")}
+          />
+        </div>
           opts={{
             align: "start",
             loop: true,
