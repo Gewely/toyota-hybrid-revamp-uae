@@ -30,26 +30,28 @@ const PreOwnedSimilar: React.FC = () => {
   };
 
   return (
-    <section className="py-16 md:py-24 px-4 bg-gradient-to-b from-background via-muted/20 to-background">
-      <div className="container mx-auto max-w-7xl">
+    <section className="py-12 md:py-16 px-4 bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(var(--primary-rgb),0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(var(--primary-rgb),0.08),transparent_50%)]" />
+      
+      <div className="container mx-auto max-w-7xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Badge variant="outline" className="px-4 py-1.5 text-sm">
-              <Shield className="w-3 h-3 mr-1.5" />
-              Certified Pre-Owned
-            </Badge>
+          <div className="inline-flex items-center gap-2 mb-4 bg-gradient-to-r from-primary/20 to-amber-500/20 backdrop-blur-sm px-5 py-2 rounded-full border border-primary/30">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Certified Pre-Owned Excellence</span>
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-foreground">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
             Trust & Heritage Showcase
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Every vehicle undergoes our rigorous 160-point inspection, backed by comprehensive warranty
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Every vehicle undergoes our <span className="font-bold text-primary">rigorous 160-point inspection</span>, backed by comprehensive warranty
           </p>
         </motion.div>
 

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Plus, ArrowRight } from "lucide-react";
+import { Eye, Plus, ArrowRight, Zap, Star, TrendingUp } from "lucide-react";
 import type { VehicleModel } from "@/types/vehicle";
 
 interface DiscoveryGridProps {
@@ -21,6 +21,7 @@ const DiscoveryGrid: React.FC<DiscoveryGridProps> = ({
   onNavigate,
 }) => {
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const toggleComparison = (vehicleId: string) => {
     setSelectedForComparison((prev) => {
@@ -55,6 +56,20 @@ const DiscoveryGrid: React.FC<DiscoveryGridProps> = ({
 
   return (
     <div className="relative">
+      {/* Bold Header */}
+      <div className="mb-8 text-center">
+        <Badge className="mb-3 bg-gradient-to-r from-primary to-amber-500 text-white px-4 py-1.5 text-sm shadow-lg">
+          <Zap className="w-3 h-3 mr-1.5" />
+          Discovery Zone
+        </Badge>
+        <h2 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent mb-3">
+          Explore Similar Vehicles
+        </h2>
+        <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
+          Hand-picked alternatives that match your lifestyle and preferences
+        </p>
+      </div>
+
       {/* Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[280px]">
         {vehicles.map((vehicle, index) => {
