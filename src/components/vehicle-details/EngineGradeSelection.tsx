@@ -458,78 +458,64 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             ))}
           </div>
 
-          {/* Engine Selector - Large Visual Cards */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-zinc-900 mb-4">Select Your Engine</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Engine Selector - ULTRA COMPACT */}
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold text-zinc-900 mb-2">Select Your Engine</h3>
+            
+            {/* Horizontal Toggle Buttons */}
+            <div className="flex gap-2 mb-3">
               {engines.map((engine) => {
                 const isSelected = selectedEngine === engine.name;
                 return (
-                  <motion.button
+                  <button
                     key={engine.name}
                     onClick={() => setSelectedEngine(engine.name)}
-                    className={`relative p-6 rounded-2xl border-2 transition-all text-left ${
+                    className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
                       isSelected
-                        ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 shadow-lg'
-                        : 'border-zinc-200 bg-white hover:border-amber-200 hover:shadow-md'
+                        ? 'bg-zinc-900 text-white shadow-lg'
+                        : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
                     }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                   >
-                    {/* Engine Badge */}
-                    {isSelected && (
-                      <div className="absolute top-4 right-4">
-                        <Badge className="bg-amber-500 text-white">Selected</Badge>
-                      </div>
-                    )}
-
-                    {/* Engine Name & Type */}
-                    <div className="mb-4">
-                      <h4 className="text-2xl font-bold text-zinc-900 mb-1">{engine.name}</h4>
-                      <p className="text-sm text-zinc-600">{engine.type}</p>
-                    </div>
-
-                    {/* Power & Torque Meters */}
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <div className="text-xs text-zinc-500 mb-2">Power</div>
-                        <div className="text-3xl font-bold text-amber-600">{engine.power}</div>
-                        <div className="w-full h-2 bg-zinc-200 rounded-full mt-2 overflow-hidden">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
-                            initial={{ width: 0 }}
-                            animate={{ width: engine.power === '295 HP' ? '100%' : '85%' }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-zinc-500 mb-2">Torque</div>
-                        <div className="text-3xl font-bold text-amber-600">{engine.torque}</div>
-                        <div className="w-full h-2 bg-zinc-200 rounded-full mt-2 overflow-hidden">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
-                            initial={{ width: 0 }}
-                            animate={{ width: engine.torque === '356 lb-ft' ? '100%' : '90%' }}
-                            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Efficiency Badge */}
-                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
-                      engine.efficiency === '9.2 L/100km'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      <span className="text-lg">⚡</span>
-                      {engine.efficiency}
-                    </div>
-                  </motion.button>
+                    {engine.name}
+                  </button>
                 );
               })}
             </div>
+
+            {/* Selected Engine Details - Compact */}
+            <AnimatePresence mode="wait">
+              {engines.filter(e => e.name === selectedEngine).map(engine => (
+                <motion.div
+                  key={engine.name}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-3 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="text-[10px] text-zinc-600 uppercase tracking-wide">{engine.type}</div>
+                      <div className="text-base font-bold text-zinc-900">{engine.name}</div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5">
+                      {engine.efficiency}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white/60 backdrop-blur rounded-lg p-2">
+                      <div className="text-[9px] text-zinc-500">Power</div>
+                      <div className="text-lg font-bold text-amber-600">{engine.power}</div>
+                    </div>
+                    <div className="bg-white/60 backdrop-blur rounded-lg p-2">
+                      <div className="text-[9px] text-zinc-500">Torque</div>
+                      <div className="text-lg font-bold text-amber-600">{engine.torque}</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
 
