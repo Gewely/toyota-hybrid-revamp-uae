@@ -18,7 +18,7 @@ const PreOwnedSimilar: React.FC = () => {
     model: preOwnedVehicles[0].model,
     year: preOwnedVehicles[0].year,
     price: preOwnedVehicles[0].price,
-    mileage: preOwnedVehicles[0].mileage,
+    mileage: `${preOwnedVehicles[0].mileage.toLocaleString()} km`,
     image: preOwnedVehicles[0].image,
     images: [preOwnedVehicles[0].image],
     certified: true,
@@ -61,141 +61,110 @@ const PreOwnedSimilar: React.FC = () => {
             onBookTestDrive={() => navigate("/test-drive")}
           />
         </div>
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-2 md:-ml-4">
-            {preOwnedVehicles.map((vehicle, index) => (
-              <CarouselItem key={vehicle.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                <motion.div
-                  initial={{ opacity: 0, rotateY: 90, scale: 0.8 }}
-                  whileInView={{ opacity: 1, rotateY: 0, scale: 1 }}
-                  viewport={{ once: true, margin: "-10%" }}
-                  transition={{ 
-                    duration: 0.7, 
-                    delay: index * 0.1,
-                    type: "spring",
-                    stiffness: 80,
-                    damping: 12
-                  }}
-                  className="h-full"
-                  style={{ 
-                    transformStyle: 'preserve-3d',
-                    perspective: '1500px'
-                  }}
-                >
-                  <motion.div
-                    whileHover={{ 
-                      rotateY: -5, 
-                      y: -8,
-                      boxShadow: '0 20px 60px -10px rgba(0,0,0,0.3)',
-                      transition: { duration: 0.3 }
-                    }}
-                    style={{ transformStyle: 'preserve-3d' }}
-                  >
-                    <Card className="group overflow-hidden transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                      <img
-                        src={vehicle.image}
-                        alt={`${vehicle.year} ${vehicle.model}`}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      
-                      {vehicle.certified && (
-                        <div className="absolute top-4 right-4">
-                          <Badge className="bg-primary text-primary-foreground shadow-lg">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Certified
-                          </Badge>
-                        </div>
-                      )}
 
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 md:p-6">
-                        <div className="flex items-end justify-between">
-                          <div>
-                            <p className="text-white/80 text-xs md:text-sm">Starting from</p>
-                            <p className="text-white text-2xl md:text-3xl font-bold">
-                              AED {vehicle.price.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
+        {/* Other Certified Vehicles Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {preOwnedVehicles.slice(1, 4).map((vehicle, index) => (
+            <motion.div
+              key={vehicle.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="group overflow-hidden transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-lg">
+                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                  <img
+                    src={vehicle.image}
+                    alt={`${vehicle.year} ${vehicle.model}`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  
+                  {vehicle.certified && (
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-primary text-primary-foreground shadow-lg">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Certified
+                      </Badge>
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-white/80 text-xs">Starting from</p>
+                        <p className="text-white text-2xl font-bold">
+                          AED {vehicle.price.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <CardContent className="p-6 space-y-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground mb-1">
+                      {vehicle.year} {vehicle.model}
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Gauge className="w-4 h-4 text-primary flex-shrink-0" />
+                      <div>
+                        <p className="text-muted-foreground text-xs">Mileage</p>
+                        <p className="font-semibold text-foreground">
+                          {vehicle.mileage.toLocaleString()} km
+                        </p>
                       </div>
                     </div>
 
-                    <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
                       <div>
-                        <h3 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-                          {vehicle.year} {vehicle.model}
-                        </h3>
+                        <p className="text-muted-foreground text-xs">Year</p>
+                        <p className="font-semibold text-foreground">{vehicle.year}</p>
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-3 md:gap-4">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Gauge className="w-4 h-4 text-primary flex-shrink-0" />
-                          <div>
-                            <p className="text-muted-foreground text-xs">Mileage</p>
-                            <p className="font-semibold text-foreground text-xs md:text-sm">
-                              {vehicle.mileage.toLocaleString()} km
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                          <div>
-                            <p className="text-muted-foreground text-xs">Year</p>
-                            <p className="font-semibold text-foreground text-xs md:text-sm">{vehicle.year}</p>
-                          </div>
-                        </div>
+                  {vehicle.features && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Features
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {vehicle.features.slice(0, 3).map((feature, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {feature}
+                          </Badge>
+                        ))}
                       </div>
+                    </div>
+                  )}
 
-                      {vehicle.features && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Features
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {vehicle.features.slice(0, 3).map((feature, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs">
-                                {feature}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex gap-3 pt-2">
-                        <Button
-                          variant="default"
-                          className="flex-1 text-sm md:text-base"
-                          onClick={() => navigate('/pre-owned')}
-                        >
-                          View Details
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="flex-1 text-sm md:text-base"
-                          onClick={() => navigate('/enquire')}
-                        >
-                          Enquire
-                        </Button>
-                      </div>
-                    </CardContent>
-                    </Card>
-                  </motion.div>
-                </motion.div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <div className="hidden md:block">
-            <CarouselPrevious className="left-0" />
-            <CarouselNext className="right-0" />
-          </div>
-        </Carousel>
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      variant="default"
+                      className="flex-1"
+                      onClick={() => navigate('/pre-owned')}
+                    >
+                      View Details
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => navigate('/enquire')}
+                    >
+                      Enquire
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
