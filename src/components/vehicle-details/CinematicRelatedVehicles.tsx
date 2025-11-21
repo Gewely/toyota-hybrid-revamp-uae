@@ -202,34 +202,33 @@ const CinematicRelatedVehicles: React.FC<CinematicRelatedVehiclesProps> = ({
           </div>
         </motion.div>
 
-        {/* Horizontal scroll container */}
-        <motion.div
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent [&::-webkit-scrollbar]:h-2 lg:scrollbar-none"
-          initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.8, delay: 0.3 }}
-        >
-          {related.map((vehicle, idx) => (
-            <VehicleCardEnhanced
-              key={vehicle.id}
-              vehicle={vehicle}
-              index={idx}
-              inView={inView}
-              onNavigate={() => navigate(`/vehicle/${slugify(vehicle.name)}`)}
-            />
-          ))}
-        </motion.div>
+        {/* Use DiscoveryGrid instead of scroll container */}
+        <DiscoveryGrid
+          vehicles={related}
+          onCompare={handleCompare}
+          onQuickView={handleQuickView}
+          onNavigate={handleNavigate}
+        />
 
-        {/* Mobile nav dots */}
-        <div className="flex lg:hidden justify-center gap-2 mt-6">
-          {related.map((_, idx) => (
-            <div
-              key={idx}
-              className="w-2 h-2 rounded-full bg-muted-foreground/30"
-            />
-          ))}
-        </div>
+        {/* Comparison Drawer */}
+        <VehicleComparisonDrawer
+          vehicles={comparisonVehicles}
+          isOpen={isCompareOpen}
+          onClose={() => setIsCompareOpen(false)}
+          onClearAll={() => setComparisonVehicles([])}
+        />
+
+        {/* Quick Preview Sheet */}
+        {quickViewVehicle && (
+          <QuickPreviewSheet
+            vehicle={quickViewVehicle}
+            isOpen={isQuickViewOpen}
+            onClose={() => {
+              setIsQuickViewOpen(false);
+              setQuickViewVehicle(null);
+            }}
+          />
+        )}
       </div>
     </section>
   );

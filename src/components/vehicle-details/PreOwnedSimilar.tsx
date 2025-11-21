@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gauge, Calendar, CheckCircle2, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { preOwnedVehicles } from "@/data/vehicles";
 import FeaturedCertifiedVehicle from "./FeaturedCertifiedVehicle";
-import CertificationBadge from "./CertificationBadge";
+import MobilePreOwnedCarousel from "./MobilePreOwnedCarousel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PreOwnedSimilar: React.FC = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Featured vehicle
   const featuredVehicle = {
@@ -64,109 +65,105 @@ const PreOwnedSimilar: React.FC = () => {
           />
         </div>
 
-        {/* Other Certified Vehicles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {preOwnedVehicles.slice(1, 4).map((vehicle, index) => (
-            <motion.div
-              key={vehicle.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <Card className="group overflow-hidden transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-lg">
-                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  <img
-                    src={vehicle.image}
-                    alt={`${vehicle.year} ${vehicle.model}`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                  
-                  {vehicle.certified && (
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-primary text-primary-foreground shadow-lg">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        Certified
-                      </Badge>
-                    </div>
-                  )}
-
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4">
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-white/80 text-xs">Starting from</p>
-                        <p className="text-white text-2xl font-bold">
-                          AED {vehicle.price.toLocaleString()}
-                        </p>
+        {/* Other Certified Vehicles - Mobile Carousel / Desktop Grid */}
+        {isMobile ? (
+          <MobilePreOwnedCarousel vehicles={preOwnedVehicles.slice(1, 5)} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {preOwnedVehicles.slice(1, 4).map((vehicle, index) => (
+              <motion.div
+                key={vehicle.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="h-full"
+              >
+                <div className="group overflow-hidden rounded-2xl transition-all duration-300 border border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-xl hover:border-primary/30 cursor-pointer"
+                  onClick={() => navigate('/pre-owned')}
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                    <img
+                      src={vehicle.image}
+                      alt={`${vehicle.year} ${vehicle.model}`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                    
+                    {vehicle.certified && (
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-primary text-primary-foreground shadow-lg">
+                          Certified
+                        </Badge>
                       </div>
+                    )}
+
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4">
+                      <p className="text-white/80 text-xs">Starting from</p>
+                      <p className="text-white text-2xl font-bold">
+                        AED {vehicle.price.toLocaleString()}
+                      </p>
                     </div>
                   </div>
-                </div>
 
-                <CardContent className="p-6 space-y-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground mb-1">
+                  <div className="p-6 space-y-4">
+                    <h3 className="text-xl font-bold text-foreground">
                       {vehicle.year} {vehicle.model}
                     </h3>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Gauge className="w-4 h-4 text-primary flex-shrink-0" />
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground text-xs">Mileage</p>
+                        <p className="text-muted-foreground text-xs mb-1">Mileage</p>
                         <p className="font-semibold text-foreground">
                           {vehicle.mileage.toLocaleString()} km
                         </p>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
                       <div>
-                        <p className="text-muted-foreground text-xs">Year</p>
+                        <p className="text-muted-foreground text-xs mb-1">Year</p>
                         <p className="font-semibold text-foreground">{vehicle.year}</p>
                       </div>
                     </div>
-                  </div>
 
-                  {vehicle.features && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Features
-                      </p>
+                    {vehicle.features && vehicle.features.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {vehicle.features.slice(0, 3).map((feature, i) => (
+                        {vehicle.features.slice(0, 2).map((feature, i) => (
                           <Badge key={i} variant="secondary" className="text-xs">
                             {feature}
                           </Badge>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      variant="default"
-                      className="flex-1"
-                      onClick={() => navigate('/pre-owned')}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => navigate('/enquire')}
-                    >
-                      Enquire
-                    </Button>
+                    <div className="flex gap-3 pt-2">
+                      <Button
+                        variant="default"
+                        className="flex-1"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/pre-owned');
+                        }}
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/enquire');
+                        }}
+                      >
+                        Enquire
+                      </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
