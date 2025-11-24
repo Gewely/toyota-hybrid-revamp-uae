@@ -117,7 +117,6 @@ const Enquire = () => {
                         <SelectValue placeholder="Select a vehicle model" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">-- Select a Model --</SelectItem>
                         {!isPreowned ? (
                           vehicles.map((vehicle) => (
                             <SelectItem key={vehicle.name} value={vehicle.name}>
