@@ -41,12 +41,12 @@ const MobilePreOwnedCarousel: React.FC<MobilePreOwnedCarouselProps> = ({ vehicle
       <CarouselContent className="-ml-2 md:-ml-4">
         {vehicles.map((vehicle) => (
           <CarouselItem key={vehicle.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-            <Card className="group overflow-hidden transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-xl">
+            <Card className="group overflow-hidden transition-all duration-200 border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-xl will-change-transform">
               <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                 <img
                   src={vehicle.image}
                   alt={`${vehicle.year} ${vehicle.model}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 will-change-transform"
                   loading="lazy"
                 />
                 

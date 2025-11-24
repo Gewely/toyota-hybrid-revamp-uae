@@ -45,14 +45,14 @@ const MobileSimilarCarousel: React.FC<MobileSimilarCarouselProps> = ({
         {vehicles.map((vehicle) => (
           <CarouselItem key={vehicle.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2">
             <Card 
-              className="group overflow-hidden transition-all duration-300 border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-xl hover:border-primary/30 cursor-pointer"
+              className="group overflow-hidden transition-all duration-200 border-border/50 bg-card/80 backdrop-blur-sm h-full hover:shadow-xl hover:border-primary/30 cursor-pointer will-change-transform"
               onClick={() => onNavigate(vehicle.id)}
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-muted">
                 <img
                   src={vehicle.image}
                   alt={vehicle.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 will-change-transform"
                   loading="lazy"
                 />
                 

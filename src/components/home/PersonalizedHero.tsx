@@ -63,50 +63,57 @@ const PersonalizedHero: React.FC = () => {
   
   if (!personaData) return null;
 
-  // Get animation style based on persona preference
+  // Get animation style based on persona preference - optimized for mobile
   const getAnimation = (style: string) => {
+    const mobileDuration = isMobile ? 0.4 : 0.6;
+    const mobileDistance = isMobile ? 40 : 80;
+    
     switch (style) {
       case "fade":
         return {
           initial: { opacity: 0 },
           animate: { opacity: 1 },
           exit: { opacity: 0 },
-          transition: { duration: 0.8 }
+          transition: { duration: mobileDuration, ease: [0.4, 0, 0.2, 1] }
         };
       case "slide":
         return {
-          initial: { x: -100, opacity: 0 },
+          initial: { x: -mobileDistance, opacity: 0 },
           animate: { x: 0, opacity: 1 },
-          exit: { x: 100, opacity: 0 },
-          transition: { duration: 0.8 }
+          exit: { x: mobileDistance, opacity: 0 },
+          transition: { duration: mobileDuration, ease: [0.4, 0, 0.2, 1] }
         };
       case "zoom":
         return {
-          initial: { scale: 0.8, opacity: 0 },
+          initial: { scale: 0.9, opacity: 0 },
           animate: { scale: 1, opacity: 1 },
-          exit: { scale: 1.2, opacity: 0 },
-          transition: { duration: 0.8 }
+          exit: { scale: 1.1, opacity: 0 },
+          transition: { duration: mobileDuration, ease: [0.4, 0, 0.2, 1] }
         };
       case "bounce":
         return {
-          initial: { y: -100, opacity: 0 },
+          initial: { y: isMobile ? -40 : -80, opacity: 0 },
           animate: { y: 0, opacity: 1 },
-          exit: { y: 100, opacity: 0 },
-          transition: { type: "spring", stiffness: 100, damping: 10 }
+          exit: { y: isMobile ? 40 : 80, opacity: 0 },
+          transition: { 
+            type: "spring", 
+            stiffness: isMobile ? 200 : 120, 
+            damping: isMobile ? 20 : 12 
+          }
         };
       case "flip":
         return {
-          initial: { rotateY: 90, opacity: 0 },
+          initial: { rotateY: 60, opacity: 0 },
           animate: { rotateY: 0, opacity: 1 },
-          exit: { rotateY: -90, opacity: 0 },
-          transition: { duration: 0.8 }
+          exit: { rotateY: -60, opacity: 0 },
+          transition: { duration: mobileDuration, ease: [0.4, 0, 0.2, 1] }
         };
       default:
         return {
           initial: { opacity: 0 },
           animate: { opacity: 1 },
           exit: { opacity: 0 },
-          transition: { duration: 0.8 }
+          transition: { duration: mobileDuration, ease: [0.4, 0, 0.2, 1] }
         };
     }
   };
@@ -190,13 +197,12 @@ const PersonalizedHero: React.FC = () => {
         
         {/* Background media - image or video */}
         <motion.div
-          initial={{ scale: 1.1, opacity: 0, filter: "blur(8px)" }}
+          initial={{ scale: 1.05, opacity: 0 }}
           animate={{ 
             scale: 1, 
-            opacity: isImageLoaded ? 1 : 0,
-            filter: "blur(0px)"
+            opacity: isImageLoaded ? 1 : 0
           }}
-          transition={{ duration: 2 }}
+          transition={{ duration: isMobile ? 0.8 : 1.5, ease: [0.4, 0, 0.2, 1] }}
           className="w-full h-full"
         >
           {personaData.backgroundImage.endsWith('.mp4') ? (
@@ -220,29 +226,29 @@ const PersonalizedHero: React.FC = () => {
           )}
         </motion.div>
         
-        {/* Mobile scroll indicator */}
+        {/* Mobile scroll indicator - faster animation */}
         {isMobile && !hasInteracted && (
           <motion.div 
             className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 3, duration: 1 }}
+            transition={{ delay: 2, duration: 0.5 }}
           >
             <motion.div 
               className="w-1.5 h-8 rounded-full border-2 border-white flex items-start justify-center p-1"
-              animate={{ y: [0, 5, 0], opacity: [0.7, 1, 0.7] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
+              animate={{ y: [0, 4, 0], opacity: [0.7, 1, 0.7] }}
+              transition={{ repeat: Infinity, duration: 1.2 }}
             >
               <motion.div 
                 className="w-1 h-1.5 bg-white rounded-full"
-                animate={{ y: [0, 12, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
+                animate={{ y: [0, 10, 0] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
               />
             </motion.div>
             <motion.p 
               className="text-white text-xs mt-2 opacity-80"
               animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
+              transition={{ repeat: Infinity, duration: 1.2 }}
             >
               Scroll to explore
             </motion.p>
@@ -401,29 +407,30 @@ const PersonalizedHero: React.FC = () => {
             </motion.div>
           )}
 
-          {/* Mobile floating particles */}
+          {/* Mobile floating particles - faster */}
           {isMobile && (
             <div className="absolute inset-0">
-              {Array.from({ length: 12 }).map((_, i) => (
+              {Array.from({ length: 8 }).map((_, i) => (
                 <motion.div
                   key={i}
-                  className="absolute bg-white/20 rounded-full"
+                  className="absolute bg-white/15 rounded-full"
                   style={{ 
-                    width: `${3 + Math.random() * 6}px`, 
-                    height: `${3 + Math.random() * 6}px`,
+                    width: `${3 + Math.random() * 5}px`, 
+                    height: `${3 + Math.random() * 5}px`,
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`
                   }}
                   animate={{
-                    x: [0, Math.random() * 20 - 10, 0],
-                    y: [0, Math.random() * 20 - 10, 0],
-                    opacity: [0.3, 0.7, 0.3],
-                    scale: [1, 1.2, 1]
+                    x: [0, Math.random() * 15 - 7.5, 0],
+                    y: [0, Math.random() * 15 - 7.5, 0],
+                    opacity: [0.2, 0.6, 0.2],
+                    scale: [1, 1.15, 1]
                   }}
                   transition={{
-                    duration: 3 + Math.random() * 5,
+                    duration: 2.5 + Math.random() * 2.5,
                     repeat: Infinity,
-                    repeatType: "reverse"
+                    repeatType: "reverse",
+                    ease: "easeInOut"
                   }}
                 />
               ))}
