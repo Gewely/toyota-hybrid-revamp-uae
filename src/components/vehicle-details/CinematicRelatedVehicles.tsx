@@ -10,6 +10,8 @@ import type { VehicleModel } from "@/types/vehicle";
 import DiscoveryGrid from "./DiscoveryGrid";
 import VehicleComparisonDrawer from "./VehicleComparisonDrawer";
 import QuickPreviewSheet from "./QuickPreviewSheet";
+import MobileSimilarCarousel from "./MobileSimilarCarousel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CinematicRelatedVehiclesProps {
   currentVehicle: VehicleModel;
@@ -63,6 +65,7 @@ const CinematicRelatedVehicles: React.FC<CinematicRelatedVehiclesProps> = ({
   title = "You Might Also Like",
 }) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const inView = useInView(sectionRef, { once: true, margin: "-100px" });
@@ -202,13 +205,21 @@ const CinematicRelatedVehicles: React.FC<CinematicRelatedVehiclesProps> = ({
           </div>
         </motion.div>
 
-        {/* Use DiscoveryGrid instead of scroll container */}
-        <DiscoveryGrid
-          vehicles={related}
-          onCompare={handleCompare}
-          onQuickView={handleQuickView}
-          onNavigate={handleNavigate}
-        />
+        {/* Mobile Carousel / Desktop Grid */}
+        {isMobile ? (
+          <MobileSimilarCarousel
+            vehicles={related}
+            onQuickView={handleQuickView}
+            onNavigate={handleNavigate}
+          />
+        ) : (
+          <DiscoveryGrid
+            vehicles={related}
+            onCompare={handleCompare}
+            onQuickView={handleQuickView}
+            onNavigate={handleNavigate}
+          />
+        )}
 
         {/* Comparison Drawer */}
         <VehicleComparisonDrawer
