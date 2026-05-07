@@ -403,7 +403,15 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   /* ----------------- Progressive Image Loading ----------------- */
   useEffect(() => {
     if (!active?.backgroundImage) return;
-    
+
+    // On mobile, skip brightness analysis & progressive ladder; load single optimized source
+    if (isMobile) {
+      setTextColor('#ffffff');
+      setImageLoading(false);
+      setImageQuality('high');
+      return;
+    }
+
     analyzeImageBrightness(active.backgroundImage);
     setImageLoading(true);
     setImageQuality('low');
@@ -420,7 +428,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       highImg.src = active.backgroundImage;
     };
     mediumImg.src = active.backgroundImage;
-  }, [active?.backgroundImage, analyzeImageBrightness]);
+  }, [active?.backgroundImage, analyzeImageBrightness, isMobile]);
 
   /* ----------------- Lock evaluator ----------------- */
   const [lockActive, setLockActive] = useState(false);
