@@ -285,6 +285,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
 
   /* ----------------- FPS Monitoring ----------------- */
   useEffect(() => {
+    // Skip FPS monitoring on mobile to save battery & main thread
+    if (isMobile) return;
     let lastTime = performance.now();
     let frames = 0;
     let rafId: number;
@@ -305,14 +307,18 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     
     rafId = requestAnimationFrame(measureFPS);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [isMobile]);
 
   // Adaptive quality
   useEffect(() => {
+    if (isMobile) {
+      setQualityMode('medium');
+      return;
+    }
     if (fps < 30) setQualityMode('medium');
     else if (fps < 45) setQualityMode('high');
     else setQualityMode('ultra');
-  }, [fps]);
+  }, [fps, isMobile]);
 
   /* ----------------- Keyboard Hints ----------------- */
   useEffect(() => {
@@ -327,27 +333,28 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     }
   }, [showKeyboardHints]);
 
-  /* ----------------- Cursor Tracking ----------------- */
+  /* ----------------- Cursor Tracking (desktop only) ----------------- */
   useEffect(() => {
-    if (qualityMode === 'medium') return;
+    if (isMobile || qualityMode === 'medium') return;
     
     const handleMouseMove = (e: MouseEvent) => {
       setCursorPos({ x: e.clientX, y: e.clientY });
     };
     
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [qualityMode]);
+  }, [qualityMode, isMobile]);
 
-  /* ----------------- Camera Shake for Performance Scene ----------------- */
+  /* ----------------- Camera Shake (desktop ultra only) ----------------- */
   useEffect(() => {
+    if (isMobile) return;
     if (active?.id === 'performance' && qualityMode === 'ultra') {
       const interval = setInterval(() => {
         cameraShake.set(Math.random() * 2 - 1);
       }, 80);
       return () => clearInterval(interval);
     }
-  }, [active?.id, qualityMode, cameraShake]);
+  }, [active?.id, qualityMode, cameraShake, isMobile]);
 
   /* ----------------- Engagement Tracking ----------------- */
   useEffect(() => {
