@@ -440,7 +440,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     let raf = 0;
     const evaluate = () => {
       raf = 0;
-      const should = coversViewport(el, topOffsetPx) && index < lastIndex && !manualUnlock;
+      // Disable scroll-lock on mobile so users can scroll naturally
+      const should = !isMobile && coversViewport(el, topOffsetPx) && index < lastIndex && !manualUnlock;
       setLockActive(should);
     };
 
@@ -461,11 +462,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       window.removeEventListener("resize", onScrollResize as any);
       window.removeEventListener("orientationchange", onScrollResize as any);
     };
-  }, [index, lastIndex, manualUnlock, topOffsetPx]);
+  }, [index, lastIndex, manualUnlock, topOffsetPx, isMobile]);
 
-  /* ----------------- Parallax ----------------- */
+  /* ----------------- Parallax (desktop only) ----------------- */
   useEffect(() => {
-    if (!motionAllowed) return;
+    if (!motionAllowed || isMobile) return;
     const onMove = (e: MouseEvent) => {
       const cx = (e.clientX / window.innerWidth - 0.5) * 16;
       const cy = (e.clientY / window.innerHeight - 0.5) * 16;
