@@ -255,6 +255,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
     [],
   );
   const [selectedEngine, setSelectedEngine] = useState<string>(engines[0].name);
+  const [financeOpen, setFinanceOpen] = useState(true);
 
   // --- Monthly calc
   const monthly = useCallback(
@@ -523,7 +524,7 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
         <div className="mt-6 hidden lg:block">
           <div className="grid grid-cols-12 gap-6 items-stretch">
             {/* Poster */}
-            <div className="col-span-7">
+            <div className={financeOpen ? "col-span-7" : "col-span-10"}>
               <div className="relative h-full overflow-hidden rounded-[28px] ring-1 ring-zinc-200 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
                 {/* arrows — change grade only */}
                 <button
@@ -597,9 +598,21 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
             </div>
 
             {/* Finance panel */}
-            <div className="col-span-5">
+            <div className={financeOpen ? "col-span-5" : "col-span-2"}>
               <Card className="rounded-[28px] border-0 bg-white p-1 shadow-[0_16px_44px_rgba(0,0,0,0.08)] h-full">
-                <CardContent className="p-6 flex flex-col h-full">
+                <CardContent className={financeOpen ? "p-6 flex flex-col h-full" : "p-3 flex flex-col h-full items-center justify-center"}>
+                  <button
+                    type="button"
+                    onClick={() => setFinanceOpen((v) => !v)}
+                    className="self-end mb-2 inline-flex items-center gap-1 rounded-full border bg-white px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-50"
+                    aria-expanded={financeOpen}
+                    aria-label={financeOpen ? "Collapse finance panel" : "Expand finance panel"}
+                  >
+                    {financeOpen ? "Collapse" : "Finance"}
+                    <ChevronRight className={`h-3.5 w-3.5 transition-transform ${financeOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {financeOpen && (
+                  <>
                   <div className="flex items-start justify-between">
                     <div>
                       <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight text-zinc-900 uppercase">
