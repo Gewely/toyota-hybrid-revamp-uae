@@ -8,6 +8,7 @@ import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX
 import { useModal } from "@/contexts/ModalProvider";
 import { contextualHaptic } from "@/utils/haptic";
 import { toast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ============================================================
    Types
@@ -176,6 +177,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const { open } = useModal();
   const prefersReduced = useReducedMotion();
   const motionAllowed = forceMotion || !prefersReduced;
+  const isMobile = useIsMobile();
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
@@ -283,6 +285,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
 
   /* ----------------- FPS Monitoring ----------------- */
   useEffect(() => {
+    // Skip FPS monitoring on mobile to save battery & main thread
+    if (isMobile) return;
     let lastTime = performance.now();
     let frames = 0;
     let rafId: number;
@@ -303,14 +307,18 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     
     rafId = requestAnimationFrame(measureFPS);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [isMobile]);
 
   // Adaptive quality
   useEffect(() => {
+    if (isMobile) {
+      setQualityMode('medium');
+      return;
+    }
     if (fps < 30) setQualityMode('medium');
     else if (fps < 45) setQualityMode('high');
     else setQualityMode('ultra');
-  }, [fps]);
+  }, [fps, isMobile]);
 
   /* ----------------- Keyboard Hints ----------------- */
   useEffect(() => {
@@ -325,27 +333,28 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     }
   }, [showKeyboardHints]);
 
-  /* ----------------- Cursor Tracking ----------------- */
+  /* ----------------- Cursor Tracking (desktop only) ----------------- */
   useEffect(() => {
-    if (qualityMode === 'medium') return;
+    if (isMobile || qualityMode === 'medium') return;
     
     const handleMouseMove = (e: MouseEvent) => {
       setCursorPos({ x: e.clientX, y: e.clientY });
     };
     
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [qualityMode]);
+  }, [qualityMode, isMobile]);
 
-  /* ----------------- Camera Shake for Performance Scene ----------------- */
+  /* ----------------- Camera Shake (desktop ultra only) ----------------- */
   useEffect(() => {
+    if (isMobile) return;
     if (active?.id === 'performance' && qualityMode === 'ultra') {
       const interval = setInterval(() => {
         cameraShake.set(Math.random() * 2 - 1);
       }, 80);
       return () => clearInterval(interval);
     }
-  }, [active?.id, qualityMode, cameraShake]);
+  }, [active?.id, qualityMode, cameraShake, isMobile]);
 
   /* ----------------- Engagement Tracking ----------------- */
   useEffect(() => {
@@ -394,7 +403,15 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   /* ----------------- Progressive Image Loading ----------------- */
   useEffect(() => {
     if (!active?.backgroundImage) return;
-    
+
+    // On mobile, skip brightness analysis & progressive ladder; load single optimized source
+    if (isMobile) {
+      setTextColor('#ffffff');
+      setImageLoading(false);
+      setImageQuality('high');
+      return;
+    }
+
     analyzeImageBrightness(active.backgroundImage);
     setImageLoading(true);
     setImageQuality('low');
@@ -411,7 +428,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       highImg.src = active.backgroundImage;
     };
     mediumImg.src = active.backgroundImage;
-  }, [active?.backgroundImage, analyzeImageBrightness]);
+  }, [active?.backgroundImage, analyzeImageBrightness, isMobile]);
 
   /* ----------------- Lock evaluator ----------------- */
   const [lockActive, setLockActive] = useState(false);
@@ -423,7 +440,8 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     let raf = 0;
     const evaluate = () => {
       raf = 0;
-      const should = coversViewport(el, topOffsetPx) && index < lastIndex && !manualUnlock;
+      // Disable scroll-lock on mobile so users can scroll naturally
+      const should = !isMobile && coversViewport(el, topOffsetPx) && index < lastIndex && !manualUnlock;
       setLockActive(should);
     };
 
@@ -444,11 +462,11 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
       window.removeEventListener("resize", onScrollResize as any);
       window.removeEventListener("orientationchange", onScrollResize as any);
     };
-  }, [index, lastIndex, manualUnlock, topOffsetPx]);
+  }, [index, lastIndex, manualUnlock, topOffsetPx, isMobile]);
 
-  /* ----------------- Parallax ----------------- */
+  /* ----------------- Parallax (desktop only) ----------------- */
   useEffect(() => {
-    if (!motionAllowed) return;
+    if (!motionAllowed || isMobile) return;
     const onMove = (e: MouseEvent) => {
       const cx = (e.clientX / window.innerWidth - 0.5) * 16;
       const cy = (e.clientY / window.innerHeight - 0.5) * 16;
@@ -456,7 +474,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
-  }, [motionAllowed]);
+  }, [motionAllowed, isMobile]);
 
   /* ----------------- Elastic Resistance ----------------- */
   const elasticResistance = useCallback((delta: number, max: number = 100) => {

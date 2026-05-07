@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import type { VehicleModel } from "@/types/vehicle";
 import { PremiumButton } from "@/components/ui/premium-button";
-import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Info, Share2, Images as ImagesIcon, Play, Pause, X, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ============================================================
    MinimalistVideoHero — Mobile-Compact
@@ -275,13 +276,13 @@ export default function MinimalistVideoHero({
   onShareClick
 }: MinimalistVideoHeroProps) {
   const shouldReduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
 
-  // Only respect reduced motion, not saveData - users want to see videos
+  // On mobile or reduced motion, default to image to avoid heavy YouTube embed
   const prefersImage = useMemo(() => {
-    return Boolean(shouldReduceMotion);
-  }, [shouldReduceMotion]);
+    return Boolean(shouldReduceMotion) || isMobile;
+  }, [shouldReduceMotion, isMobile]);
 
-  // Always start with video mode unless reduced motion is preferred
   const [mode, setMode] = useState<"video" | "image">(prefersImage ? "image" : "video");
   const [activeIndex, setActiveIndex] = useState(defaultVariant === "modellista" ? 1 : 0);
   const [videoPlaying, setVideoPlaying] = useState(!prefersImage);
@@ -411,7 +412,7 @@ export default function MinimalistVideoHero({
         y: titleY,
         opacity: contentOpacity
       }} className="space-y-1">
-          <motion.h1 id="video-hero-heading" className="text-[clamp(1.6rem,6vw,2.25rem)] md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-wide text-white leading-tight" initial={{
+          <motion.h1 id="video-hero-heading" className="text-[clamp(1.4rem,5vw,2rem)] md:text-4xl lg:text-5xl xl:text-6xl font-light tracking-wide text-white leading-tight" initial={{
           opacity: 0,
           scale: 0.9
         }} animate={{
@@ -469,7 +470,7 @@ export default function MinimalistVideoHero({
         }} transition={{
           duration: 0.5,
           delay: 0.3
-        }} className="flex flex-col gap-2.5 md:flex-row md:gap-4">
+        }} className="flex flex-col gap-3 md:flex-row md:gap-4">
             <motion.div custom={0} initial={{
             opacity: 0,
             y: 30
@@ -554,6 +555,24 @@ export default function MinimalistVideoHero({
             </motion.div>}
         </div>
       </div>
+
+      {/* Scroll indicator (mobile) */}
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 md:hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2, duration: 0.4 }}
+        style={{ opacity: contentOpacity }}
+      >
+        <motion.div
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.div>
+      </motion.div>
 
       {/* Top-right utilities (smaller on mobile) */}
       <motion.div initial={{

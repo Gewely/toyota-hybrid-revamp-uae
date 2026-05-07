@@ -178,7 +178,7 @@ const DiscoveryGrid: React.FC<DiscoveryGridProps> = ({
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-24 sm:bottom-8 left-1/2 -translate-x-1/2 z-50"
+          className="fixed bottom-20 sm:bottom-8 left-1/2 -translate-x-1/2 z-50"
         >
           <Button
             size="lg"
