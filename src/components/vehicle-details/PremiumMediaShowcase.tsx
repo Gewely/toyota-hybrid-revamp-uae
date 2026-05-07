@@ -458,7 +458,7 @@ const PremiumMediaShowcase: React.FC<Props> = ({
             transition={{ 
               duration: 8, 
               ease: "linear",
-              repeat: Infinity,
+              repeat: 2,
               repeatType: "reverse"
             }}
           />
