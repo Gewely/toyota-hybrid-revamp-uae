@@ -756,6 +756,8 @@ const EngineGradeSelection: React.FC<EngineGradeSelectionProps> = ({
                     <Info className="inline-block -mt-1 mr-1 h-3.5 w-3.5" />
                     Figures are illustrative and may vary by market.
                   </p>
+                  </>
+                  )}
                 </CardContent>
               </Card>
             </div>
