@@ -8,6 +8,7 @@ import { Zap, Car, Shield, Sparkles, ChevronRight, ChevronDown, Volume2, VolumeX
 import { useModal } from "@/contexts/ModalProvider";
 import { contextualHaptic } from "@/utils/haptic";
 import { toast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ============================================================
    Types
