@@ -474,7 +474,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
     };
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
-  }, [motionAllowed]);
+  }, [motionAllowed, isMobile]);
 
   /* ----------------- Elastic Resistance ----------------- */
   const elasticResistance = useCallback((delta: number, max: number = 100) => {
