@@ -237,7 +237,7 @@ const DesktopGrid: React.FC<{
   
   return (
     <div className="mx-auto max-w-[1400px] px-6 lg:px-8 py-10">
-      <div ref={gridRef} className="grid grid-cols-12 gap-6" style={{ perspective: '1500px' }}>
+      <div ref={gridRef} className="grid grid-cols-12 gap-6" style={{ contentVisibility: 'auto' as any }}>
         {cards.map((card, i) => {
           const aspect =
             card.layout === "tall" ? "aspect-[4/5]" : card.layout === "square" ? "aspect-square" : "aspect-[16/9]";
@@ -249,25 +249,19 @@ const DesktopGrid: React.FC<{
               onClick={() => onCardClick(card.id)}
               className={`group relative ${span} ${aspect} overflow-hidden rounded-3xl bg-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800`}
               aria-label={`${card.title}: ${card.tagline}`}
-              initial={{ opacity: 0, rotateX: -15, scale: 0.9 }}
-              whileInView={{ opacity: 1, rotateX: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
               transition={{
-                duration: 0.6,
-                delay: i * 0.15,
-                type: "spring",
-                stiffness: 100,
-                damping: 20
+                duration: 0.5,
+                delay: Math.min(i * 0.08, 0.4),
+                ease: [0.22, 1, 0.36, 1]
               }}
               whileHover={{ 
-                y: -8,
-                rotateY: 2,
-                transition: { duration: 0.3 }
+                y: -6,
+                transition: { duration: 0.25 }
               }}
-              style={{ 
-                transformStyle: 'preserve-3d',
-                willChange: 'transform'
-              }}
+              style={{ willChange: 'transform' }}
             >
               <motion.img
                 src={card.image}
