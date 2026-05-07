@@ -556,6 +556,24 @@ export default function MinimalistVideoHero({
         </div>
       </div>
 
+      {/* Scroll indicator (mobile) */}
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 md:hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2, duration: 0.4 }}
+        style={{ opacity: contentOpacity }}
+      >
+        <motion.div
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.div>
+      </motion.div>
+
       {/* Top-right utilities (smaller on mobile) */}
       <motion.div initial={{
       opacity: 0
