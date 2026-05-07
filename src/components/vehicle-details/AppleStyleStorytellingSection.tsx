@@ -177,6 +177,7 @@ const AppleStyleStorytellingSection: React.FC<Props> = ({
   const { open } = useModal();
   const prefersReduced = useReducedMotion();
   const motionAllowed = forceMotion || !prefersReduced;
+  const isMobile = useIsMobile();
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
