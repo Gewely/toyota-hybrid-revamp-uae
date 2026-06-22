@@ -14,6 +14,7 @@ import VehicleDetails from "./pages/VehicleDetails";
 import TestDrive from "./pages/TestDrive";
 import Enquire from "./pages/Enquire";
 import PreOwned from "./pages/PreOwned";
+import BusinessMobilityBuilder from "./pages/BusinessMobilityBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,9 @@ const App = () => (
                 <Route path="/test-drive" element={<TestDrive />} />
                 <Route path="/enquire" element={<Enquire />} />
                 <Route path="/pre-owned" element={<PreOwned />} />
+                <Route path="/en/business-mobility-builder" element={<BusinessMobilityBuilder />} />
+                <Route path="/business-mobility-builder" element={<BusinessMobilityBuilder />} />
+                <Route path="/en/business-builder" element={<BusinessMobilityBuilder />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
